@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
@@ -90,15 +88,6 @@ class _TransactionReceiptWidgetState
         context.go('/');
       }
     }
-  }
-
-  void _handleCopyToClipboard(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    AppMessenger.show(
-      context,
-      type: MessageType.success,
-      message: 'Copied to clipboard',
-    );
   }
 
   @override
@@ -342,36 +331,18 @@ class _TransactionReceiptWidgetState
         const SizedBox(width: 16),
         // Value with optional copy icon
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  detail.value,
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontFamily: 'SF Pro',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 1.33,
-                    letterSpacing: 0.06,
-                  ),
-                ),
-              ),
-              if (detail.showCopyIcon) ...[
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _handleCopyToClipboard(detail.value),
-                  child: const Icon(
-                    Icons.copy,
-                    size: 14,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-              ],
-            ],
+          child: Text(
+            detail.value,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 3,
+            style: const TextStyle(
+              fontFamily: 'SF Pro',
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.33,
+              letterSpacing: 0.06,
+            ),
           ),
         ),
       ],
