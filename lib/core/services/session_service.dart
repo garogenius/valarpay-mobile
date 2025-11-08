@@ -2,10 +2,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/features/models/login.dart';
 import 'package:valarpay/features/models/user.dart';
 
 class SessionService {
+  late BuildContext context;
+  SessionService(BuildContext incomingBuildContext) {
+    context = incomingBuildContext;
+  }
+
   static const String _userDetailsKey = 'user_details';
   static const String _userAccessToken = 'user_access_token';
   static const String _usernameKey = 'username';
@@ -73,27 +79,31 @@ class SessionService {
     return await getAccessToken() != null && await getUser() != null;
   }
 
-  static Future<void> logout() async {
+  Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userDetailsKey);
-    await prefs.remove(_usernameKey);
-    await prefs.remove(_userFullnameKey);
-    await prefs.remove(_userActualUsernameKey);
-    await prefs.remove(_userPhoneNumberKey);
-    // Do NOT remove access token so biometric login can work after logout
-    // await prefs.remove(_userAccessToken);
+    await prefs.remove(_userAccessToken);
+
+    final fpEnabled = await LocalStorageService.getBool(
+      'pref_biometric_fingerprint',
+    );
+    final faceEnabled = await LocalStorageService.getBool(
+      'pref_biometric_faceid',
+    );
+    if (await SessionService.getUsername() != null &&
+        (fpEnabled == true || faceEnabled == true)) {
+      context.pushReplacement('/biometric-login');
+    } else {
+      context.pushReplacement('/signin');
+    }
   }
 
-  Future<void> checkSession(BuildContext context) async {
+  Future<void> checkSession() async {
     final loggedIn = await SessionService.isLoggedIn();
     if (loggedIn) {
-      context.pushReplacement('/'); // go to home
+      context.pushReplacement('/');
     } else {
-      if (await SessionService.getUsername() != null) {
-        context.pushReplacement('/biometric-login');
-      } else {
-        context.pushReplacement('/signin');
-      }
+      logout();
     }
   }
 }

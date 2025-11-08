@@ -93,7 +93,7 @@ class InactivityService {
     
     // Logout user but keep biometric credentials for quick re-login
     if (setting == 'Always Require Password to Log in') {
-      await SessionService.logout();
+      await SessionService(context).logout();
     }
     
     if (context.mounted) {

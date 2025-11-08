@@ -31,6 +31,7 @@ class UserActivityService {
 
   static Future<void> _logoutUser(BuildContext context, WidgetRef ref) async {
     ref.read(userProvider.notifier).clearUser();
+    SessionService(context).logout();
     if (context.mounted) {
       String? username = await SessionService.getUsername();
       if (username != null) {

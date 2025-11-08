@@ -31,7 +31,7 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          // log("Response: ${response.statusCode}");
+           log("Response: ${response.statusCode}");
           if (response.statusCode == 200) {
             final data = response.data;
 
@@ -57,11 +57,6 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          // ✅ Handle 401 Unauthorized
-          if (e.response?.statusCode == 401) {
-            await SessionService.logout();
-          }
-
           return handler.next(e);
         },
       ),

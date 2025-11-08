@@ -83,23 +83,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    // If should logout due to inactivity, clear session
     if (shouldLogout && loggedIn) {
-      await SessionService.logout();
-
-      // Check if biometric is available
-      final fpEnabled = await LocalStorageService.getBool(
-        'pref_biometric_fingerprint',
-      );
-      final faceEnabled = await LocalStorageService.getBool(
-        'pref_biometric_faceid',
-      );
-
-      if ((fpEnabled ?? false) || (faceEnabled ?? false)) {
-        context.pushReplacement('/biometric-login');
-      } else {
-        context.pushReplacement('/signin');
-      }
+      await SessionService(context).logout();
       return;
     }
 

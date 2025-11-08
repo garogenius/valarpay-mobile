@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
@@ -46,9 +47,7 @@ class _TransactionReceiptWidgetState
 
   Future<void> _handleDoneButton() async {
     if (_isLoading) return;
-
     setState(() => _isLoading = true);
-
     try {
       final freshedUser =
           await ref.read(userNotifierProvider.notifier).refreshUserProfile();
@@ -57,12 +56,11 @@ class _TransactionReceiptWidgetState
         ref.read(userProvider.notifier).setUser(freshedUser);
       }
     } catch (e) {
-      // Handle error silently or log it
       debugPrint('Error refreshing user profile: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        context.go('/');
       }
     }
   }
