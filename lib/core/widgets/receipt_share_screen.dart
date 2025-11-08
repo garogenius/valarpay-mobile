@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
 
 class ReceiptShareScreen extends StatefulWidget {
@@ -15,24 +21,50 @@ class ReceiptShareScreen extends StatefulWidget {
 }
 
 class _ReceiptShareScreenState extends State<ReceiptShareScreen> {
-  // final ScreenshotController _screenshotController = ScreenshotController();
+  final GlobalKey _receiptKey = GlobalKey();
+  bool _isSharing = false;
 
-  // Future<void> _captureAndShare() async {
-  //   try {
-  //     final image = await _screenshotController.capture();
-  //     if (image == null) return;
+  Future<void> _shareReceipt() async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
 
-  //     final directory = await getTemporaryDirectory();
-  //     final imagePath = await File('${directory.path}/receipt.png').create();
-  //     await imagePath.writeAsBytes(image);
+    try {
+      // Capture the receipt widget as an image
+      final RenderRepaintBoundary boundary =
+          _receiptKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-  //     await Share.shareXFiles([
-  //       XFile(imagePath.path),
-  //     ], text: 'My ValarPay Transaction Receipt');
-  //   } catch (e) {
-  //     debugPrint("Error sharing receipt: $e");
-  //   }
-  // }
+      // Save the image to a temporary file
+      final Directory tempDir = await getTemporaryDirectory();
+      final String fileName =
+          'receipt_${DateTime.now().millisecondsSinceEpoch}.png';
+      final File imageFile = File('${tempDir.path}/$fileName');
+      await imageFile.writeAsBytes(pngBytes);
+
+      // Share the image
+      await Share.shareXFiles(
+        [XFile(imageFile.path)],
+        subject: 'ValarPay Transaction Receipt',
+        text: 'Check out my ValarPay transaction receipt!',
+      );
+    } catch (e) {
+      debugPrint('Error sharing receipt image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to share receipt: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,22 +76,33 @@ class _ReceiptShareScreenState extends State<ReceiptShareScreen> {
         ),
       ),
       body: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          // child: Screenshot(
-          //   controller: _screenshotController,
-            child: ShareableTransactionReceipt(
-              date: widget.date,
-              transactionDetailList: widget.transactionDetailList,
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            child: RepaintBoundary(
+              key: _receiptKey,
+              child: ShareableTransactionReceipt(
+                date: widget.date,
+                transactionDetailList: widget.transactionDetailList,
+              ),
             ),
-          // ),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: null,
-        // onPressed: _captureAndShare,
-        label: const Text("Share Receipt"),
-        icon: const Icon(Icons.share),
+        onPressed: _isSharing ? null : _shareReceipt,
+        label: Text(_isSharing ? "Sharing..." : "Share Receipt"),
+        icon:
+            _isSharing
+                ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : const Icon(Icons.share),
       ),
     );
   }

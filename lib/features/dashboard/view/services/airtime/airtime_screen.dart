@@ -10,7 +10,6 @@ import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/utils/helpers.dart';
 import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_amount_textfield.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
@@ -176,6 +175,39 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     final selectedNetwork = ref.read(airtimeSelectedNetworkProvider);
     final now = DateTime.now();
 
+    // Create receipt data while State is mounted
+    final receiptData = [
+      ShareableTransactionReceiptDetail(
+        label: 'Amount',
+        value: currencyFormatter(_amountController.text.replaceAll(',', '')),
+      ),
+      ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction Type',
+        value: 'Airtime Purchase',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Provider',
+        value: selectedNetwork.toUpperCase(),
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Phone Number',
+        value: _phoneController.text.trim(),
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction ID',
+        value: 'TXN${now.millisecondsSinceEpoch}',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Status',
+        value: 'Successful',
+        isSuccessful: true,
+      ),
+    ];
+
+    final receiptDate =
+        '${now.day} ${Helpers.getMonthName(now.month)} ${now.year} | ${DateFormat.jm().format(now)}';
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -206,51 +238,8 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                   ),
                 ),
               ],
-              onShareReceipt: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ReceiptShareScreen(
-                          date:
-                              '${now.day} ${Helpers.getMonthName(now.month)} ${now.year} | ${DateFormat.jm().format(now)}',
-                          transactionDetailList: [
-                            ShareableTransactionReceiptDetail(
-                              label: 'Amount',
-                              value: currencyFormatter(
-                                _amountController.text.replaceAll(',', ''),
-                              ),
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Currency',
-                              value: 'NGN',
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Transaction Type',
-                              value: 'Airtime Purchase',
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Provider',
-                              value: selectedNetwork.toUpperCase(),
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Phone Number',
-                              value: _phoneController.text.trim(),
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Transaction ID',
-                              value: 'TXN${now.millisecondsSinceEpoch}',
-                            ),
-                            ShareableTransactionReceiptDetail(
-                              label: 'Status',
-                              value: 'Successful',
-                              isSuccessful: true,
-                            ),
-                          ],
-                        ),
-                  ),
-                );
-              },
+              shareableDetails: receiptData,
+              receiptDate: receiptDate,
             ),
       ),
     );

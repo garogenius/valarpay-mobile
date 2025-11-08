@@ -5,7 +5,6 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
@@ -73,58 +72,43 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
 
     // cable plans are read when needed (e.g. in modal builders)
 
-    _onShareTransactionReceiptPressed() {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => ReceiptShareScreen(
-                date:
-                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-                transactionDetailList: [
-                  ShareableTransactionReceiptDetail(
-                    label: 'Amount',
-                    value: currencyFormatter(_planAmount),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Currency',
-                    value: 'NGN',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction Type',
-                    value: 'Cable TV Purchase',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Plan',
-                    value: ref.read(cableSelectedPlanProvider) ?? '',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Smartcard Number',
-                    value: _smartcardController.text.trim(),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Customer Name',
-                    value: _verifiedUserName ?? '',
-                  ),
-
-                  ShareableTransactionReceiptDetail(
-                    label: 'Provider',
-                    value:
-                        ref.read(cableSelectedProviderProvider)?.planName ?? '',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction ID',
-                    value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Status',
-                    value: 'Successful',
-                    isSuccessful: true,
-                  ),
-                ],
-              ),
+    _buildCableTVReceiptData() {
+      return [
+        ShareableTransactionReceiptDetail(
+          label: 'Amount',
+          value: currencyFormatter(_planAmount),
         ),
-      );
+        ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction Type',
+          value: 'Cable TV Purchase',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Plan',
+          value: ref.read(cableSelectedPlanProvider) ?? '',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Smartcard Number',
+          value: _smartcardController.text.trim(),
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Customer Name',
+          value: _verifiedUserName ?? '',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Provider',
+          value: ref.read(cableSelectedProviderProvider)?.planName ?? '',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction ID',
+          value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Status',
+          value: 'Successful',
+          isSuccessful: true,
+        ),
+      ];
     }
 
     void _showLoading() {
@@ -203,7 +187,9 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                         '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
                   ),
                 ],
-                onShareReceipt: _onShareTransactionReceiptPressed,
+                shareableDetails: _buildCableTVReceiptData(),
+                receiptDate:
+                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
               ),
         ),
       );
@@ -693,7 +679,9 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                           MaterialPageRoute(
                             builder:
                                 (context) => ReuseableTransactionDetailsScreen(
-                                  totalAmount: double.parse(_totalAmount.toString()),
+                                  totalAmount: double.parse(
+                                    _totalAmount.toString(),
+                                  ),
                                   saveBeneficiary: _saveBeneficiary,
                                   onSaveBeneficiaryChanged: (value) {
                                     setState(() {

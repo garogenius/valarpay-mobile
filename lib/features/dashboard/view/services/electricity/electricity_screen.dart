@@ -5,7 +5,6 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_amount_textfield.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
@@ -101,68 +100,51 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
       _totalAmount = 0;
     }
 
-    _onShareTransactionReceiptPressed() {
+    _buildElectricityReceiptData() {
       final paymentResponse =
           ref.read(electricityPaymentNotifierProvider).singleData;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => ReceiptShareScreen(
-                date:
-                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-                transactionDetailList: [
-                  ShareableTransactionReceiptDetail(
-                    label: 'Amount',
-                    value: currencyFormatter(
-                      _amountController.text..replaceAll(',', ''),
-                    ),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Fee',
-                    value: currencyFormatter(_serviceFee),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Currency',
-                    value: 'NGN',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction Type',
-                    value: 'Electricity Purchase',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Token',
-                    value: paymentResponse!.data.rechargeToken,
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Meter Details',
-                    value:
-                        '${_meterNumberController.text.trim()}\n${ref.read(electricitySelectedMeterTypeProvider)?.categoryName}',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Customer Name',
-                    value: _verifyMeterNumberData?.name ?? '',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Discos',
-                    value:
-                        ref.read(electricitySelectedDiscoProvider)?.planName ??
-                        '',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction ID',
-                    value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Status',
-                    value: 'Successful',
-                    isSuccessful: true,
-                  ),
-                ],
-              ),
+      return [
+        ShareableTransactionReceiptDetail(
+          label: 'Amount',
+          value: currencyFormatter(_amountController.text..replaceAll(',', '')),
         ),
-      );
+        ShareableTransactionReceiptDetail(
+          label: 'Fee',
+          value: currencyFormatter(_serviceFee),
+        ),
+        ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction Type',
+          value: 'Electricity Purchase',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Token',
+          value: paymentResponse!.data.rechargeToken,
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Meter Details',
+          value:
+              '${_meterNumberController.text.trim()}\n${ref.read(electricitySelectedMeterTypeProvider)?.categoryName}',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Customer Name',
+          value: _verifyMeterNumberData?.name ?? '',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Discos',
+          value: ref.read(electricitySelectedDiscoProvider)?.planName ?? '',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction ID',
+          value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Status',
+          value: 'Successful',
+          isSuccessful: true,
+        ),
+      ];
     }
 
     bool _canProceed() {
@@ -311,7 +293,9 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                         '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
                   ),
                 ],
-                onShareReceipt: _onShareTransactionReceiptPressed,
+                shareableDetails: _buildElectricityReceiptData(),
+                receiptDate:
+                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
               ),
         ),
       );
@@ -801,7 +785,9 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                                   (
                                     context,
                                   ) => ReuseableTransactionDetailsScreen(
-                                    totalAmount: double.parse(_totalAmount.toString()),
+                                    totalAmount: double.parse(
+                                      _totalAmount.toString(),
+                                    ),
                                     saveBeneficiary: _saveBeneficiary,
                                     onSaveBeneficiaryChanged: (value) {
                                       setState(() {

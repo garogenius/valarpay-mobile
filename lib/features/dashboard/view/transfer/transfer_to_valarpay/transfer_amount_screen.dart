@@ -9,7 +9,6 @@ import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_amount_textfield.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
@@ -39,6 +38,8 @@ class _InternalTransferAmountScreenState
   bool _isNotMinimumAmount = false;
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
+  late String _userFullname;
+  late double _amount;
 
   @override
   void initState() {
@@ -112,7 +113,7 @@ class _InternalTransferAmountScreenState
       await ref
           .read(transferNotifierProvider.notifier)
           .initiateTransfer(
-            bankCode: '090672', 
+            bankCode: '090672',
             accountNumber: widget.accountDetails.accountNumber,
             amount: amount,
             currency: 'NGN',
@@ -176,20 +177,23 @@ class _InternalTransferAmountScreenState
   }
 
   _handlePinEntry({bool biometric = false}) async {
-     final amount =
+    final amount =
         double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
     final user = ref.watch(userProvider);
-      final wallet =
-          user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
-      final balance = wallet?.balance ?? 0.0;
-      final hasEnoughBalance = checkBalanceLeft(
-        context,
-        balance.toString(),
-        amount.toString()
-      );
+    final wallet =
+        user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
+    final balance = wallet?.balance ?? 0.0;
+    final hasEnoughBalance = checkBalanceLeft(
+      context,
+      balance.toString(),
+      amount.toString(),
+    );
 
-      if (!hasEnoughBalance) return;
-    final pin = biometric ? await BiometricTransactionPinModal.show(context) : await TransactionPinModal.show(context);
+    if (!hasEnoughBalance) return;
+    final pin =
+        biometric
+            ? await BiometricTransactionPinModal.show(context)
+            : await TransactionPinModal.show(context);
 
     if (pin != null && pin.length == 4) {
       // Ensure PIN is a string
@@ -239,7 +243,8 @@ class _InternalTransferAmountScreenState
               ],
               onButtonPressed: () => _handlePinEntry(biometric: false),
               onBiometricButtonPressed: () => _handlePinEntry(biometric: true),
-              onAutomaticallyShowBiometric: () => _handlePinEntry(biometric: true),
+              onAutomaticallyShowBiometric:
+                  () => _handlePinEntry(biometric: true),
             ),
       ),
     );
@@ -248,72 +253,9 @@ class _InternalTransferAmountScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-          final user = ref.read(userProvider);
-
-
-    _onShareTransactionReceiptPressed() {
-      // Guard against null account details
-      if (widget.accountDetails.sessionId.isEmpty) {
-        AppMessenger.show(
-          context,
-          message: 'Transaction ID not available',
-          type: MessageType.error,
-        );
-        return;
-      }
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => ReceiptShareScreen(
-                date:
-                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-                transactionDetailList: [
-                  ShareableTransactionReceiptDetail(
-                    label: 'Amount',
-                    value: currencyFormatter(_amountController.text.trim()),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Currency',
-                    value: 'NGN',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction Type',
-                    value: 'Intra-bank Transfer',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Sender Name',
-                    value: user?.fullname ?? '',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Beneficiary Details',
-                    value:
-                        '${widget.accountDetails.accountName} \n${widget.accountDetails.accountNumber}',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Beneficiary Bank',
-                    value: 'ValarPay',
-                  ),
-                  if (_narrationController.text.isNotEmpty)
-                    ShareableTransactionReceiptDetail(
-                      label: 'Narration',
-                      value: _narrationController.text,
-                    ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction ID',
-                    value: widget.accountDetails.sessionId,
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Status',
-                    value: 'Successful',
-                    isSuccessful: true,
-                  ),
-                ],
-              ),
-        ),
-      );
-    }
+    final user = ref.read(userProvider);
+    _userFullname = user?.fullname ?? '';
+    _amount = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
 
     // Listen to transfer state
     ref.listen(transferNotifierProvider, (previous, next) {
@@ -333,6 +275,49 @@ class _InternalTransferAmountScreenState
           // Transfer successful - navigate to receipt
           final transferAmount =
               double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
+
+          // Create the receipt data here while State is still mounted
+          final receiptData = [
+            ShareableTransactionReceiptDetail(
+              label: 'Amount',
+              value: currencyFormatter(_amount.toString()),
+            ),
+            ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+            ShareableTransactionReceiptDetail(
+              label: 'Transaction Type',
+              value: 'Intra-bank Transfer',
+            ),
+            ShareableTransactionReceiptDetail(
+              label: 'Sender Name',
+              value: _userFullname,
+            ),
+            ShareableTransactionReceiptDetail(
+              label: 'Beneficiary Details',
+              value:
+                  '${widget.accountDetails.accountName} \n${widget.accountDetails.accountNumber}',
+            ),
+            ShareableTransactionReceiptDetail(
+              label: 'Beneficiary Bank',
+              value: 'ValarPay',
+            ),
+            if (_narrationController.text.isNotEmpty)
+              ShareableTransactionReceiptDetail(
+                label: 'Narration',
+                value: _narrationController.text,
+              ),
+            ShareableTransactionReceiptDetail(
+              label: 'Transaction ID',
+              value: widget.accountDetails.sessionId,
+            ),
+            ShareableTransactionReceiptDetail(
+              label: 'Status',
+              value: 'Successful',
+              isSuccessful: true,
+            ),
+          ];
+
+          final receiptDate =
+              '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
 
           Navigator.push(
             context,
@@ -366,7 +351,8 @@ class _InternalTransferAmountScreenState
                           value: _narrationController.text.trim(),
                         ),
                     ],
-                    onShareReceipt: _onShareTransactionReceiptPressed,
+                    shareableDetails: receiptData,
+                    receiptDate: receiptDate,
                   ),
             ),
           );
