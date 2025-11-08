@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
 
 class ReceiptShareScreen extends StatefulWidget {
@@ -15,24 +16,37 @@ class ReceiptShareScreen extends StatefulWidget {
 }
 
 class _ReceiptShareScreenState extends State<ReceiptShareScreen> {
-  // final ScreenshotController _screenshotController = ScreenshotController();
+  Future<void> _shareReceipt() async {
+    try {
+      // Build receipt text
+      final buffer = StringBuffer();
+      buffer.writeln('📱 ValarPay Transaction Receipt');
+      buffer.writeln('════════════════════════════════');
+      buffer.writeln('Date: ${widget.date}');
+      buffer.writeln('');
 
-  // Future<void> _captureAndShare() async {
-  //   try {
-  //     final image = await _screenshotController.capture();
-  //     if (image == null) return;
+      for (final detail in widget.transactionDetailList) {
+        buffer.writeln('${detail.label}: ${detail.value}');
+      }
 
-  //     final directory = await getTemporaryDirectory();
-  //     final imagePath = await File('${directory.path}/receipt.png').create();
-  //     await imagePath.writeAsBytes(image);
+      buffer.writeln('');
+      buffer.writeln('════════════════════════════════');
+      buffer.writeln('Shared from ValarPay App');
 
-  //     await Share.shareXFiles([
-  //       XFile(imagePath.path),
-  //     ], text: 'My ValarPay Transaction Receipt');
-  //   } catch (e) {
-  //     debugPrint("Error sharing receipt: $e");
-  //   }
-  // }
+      // Use share_plus to share to WhatsApp, Email, etc.
+      await Share.share(
+        buffer.toString(),
+        subject: 'ValarPay Transaction Receipt',
+      );
+    } catch (e) {
+      debugPrint('Error sharing receipt: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to share receipt: $e')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,18 +60,14 @@ class _ReceiptShareScreenState extends State<ReceiptShareScreen> {
       body: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
-          // child: Screenshot(
-          //   controller: _screenshotController,
-            child: ShareableTransactionReceipt(
-              date: widget.date,
-              transactionDetailList: widget.transactionDetailList,
-            ),
-          // ),
+          child: ShareableTransactionReceipt(
+            date: widget.date,
+            transactionDetailList: widget.transactionDetailList,
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: null,
-        // onPressed: _captureAndShare,
+        onPressed: _shareReceipt,
         label: const Text("Share Receipt"),
         icon: const Icon(Icons.share),
       ),

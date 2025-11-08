@@ -7,7 +7,6 @@ import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/current_rate_widget.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
 import 'package:valarpay/core/widgets/transaction_details_screen.dart';
@@ -718,6 +717,40 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
   void _navigateToReceipt(double amount) {
     final transactionId = 'TXN${DateTime.now().millisecondsSinceEpoch}';
+    final receiptDate =
+        '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
+
+    // Create receipt data while State is mounted
+    final receiptData = [
+      ShareableTransactionReceiptDetail(
+        label: 'Amount',
+        value: currencyFormatter(_currentRate),
+      ),
+      ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction Type',
+        value: 'Buy Giftcard',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Card Type',
+        value: _selectedProduct != null ? _selectedProduct!.productName : '',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Country',
+        value: _selectedCountry,
+      ),
+      ShareableTransactionReceiptDetail(label: 'Card', value: 'Card number'),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction ID',
+        value: transactionId,
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Status',
+        value: 'Successful',
+        isSuccessful: true,
+      ),
+    ];
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -749,13 +782,10 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
                   label: 'Payment Source',
                   value: 'ValarPay Account',
                 ),
-                TransactionDetail(
-                  label: 'Date & Time',
-                  value:
-                      '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-                ),
+                TransactionDetail(label: 'Date & Time', value: receiptDate),
               ],
-              onShareReceipt: _onShareBuyTransactionReceiptPressed,
+              shareableDetails: receiptData,
+              receiptDate: receiptDate,
             ),
       ),
     );
@@ -781,57 +811,5 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
     if (mounted && Navigator.canPop(context)) {
       Navigator.of(context, rootNavigator: true).pop();
     }
-  }
-
-  _onShareBuyTransactionReceiptPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => ReceiptShareScreen(
-              date:
-                  '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-              transactionDetailList: [
-                ShareableTransactionReceiptDetail(
-                  label: 'Amount',
-                  value: currencyFormatter(_currentRate),
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Currency',
-                  value: 'NGN',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction Type',
-                  value: 'Buy Giftcard',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Card Type',
-                  value:
-                      _selectedProduct != null
-                          ? _selectedProduct!.productName
-                          : '',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Country',
-                  value: _selectedCountry,
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Card',
-                  value: 'Card number',
-                ),
-
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction ID',
-                  value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Status',
-                  value: 'Successful',
-                  isSuccessful: true,
-                ),
-              ],
-            ),
-      ),
-    );
   }
 }

@@ -7,7 +7,6 @@ import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/current_rate_widget.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
@@ -74,52 +73,6 @@ class _InternetProviderPaymentScreenState
 
     final planNames = variationsState.data?.map((v) => v.name).toList() ?? [];
 
-    _onShareTransactionReceiptPressed() {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => ReceiptShareScreen(
-                date:
-                    '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-                transactionDetailList: [
-                  ShareableTransactionReceiptDetail(
-                    label: 'Amount',
-                    value: currencyFormatter(
-                      _amountController.text..replaceAll(',', ''),
-                    ),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Currency',
-                    value: 'NGN',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction Type',
-                    value: 'Internet',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Beneficiary Number',
-                    value: _accountController.text.trim(),
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Provider',
-                    value: _selectedProvider,
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Transaction ID',
-                    value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
-                  ),
-                  ShareableTransactionReceiptDetail(
-                    label: 'Status',
-                    value: 'Successful',
-                    isSuccessful: true,
-                  ),
-                ],
-              ),
-        ),
-      );
-    }
-
     void _showLoading() {
       if (_loadingShown) return;
       _loadingShown = true;
@@ -151,6 +104,39 @@ class _InternetProviderPaymentScreenState
         (v) => v.name == _selectedPlan,
         orElse: () => variations.first,
       );
+
+      // Create receipt data while State is mounted
+      final receiptData = [
+        ShareableTransactionReceiptDetail(
+          label: 'Amount',
+          value: currencyFormatter(_amountController.text..replaceAll(',', '')),
+        ),
+        ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction Type',
+          value: 'Internet',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Beneficiary Number',
+          value: _accountController.text.trim(),
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Provider',
+          value: _selectedProvider,
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction ID',
+          value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Status',
+          value: 'Successful',
+          isSuccessful: true,
+        ),
+      ];
+
+      final receiptDate =
+          '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
 
       Navigator.push(
         context,
@@ -191,7 +177,8 @@ class _InternetProviderPaymentScreenState
                         '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
                   ),
                 ],
-                onShareReceipt: _onShareTransactionReceiptPressed,
+                shareableDetails: receiptData,
+                receiptDate: receiptDate,
               ),
         ),
       );
@@ -435,7 +422,11 @@ class _InternetProviderPaymentScreenState
                   MaterialPageRoute(
                     builder:
                         (context) => ReuseableTransactionDetailsScreen(
-                          totalAmount: double.parse((int.parse(_amountController.text) + int.parse(_serviceFee)).toString()),
+                          totalAmount: double.parse(
+                            (int.parse(_amountController.text) +
+                                    int.parse(_serviceFee))
+                                .toString(),
+                          ),
                           hasBottom: false,
                           saveBeneficiary: _saveBeneficiary,
                           onSaveBeneficiaryChanged: (value) {
@@ -478,7 +469,8 @@ class _InternetProviderPaymentScreenState
                           onButtonPressed: () => _handlePin(),
                           onBiometricButtonPressed:
                               () => _handlePin(biometric: true),
-                          onAutomaticallyShowBiometric:  () => _handlePin(biometric: true),
+                          onAutomaticallyShowBiometric:
+                              () => _handlePin(biometric: true),
                         ),
                   ),
                 );

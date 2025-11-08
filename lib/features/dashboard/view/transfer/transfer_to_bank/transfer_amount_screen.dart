@@ -6,7 +6,6 @@ import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_amount_textfield.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
@@ -224,66 +223,56 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     }
   }
 
-  void _onShareTransactionReceiptPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => ReceiptShareScreen(
-              date:
-                  '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-              transactionDetailList: [
-                ShareableTransactionReceiptDetail(
-                  label: 'Amount',
-                  value: currencyFormatter(_amount.toString()),
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Currency',
-                  value: 'NGN',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction Type',
-                  value: 'Inter-bank Transfer',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Sender Name',
-                  value: _userFullname,
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Beneficiary Details',
-                  value:
-                      '${widget.accountDetails.accountName} \n${widget.accountDetails.accountNumber}',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Beneficiary Bank',
-                  value: widget.selectedBank.name,
-                ),
-                if (_descriptionController.text.isNotEmpty)
-                  ShareableTransactionReceiptDetail(
-                    label: 'Narration',
-                    value: _descriptionController.text,
-                  ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction ID',
-                  value: widget.accountDetails.sessionId,
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Status',
-                  value: 'Successful',
-                  isSuccessful: true,
-                ),
-              ],
-            ),
-      ),
-    );
-  }
-
   void _navigateToReceipt() {
     // Small delay to ensure any dialogs are closed
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) {
         return;
       }
+
+      // Create the receipt data here while the parent State is still mounted
+      final receiptData = [
+        ShareableTransactionReceiptDetail(
+          label: 'Amount',
+          value: currencyFormatter(_amount.toString()),
+        ),
+        ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction Type',
+          value: 'Inter-bank Transfer',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Sender Name',
+          value: _userFullname,
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Beneficiary Details',
+          value:
+              '${widget.accountDetails.accountName} \n${widget.accountDetails.accountNumber}',
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Beneficiary Bank',
+          value: widget.selectedBank.name,
+        ),
+        if (_descriptionController.text.isNotEmpty)
+          ShareableTransactionReceiptDetail(
+            label: 'Narration',
+            value: _descriptionController.text,
+          ),
+        ShareableTransactionReceiptDetail(
+          label: 'Transaction ID',
+          value: widget.accountDetails.sessionId,
+        ),
+        ShareableTransactionReceiptDetail(
+          label: 'Status',
+          value: 'Successful',
+          isSuccessful: true,
+        ),
+      ];
+
+      final receiptDate =
+          '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
+
       // Transfer successful - navigate to receipt
       Navigator.push(
         context,
@@ -334,7 +323,8 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                             : _descriptionController.text.trim(),
                   ),
                 ],
-                onShareReceipt: _onShareTransactionReceiptPressed,
+                shareableDetails: receiptData,
+                receiptDate: receiptDate,
               ),
         ),
       );
@@ -351,9 +341,12 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     // Listen to transfer state
     ref.listen(transferNotifierProvider, (previous, next) {
       if (next.isDataAvailable && next.data != null && next.data!.isNotEmpty) {
+        _hideLoading(); // Ensure dialog is hidden
         if (!mounted) return;
         _navigateToReceipt();
       } else if (next.message != null && !next.isDataAvailable) {
+        _hideLoading(); // Hide on error too
+        if (!mounted) return;
         AppMessenger.show(
           context,
           message: next.message!,

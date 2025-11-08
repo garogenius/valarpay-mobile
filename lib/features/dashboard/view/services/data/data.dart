@@ -9,7 +9,6 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
-import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
@@ -681,67 +680,6 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     );
   }
 
-  _onShareTransactionReceiptPressed() {
-    final selectedNetwork = ref.read(dataSelectedNetworkProvider);
-    final selectedPlan = ref.read(dataSelectedPlanProvider);
-    final dataVariations = ref.read(dataVariationNotifierProvider).data ?? [];
-    final descriptions =
-        dataVariations.isNotEmpty
-            ? dataVariations.first.fixedAmountsDescriptions
-            : <String, dynamic>{};
-    final amountKey = double.parse(selectedPlan).toStringAsFixed(0);
-    final planDescription =
-        descriptions[amountKey] ?? '₦${_amountController.text} Data';
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => ReceiptShareScreen(
-              date:
-                  '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}',
-              transactionDetailList: [
-                ShareableTransactionReceiptDetail(
-                  label: 'Amount',
-                  value: currencyFormatter(
-                    _amountController.text.replaceAll(',', ''),
-                  ),
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Currency',
-                  value: 'NGN',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction Type',
-                  value: 'Mobile Data Purchase',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Provider',
-                  value: selectedNetwork,
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Plan',
-                  value: planDescription,
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Phone Number',
-                  value: _phoneController.text.trim(),
-                ),
-
-                ShareableTransactionReceiptDetail(
-                  label: 'Transaction ID',
-                  value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
-                ),
-                ShareableTransactionReceiptDetail(
-                  label: 'Status',
-                  value: 'Successful',
-                  isSuccessful: true,
-                ),
-              ],
-            ),
-      ),
-    );
-  }
-
   // Handle continue button press
   void _handleContinue() {
     if (!_isFormValid()) {
@@ -900,6 +838,40 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final planDescription =
         descriptions[amountKey] ?? '₦${_amountController.text} Data';
 
+    // Create receipt data while State is mounted
+    final receiptData = [
+      ShareableTransactionReceiptDetail(
+        label: 'Amount',
+        value: currencyFormatter(_amountController.text.replaceAll(',', '')),
+      ),
+      ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction Type',
+        value: 'Mobile Data Purchase',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Provider',
+        value: selectedNetwork,
+      ),
+      ShareableTransactionReceiptDetail(label: 'Plan', value: planDescription),
+      ShareableTransactionReceiptDetail(
+        label: 'Phone Number',
+        value: _phoneController.text.trim(),
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Transaction ID',
+        value: 'TXN${DateTime.now().millisecondsSinceEpoch}',
+      ),
+      ShareableTransactionReceiptDetail(
+        label: 'Status',
+        value: 'Successful',
+        isSuccessful: true,
+      ),
+    ];
+
+    final receiptDate =
+        '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -928,7 +900,8 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                   ),
                 ),
               ],
-              onShareReceipt: _onShareTransactionReceiptPressed,
+              shareableDetails: receiptData,
+              receiptDate: receiptDate,
             ),
       ),
     );

@@ -5,6 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:valarpay/core/widgets/receipt_share_screen.dart';
+import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 
@@ -24,8 +26,9 @@ class TransactionReceiptWidget extends ConsumerStatefulWidget {
   final String amount;
   final List<TransactionDetail> topDetails;
   final List<TransactionDetail>? bottomDetails;
-  final VoidCallback onShareReceipt;
   final String headerText;
+  final List<ShareableTransactionReceiptDetail>? shareableDetails;
+  final String? receiptDate;
 
   const TransactionReceiptWidget({
     Key? key,
@@ -33,7 +36,8 @@ class TransactionReceiptWidget extends ConsumerStatefulWidget {
     required this.topDetails,
     this.bottomDetails,
     required this.headerText,
-    required this.onShareReceipt,
+    this.shareableDetails,
+    this.receiptDate,
   }) : super(key: key);
 
   @override
@@ -44,6 +48,29 @@ class TransactionReceiptWidget extends ConsumerStatefulWidget {
 class _TransactionReceiptWidgetState
     extends ConsumerState<TransactionReceiptWidget> {
   bool _isLoading = false;
+
+  void _navigateToReceiptShare() {
+    if (widget.shareableDetails != null && widget.receiptDate != null) {
+      debugPrint(
+        '🟢 Navigating to ReceiptShareScreen from TransactionReceiptWidget',
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => ReceiptShareScreen(
+                transactionDetailList: widget.shareableDetails!,
+                date: widget.receiptDate!,
+              ),
+        ),
+      );
+    } else {
+      debugPrint('🔴 Receipt data is missing!');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receipt data is not available')),
+      );
+    }
+  }
 
   Future<void> _handleDoneButton() async {
     if (_isLoading) return;
@@ -158,7 +185,13 @@ class _TransactionReceiptWidgetState
               border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
             ),
             child: TextButton(
-              onPressed: _isLoading ? null : widget.onShareReceipt,
+              onPressed:
+                  _isLoading
+                      ? null
+                      : () {
+                        debugPrint('🔵 View Receipt button pressed');
+                        _navigateToReceiptShare();
+                      },
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.all(10),
                 shape: RoundedRectangleBorder(
@@ -194,7 +227,13 @@ class _TransactionReceiptWidgetState
               borderRadius: BorderRadius.circular(24),
             ),
             child: TextButton(
-              onPressed: _isLoading ? null : widget.onShareReceipt,
+              onPressed:
+                  _isLoading
+                      ? null
+                      : () {
+                        debugPrint('🟠 Share Receipt button pressed');
+                        _navigateToReceiptShare();
+                      },
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.all(10),
                 shape: RoundedRectangleBorder(

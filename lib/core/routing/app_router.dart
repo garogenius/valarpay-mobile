@@ -12,6 +12,7 @@ import 'package:valarpay/features/dashboard/view/me/rewards.dart';
 import 'package:valarpay/features/dashboard/view/me/rate_app_screen.dart';
 import 'package:valarpay/features/dashboard/view/services/betting/betting.dart';
 import 'package:valarpay/features/dashboard/view/services/cabletv/cabletv_screen.dart';
+import 'package:valarpay/features/dashboard/view/services/giftcard/gift_card.dart';
 import 'package:valarpay/features/dashboard/view/services/data/data_ussd_enquiry.dart';
 import 'package:valarpay/features/dashboard/view/services/education/education.dart';
 import 'package:valarpay/features/dashboard/view/services/electricity/electricity_screen.dart';
@@ -402,26 +403,26 @@ final router = GoRouter(
       path: '/electricity',
       builder: (context, state) => const ElectricityScreen(),
     ),
-    GoRoute(
-      path: '/flight',
-      builder: (context, state) => const FlightSelectionScreen(),
-    ),
+    // GoRoute(
+    //   path: '/flight',
+    //   builder: (context, state) => const FlightSelectionScreen(),
+    // ),
     GoRoute(
       path: '/swap-currency',
       builder: (context, state) => const SwapCurrencyScreen(),
     ),
-    GoRoute(
-      path: '/insurance',
-      builder: (context, state) => const InsuranceScreen(),
-    ),
-    GoRoute(
-      path: '/international-airtime',
-      builder: (context, state) => const InternationalAirtimeScreen(),
-    ),
-    GoRoute(
-      path: '/education',
-      builder: (context, state) => const EducationScreen(),
-    ),
+    // GoRoute(
+    //   path: '/insurance',
+    //   builder: (context, state) => const InsuranceScreen(),
+    // ),
+    // GoRoute(
+    //   path: '/international-airtime',
+    //   builder: (context, state) => const InternationalAirtimeScreen(),
+    // ),
+    // GoRoute(
+    //   path: '/education',
+    //   builder: (context, state) => const EducationScreen(),
+    // ),
     GoRoute(
       path: '/internet',
       builder: (context, state) => const InternetScreen(),
@@ -489,14 +490,14 @@ final router = GoRouter(
       path: '/cable-tv',
       builder: (context, state) => const CableTvScreen(),
     ),
-    GoRoute(
-      path: '/betting',
-      builder: (context, state) => const BettingScreen(),
-    ),
-    GoRoute(
-      path: '/shopping',
-      builder: (context, state) => const ShoppingScreen(),
-    ),
+    // GoRoute(
+    //   path: '/betting',
+    //   builder: (context, state) => const BettingScreen(),
+    // ),
+    // GoRoute(
+    //   path: '/shopping',
+    //   builder: (context, state) => const ShoppingScreen(),
+    // ),
 
     GoRoute(
       path: '/gift-card',
