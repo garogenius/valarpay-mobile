@@ -144,7 +144,7 @@ class _InternalRecentAndSavedBeneficiaryState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName}',
+                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName??''}',
                         style: const TextStyle(
                           fontSize: 13,
                         ),

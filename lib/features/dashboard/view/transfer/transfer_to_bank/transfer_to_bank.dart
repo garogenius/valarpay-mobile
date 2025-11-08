@@ -195,9 +195,6 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
 
-    final accountVerificationState = ref.watch(
-      accountVerificationNotifierProvider,
-    );
 
     // Listen to account verification state
     ref.listen(accountVerificationNotifierProvider, (previous, next) {

@@ -151,12 +151,9 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
 
   void _initiateTransfer(String pin, double amount) async {
     Navigator.pop(context); // Close pin modal
-
     _showLoading();
 
     try {
-      // Proceed with transfer (backend will validate PIN)
-      // Use bankCode from accountDetails (returned from account verification) not from selectedBank
       await ref
           .read(transferNotifierProvider.notifier)
           .initiateTransfer(
@@ -169,21 +166,19 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
             saveBeneficiary: _saveBeneficiary,
             sessionId: widget.accountDetails.sessionId,
           );
-
+      final state = ref.read(transferNotifierProvider);
+      if (!mounted) return;
       _hideLoading();
 
-      if (!mounted) return;
-
-      final state = ref.read(transferNotifierProvider);
-
-      if (state.isDataAvailable) {
+      if (state.isDataAvailable &&
+          state.data != null &&
+          state.data!.isNotEmpty) {
         Navigator.pop(context);
+        _navigateToReceipt();
       } else {
-        // Check if the error message indicates incorrect PIN
         final errorMessage =
             state.message ?? 'Transaction failed. Please try again.';
 
-        // Common patterns for incorrect PIN errors
         final isIncorrectPin =
             errorMessage.toLowerCase().contains('incorrect pin') ||
             errorMessage.toLowerCase().contains('wrong pin') ||
@@ -224,13 +219,10 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
   }
 
   void _navigateToReceipt() {
-    // Small delay to ensure any dialogs are closed
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) {
         return;
       }
-
-      // Create the receipt data here while the parent State is still mounted
       final receiptData = [
         ShareableTransactionReceiptDetail(
           label: 'Amount',
@@ -331,112 +323,93 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     });
   }
 
+  Future<void> _handlePinEntry({bool biometric = false}) async {
+    final user = ref.watch(userProvider);
+    final wallet =
+        user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
+    final balance = wallet?.balance ?? 0.0;
+    final hasEnoughBalance = checkBalanceLeft(
+      context,
+      balance.toString(),
+      _totalAmount.toString(),
+    );
+
+    if (!hasEnoughBalance) return;
+
+    final pin =
+        biometric
+            ? await BiometricTransactionPinModal.show(context)
+            : await TransactionPinModal.show(context);
+
+    if (pin != null && pin.length == 4) {
+      final pinString = pin.toString();
+      Navigator.pop(context);
+      if (mounted) {
+        _initiateTransfer(pinString, _amount);
+      }
+    }
+  }
+
+  _handleOnPressed() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ReuseableTransactionDetailsScreen(
+              totalAmount: _totalAmount,
+              hasBottom: false,
+              saveBeneficiary: _saveBeneficiary,
+              onSaveBeneficiaryChanged: (value) {
+                setState(() {
+                  _saveBeneficiary = value;
+                });
+              },
+              topTitleText: 'Transaction',
+              topTransactionsDetailsList: [
+                buildDetailRow(
+                  'Account Name',
+                  widget.accountDetails.accountName,
+                  isDark,
+                ),
+                buildDetailRow('Bank', widget.selectedBank.name, isDark),
+                buildDetailRow(
+                  'Account Number',
+                  widget.accountDetails.accountNumber,
+                  isDark,
+                ),
+                buildDetailRow(
+                  'Amount',
+                  currencyFormatter(_amountController.text),
+                  isDark,
+                ),
+                buildDetailRow(
+                  'Fee',
+                  currencyFormatter(_transferFee?.fee.toString() ?? ''),
+                  isDark,
+                ),
+                buildDetailRow(
+                  'Total Amount',
+                  currencyFormatter('$_totalAmount'),
+                  isDark,
+                  isTotal: true,
+                ),
+              ],
+              onButtonPressed: () => _handlePinEntry(biometric: false),
+              onBiometricButtonPressed: () => _handlePinEntry(biometric: true),
+              onAutomaticallyShowBiometric:
+                  () => _handlePinEntry(biometric: true),
+            ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final transferState = ref.watch(transferNotifierProvider);
     _amount = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
     _totalAmount = _amount + (_transferFee?.fee ?? 0);
     _userFullname = ref.read(userProvider)?.fullname ?? '';
-
-    // Listen to transfer state
-    ref.listen(transferNotifierProvider, (previous, next) {
-      if (next.isDataAvailable && next.data != null && next.data!.isNotEmpty) {
-        _hideLoading(); // Ensure dialog is hidden
-        if (!mounted) return;
-        _navigateToReceipt();
-      } else if (next.message != null && !next.isDataAvailable) {
-        _hideLoading(); // Hide on error too
-        if (!mounted) return;
-        AppMessenger.show(
-          context,
-          message: next.message!,
-          type: MessageType.error,
-        );
-      }
-    });
-
-    Future<void> _handlePinEntry({bool biometric = false}) async {
-      final user = ref.watch(userProvider);
-      final wallet =
-          user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
-      final balance = wallet?.balance ?? 0.0;
-      final hasEnoughBalance = checkBalanceLeft(
-        context,
-        balance.toString(),
-        _totalAmount.toString(),
-      );
-
-      if (!hasEnoughBalance) return;
-
-      final pin =
-          biometric
-              ? await BiometricTransactionPinModal.show(context)
-              : await TransactionPinModal.show(context);
-
-      if (pin != null && pin.length == 4) {
-        // Ensure PIN is a string
-        final pinString = pin.toString();
-        Navigator.pop(context);
-        if (mounted) {
-          _initiateTransfer(pinString, _amount);
-        }
-      }
-    }
-
-    _handleOnPressed() {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => ReuseableTransactionDetailsScreen(
-                totalAmount: _totalAmount,
-                hasBottom: false,
-                saveBeneficiary: _saveBeneficiary,
-                onSaveBeneficiaryChanged: (value) {
-                  setState(() {
-                    _saveBeneficiary = value;
-                  });
-                },
-                topTitleText: 'Transaction',
-                topTransactionsDetailsList: [
-                  buildDetailRow(
-                    'Account Name',
-                    widget.accountDetails.accountName,
-                    isDark,
-                  ),
-                  buildDetailRow('Bank', widget.selectedBank.name, isDark),
-                  buildDetailRow(
-                    'Account Number',
-                    widget.accountDetails.accountNumber,
-                    isDark,
-                  ),
-                  buildDetailRow(
-                    'Amount',
-                    currencyFormatter(_amountController.text),
-                    isDark,
-                  ),
-                  buildDetailRow(
-                    'Fee',
-                    currencyFormatter(_transferFee?.fee.toString() ?? ''),
-                    isDark,
-                  ),
-                  buildDetailRow(
-                    'Total Amount',
-                    currencyFormatter('$_totalAmount'),
-                    isDark,
-                    isTotal: true,
-                  ),
-                ],
-                onButtonPressed: () => _handlePinEntry(biometric: false),
-                onBiometricButtonPressed:
-                    () => _handlePinEntry(biometric: true),
-                onAutomaticallyShowBiometric:
-                    () => _handlePinEntry(biometric: true),
-              ),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(
