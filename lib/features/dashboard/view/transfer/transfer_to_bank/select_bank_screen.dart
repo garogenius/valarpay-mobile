@@ -38,7 +38,7 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
       ref.read(banksNotifierProvider.notifier).fetchBanks(currency: 'NGN');
     } else {
       setState(() {
-        allBanks = allBanksState.data!;
+        allBanks = allBanksState.singleData!.banks;
         filteredBanks = allBanks;
       });
     }
@@ -65,7 +65,7 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
     ref.listen(banksNotifierProvider, (previous, next) {
       if (next.isDataAvailable && next.data != null) {
         setState(() {
-          allBanks = next.data!;
+          allBanks = next.singleData!.banks;
           filteredBanks = allBanks;
         });
       }

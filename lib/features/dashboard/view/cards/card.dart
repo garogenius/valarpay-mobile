@@ -67,6 +67,7 @@ class _CardsScreenState extends State<CardsScreen> {
                         fit: BoxFit.contain,
                       ),
                     ),
+
                     const SizedBox(height: 40),
 
                     // 1️⃣ Free Application and Usage
@@ -198,7 +199,14 @@ class _CardsScreenState extends State<CardsScreen> {
                         ),
                       ],
                     ),
-
+                    const SizedBox(height: 15),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: Image.asset(
+                        'assets/images/ndic.jpeg',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                     const SizedBox(height: 40),
 
                     FullWidthButton(
@@ -232,7 +240,7 @@ class _CardsScreenState extends State<CardsScreen> {
                       ),
                     ),
                     SizedBox(height: 32.h),
-                
+
                     // Title
                     Text(
                       "Virtual Card Coming Soon 🚀",
@@ -242,9 +250,9 @@ class _CardsScreenState extends State<CardsScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                
+
                     SizedBox(height: 12.h),
-                
+
                     // Subtitle
                     Text(
                       "We’re working hard to bring this feature to you. "
@@ -255,7 +263,7 @@ class _CardsScreenState extends State<CardsScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                
+
                     SizedBox(height: 32.h),
                   ],
                 ),

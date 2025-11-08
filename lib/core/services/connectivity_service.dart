@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:valarpay/core/widgets/no_internet_dialogue.dart';
-import 'package:valarpay/features/dashboard/view/services/jamb/education_service.dart';
 
 class ConnectivityService {
   static final ConnectivityService _instance = ConnectivityService._internal();

@@ -44,11 +44,13 @@ class Bank {
 
 class BanksResponse {
   final List<Bank> banks;
+  final AccountDetails? account;
   final String message;
   final int statusCode;
 
   BanksResponse({
     required this.banks,
+    this.account,
     required this.message,
     required this.statusCode,
   });
@@ -59,6 +61,10 @@ class BanksResponse {
             ?.map((bank) => Bank.fromJson(bank))
             .toList() ??
         [],
+    account:
+        json['account'] != null
+            ? AccountDetails.fromJson(json['account'])
+            : null,
     message: json['message'] ?? 'Success',
     statusCode: json['statusCode'] ?? 200,
   );
@@ -165,7 +171,7 @@ class InitiateTransferRequest {
     required this.description,
     required this.pin,
     required this.saveBeneficiary,
-    required this.sessionId
+    required this.sessionId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -176,7 +182,7 @@ class InitiateTransferRequest {
     'description': description,
     'walletPin': pin, // Backend expects 'walletPin', not 'pin'
     "saveBeneficiary": saveBeneficiary,
-    "sessionId": sessionId
+    "sessionId": sessionId,
   };
 }
 

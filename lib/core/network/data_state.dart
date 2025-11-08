@@ -38,7 +38,7 @@ class DataState<T> {
     int? totalPages,
     String? message,
     List<T>? data,
-    final T? singleData
+    T? singleData
   }) {
     return DataState<T>(
       isInitialLoading: isInitialLoading ?? this.isInitialLoading,

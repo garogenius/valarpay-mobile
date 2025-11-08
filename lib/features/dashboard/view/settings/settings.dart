@@ -114,6 +114,7 @@ class SettingsScreen extends ConsumerWidget {
             Navigator.of(dialogCtx).pop();
 
             await ref.read(userProvider.notifier).clearUser();
+            SessionService(context).logout();
 
             AppMessenger.show(
               parentContext,

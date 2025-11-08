@@ -19,6 +19,17 @@ class TransferRepository {
     }
   }
 
+  Future<BanksResponse> getMatchedBanks({required String accountNumber}) async {
+    try {
+      final response = await apiClient.get(
+        '${ApiEndpoints.getMatchedBanks}/$accountNumber',
+      );
+      return BanksResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to match banks');
+    }
+  }
+
   Future<TransferFeeResponse> getTransferFee({
     required String currency,
     required double amount,

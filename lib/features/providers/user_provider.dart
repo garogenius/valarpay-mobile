@@ -27,9 +27,6 @@ class UserController extends StateNotifier<UserModel?> {
 
   Future<void> clearUser() async {
     state = null;
-    await SessionService.logout();
-
-    // Invalidate all service-related providers to clear old data
     ref.invalidate(airtimeUseCashbackProvider);
     ref.invalidate(airtimeSelectedNetworkProvider);
     ref.invalidate(airtimeSelectedOperatorIdProvider);

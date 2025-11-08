@@ -146,8 +146,6 @@ class _BeneficiaryTransferAmountScreenState
     _showLoading();
 
     try {
-      // Proceed with transfer (backend will validate PIN)
-      // Use bankCode from accountDetails (returned from account verification) not from selectedBank
       await ref
           .read(transferNotifierProvider.notifier)
           .initiateTransfer(
@@ -170,7 +168,6 @@ class _BeneficiaryTransferAmountScreenState
       if (state.isDataAvailable) {
         Navigator.pop(context);
       } else {
-        // Check if the error message indicates incorrect PIN
         final errorMessage =
             state.message ?? 'Transaction failed. Please try again.';
 

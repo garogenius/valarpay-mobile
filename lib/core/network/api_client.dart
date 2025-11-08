@@ -26,12 +26,12 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          log("Api call:${options.path}");
-          log("Request:${options.data.toString()}");
+          // log("Api call:${options.path}");
+          // log("Request:${options.data.toString()}");
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          log("Response: ${response.data}");
+           log("Response: ${response.statusCode}");
           if (response.statusCode == 200) {
             final data = response.data;
 
@@ -57,11 +57,6 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          // ✅ Handle 401 Unauthorized
-          if (e.response?.statusCode == 401) {
-            await SessionService.logout();
-          }
-
           return handler.next(e);
         },
       ),
