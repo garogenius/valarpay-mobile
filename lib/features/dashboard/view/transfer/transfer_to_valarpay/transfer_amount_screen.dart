@@ -109,9 +109,6 @@ class _InternalTransferAmountScreenState
       AppLogger.log(
         '📤 Transfer details - Account: ${widget.accountDetails.accountNumber}, Amount: $amount',
       );
-
-      // Proceed with internal transfer (backend will validate PIN)
-      // For ValarPay to ValarPay, bankCode should be empty or null
       await ref
           .read(transferNotifierProvider.notifier)
           .initiateTransfer(

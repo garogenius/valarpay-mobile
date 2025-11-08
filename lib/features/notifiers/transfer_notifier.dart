@@ -11,10 +11,10 @@ final transferRepositoryProvider = Provider<TransferRepository>((ref) {
 });
 
 /// Banks Notifier
-class BanksNotifier extends StateNotifier<DataState<Bank>> {
+class BanksNotifier extends StateNotifier<DataState<BanksResponse>> {
   final TransferRepository _repository;
 
-  BanksNotifier(this._repository) : super(DataState<Bank>.initial());
+  BanksNotifier(this._repository) : super(DataState<BanksResponse>.initial());
 
   Future<void> fetchBanks({required String currency}) async {
     state = state.copyWith(isInitialLoading: true, message: null);
@@ -22,7 +22,7 @@ class BanksNotifier extends StateNotifier<DataState<Bank>> {
       final res = await _repository.getBanks(currency: currency);
       state = state.copyWith(
         isInitialLoading: false,
-        data: res.banks,
+        singleData: res,
         isDataAvailable: true,
         message: res.message,
       );
@@ -36,8 +36,31 @@ class BanksNotifier extends StateNotifier<DataState<Bank>> {
     }
   }
 
-  void reset() => state = DataState<Bank>.initial();
+  Future<void> fetchMatchedBanks({required String accountNumber}) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.getMatchedBanks(
+        accountNumber: accountNumber,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        singleData: res,
+        isDataAvailable: true,
+        message: res.message,
+      );
+    } catch (e, stack) {
+      log('[BanksNotifier fetchMatchedBanks] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to load banks: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<BanksResponse>.initial();
 }
+
 
 /// Transfer Fee Notifier
 class TransferFeeNotifier extends StateNotifier<DataState<TransferFee>> {
@@ -287,7 +310,7 @@ class QRCodeDataNotifier extends StateNotifier<DataState<QRCodeData>> {
 
 // Riverpod providers
 final banksNotifierProvider =
-    StateNotifierProvider<BanksNotifier, DataState<Bank>>(
+    StateNotifierProvider<BanksNotifier, DataState<BanksResponse>>(
       (ref) => BanksNotifier(ref.read(transferRepositoryProvider)),
     );
 

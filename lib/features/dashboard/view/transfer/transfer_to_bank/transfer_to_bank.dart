@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,70 +63,51 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
   Future<void> _searchMatchingBanks() async {
     if (_shouldStopSearching || _isDisposed) return;
 
-    final account = accountController.text.trim();
-    if (account.length != 10) return;
+    try {
+      final accountNumber = accountController.text.trim();
+      if (accountNumber.length != 10) return;
+      _isDisposed = false;
 
-    _isDisposed = false;
+      setState(() {
+        isSearchingBanks = true;
+        matchedBanks = [];
+        matchError = null;
+        verifiedAccount = null;
+      });
 
-    setState(() {
-      isSearchingBanks = true;
-      matchedBanks = [];
-      matchError = null;
-      verifiedAccount = null;
-    });
-
-    // Ensure we have the list of banks
-    var banksState = ref.read(banksNotifierProvider);
-    if (!banksState.isDataAvailable || banksState.data == null) {
       await ref
           .read(banksNotifierProvider.notifier)
-          .fetchBanks(currency: 'NGN');
-      banksState = ref.read(banksNotifierProvider);
-    }
+          .fetchMatchedBanks(accountNumber: accountNumber);
 
-    if (_shouldStopSearching || _isDisposed)
-      return; // stop early if widget disposed
+      final banksState = ref.read(banksNotifierProvider);
 
-    final allBanks = banksState.data ?? [];
-    final repo = ref.read(transferRepositoryProvider);
-
-    // Run verification for each bank in parallel but safely catch errors
-    final tasks =
-        allBanks
-            .map(
-              (bank) => () async {
-                if (_shouldStopSearching || _isDisposed) return null;
-                try {
-                  final res = await repo
-                      .verifyAccount(
-                        VerifyAccountRequest(
-                          accountNumber: account,
-                          bankCode: bank.bankCode,
-                        ),
-                      )
-                      .timeout(const Duration(seconds: 4));
-                  if (res.data.accountName.isNotEmpty) return bank;
-                } catch (_) {}
-                return null;
-              },
-            )
-            .toList();
-
-    final results = await runInBatches(tasks, batchSize: 25);
-
-    final matches = <Bank>[];
-
-    matches.addAll(results.whereType<Bank>());
-
-    if (_shouldStopSearching || _isDisposed) return;
-
-    setState(() {
-      matchedBanks = matches;
-      isSearchingBanks = false;
-      if (matches.isEmpty) {
-        matchError = 'No matched bank found this account number';
+      if (banksState.isDataAvailable && mounted) {
+        setState(() {
+          matchedBanks = banksState.singleData!.banks;
+          selectedBank = banksState.singleData!.banks[0];
+          verifiedAccount = banksState.singleData!.account;
+          isSearchingBanks = false;
+        });
+      } else {
+        setState(() {
+          matchedBanks = [];
+          selectedBank = null;
+          verifiedAccount = null;
+          isSearchingBanks = false;
+          matchError = 'No matched bank found this account number';
+        });
       }
-    });
+    } catch (ex) {
+      print('An error occured:$ex');
+      setState(() {
+        matchedBanks = [];
+        selectedBank = null;
+        verifiedAccount = null;
+        isSearchingBanks = false;
+        matchError =
+            'No matched bank found, check the account number and ensure its correct or select the bank in the above';
+      });
+    }
   }
 
   void _verifyAccount() async {
@@ -156,29 +138,16 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
       if (_isDisposed) return;
-      // if (accountController.text.length == 10) {
-      //   _searchMatchingBanks();
-      // } else {
-      //   setState(() {
-      //     verifiedAccount = null;
-      //     matchedBanks = [];
-      //     matchError = null;
-      //   });
-      // }
+      if (accountController.text.length == 10) {
+        _searchMatchingBanks();
+      } else {
+        setState(() {
+          verifiedAccount = null;
+          matchedBanks = [];
+          matchError = null;
+        });
+      }
     });
-  }
-
-  Future<List<T>> runInBatches<T>(
-    List<Future<T> Function()> tasks, {
-    int batchSize = 5,
-  }) async {
-    final results = <T>[];
-    for (var i = 0; i < tasks.length; i += batchSize) {
-      if (_shouldStopSearching || _isDisposed) break;
-      final batch = tasks.skip(i).take(batchSize).map((t) => t());
-      results.addAll(await Future.wait(batch));
-    }
-    return results;
   }
 
   void _selectBank() async {
@@ -281,22 +250,18 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                     children: [
                       SnapAndSendMoneyCard(
                         onPressed: () async {
-                          // Open camera scanner and await detected 10-digit account number
                           final result = await Navigator.push<String?>(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const CameraScanScreen(),
                             ),
                           );
-
                           if (result != null && result.isNotEmpty) {
-                            // populate account field and trigger matching
                             setState(() {
                               accountController.text = result;
                             });
-                            // directly trigger matching for immediate feedback
                             if (accountController.text.length == 10) {
-                              // _searchMatchingBanks();
+                              _searchMatchingBanks();
                             }
                           }
                         },
@@ -311,7 +276,9 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                       TextField(
                         controller: accountController,
                         onChanged: (value) {
-                          if (value.isEmpty) {}
+                          if (value.length == 10) {
+                            _searchMatchingBanks();
+                          }
                         },
                         keyboardType: TextInputType.number,
                         maxLength: 10,
@@ -354,65 +321,69 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                       const SizedBox(height: 20),
 
                       // Select Bank
-                      const Text("Select Bank", style: TextStyle(fontSize: 14)),
-                      const SizedBox(height: 8),
-
-                      GestureDetector(
-                        onTap: _selectBank,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).cardColor.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundColor:
-                                    selectedBank != null
-                                        ? appTheme.primaryColor.withValues(
-                                          alpha: 0.1,
-                                        )
-                                        : Colors.black,
-                                child:
-                                    selectedBank != null
-                                        ? Text(
-                                          selectedBank!.name
-                                              .substring(0, 1)
-                                              .toUpperCase(),
-                                          style: TextStyle(
-                                            color: appTheme.primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                      if (matchedBanks.isEmpty)
+                        const Text(
+                          "Select Bank",
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      if (matchedBanks.isEmpty) const SizedBox(height: 8),
+                      if (matchedBanks.isEmpty)
+                        GestureDetector(
+                          onTap: _selectBank,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).cardColor.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor:
+                                      selectedBank != null
+                                          ? appTheme.primaryColor.withValues(
+                                            alpha: 0.1,
+                                          )
+                                          : Colors.black,
+                                  child:
+                                      selectedBank != null
+                                          ? Text(
+                                            selectedBank!.name
+                                                .substring(0, 1)
+                                                .toUpperCase(),
+                                            style: TextStyle(
+                                              color: appTheme.primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          )
+                                          : const Icon(
+                                            Icons.account_balance,
+                                            color: Colors.white,
+                                            size: 18,
                                           ),
-                                        )
-                                        : const Icon(
-                                          Icons.account_balance,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  selectedBank?.name ?? "Select Bank",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    selectedBank?.name ?? "Select Bank",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const Icon(Icons.chevron_right),
-                            ],
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 14),
 
                       // If there are matched banks show them inline for user selection
@@ -549,8 +520,9 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                           ],
                         )
                       else if (accountController.text.length == 10 &&
-                              selectedBank != null ||
-                          accountVerificationState.data == null)
+                          !isSearchingBanks &&
+                          matchedBanks.isEmpty &&
+                          verifiedAccount == null)
                         Row(
                           children: [
                             const Icon(Icons.error_outline, color: Colors.red),
@@ -590,12 +562,11 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                       const SizedBox(height: 24),
                       TransferToBankRecentAndSavedBeneficiaries(
                         onSelectAccount: (selectedAccount) {
-                          // Populate the account controller and trigger matching
                           setState(() {
                             accountController.text = selectedAccount;
                           });
                           if (accountController.text.length == 10) {
-                            // _searchMatchingBanks();
+                            _searchMatchingBanks();
                           }
                         },
                       ),

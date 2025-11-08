@@ -121,7 +121,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
               if (banksState.isDataAvailable && banksState.data != null) {
                 final bankName = details.beneficiaryBankName ?? '';
                 try {
-                  final matchingBank = banksState.data!.firstWhere(
+                  final matchingBank = banksState.singleData!.banks.firstWhere(
                     (bank) => bank.name.toLowerCase().contains(
                       bankName.toLowerCase(),
                     ),
@@ -131,7 +131,6 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                   // Bank not found, will use empty string (will likely fail)
                 }
               }
-
               // Convert transaction details to Beneficiary model
               final beneficiary = Beneficiary(
                 id: '',
