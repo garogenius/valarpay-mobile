@@ -206,7 +206,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     ];
 
     final receiptDate =
-        '${now.day} ${Helpers.getMonthName(now.month)} ${now.year} | ${DateFormat.jm().format(now)}';
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} | ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
 
     Navigator.push(
       context,

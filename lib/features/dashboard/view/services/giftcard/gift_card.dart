@@ -717,8 +717,9 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
   void _navigateToReceipt(double amount) {
     final transactionId = 'TXN${DateTime.now().millisecondsSinceEpoch}';
+    final now = DateTime.now();
     final receiptDate =
-        '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} | ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
 
     // Create receipt data while State is mounted
     final receiptData = [

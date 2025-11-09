@@ -58,7 +58,7 @@ class _InternalTransferAmountScreenState
           selection: TextSelection.collapsed(offset: cursorPos),
         );
       }
-      if (int.parse(text) < 50) {
+      if (int.parse(text) < 100) {
         setState(() {
           _isNotMinimumAmount = true;
         });
@@ -297,8 +297,9 @@ class _InternalTransferAmountScreenState
           isSuccessful: true,
         ),
       ];
+      final now = DateTime.now();
       final receiptDate =
-          '${DateTime.now().day} ${DateFormat('MMMM').format(DateTime.now())} ${DateTime.now().year} | ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'pm' : 'am'}';
+          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} | ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -428,7 +429,7 @@ class _InternalTransferAmountScreenState
               if (_isNotMinimumAmount) SizedBox(height: 5),
               if (_isNotMinimumAmount)
                 Text(
-                  'Minimum transfer amount is ₦50',
+                  'Minimum transfer amount is ₦100',
                   style: TextStyle(color: Colors.red, fontSize: 13),
                 ),
 
@@ -478,7 +479,8 @@ class _InternalTransferAmountScreenState
                 text: 'Continue',
                 isEnabled:
                     _amountController.text.isNotEmpty &&
-                    int.parse(_amountController.text.replaceAll(',', '')) >= 50,
+                    int.parse(_amountController.text.replaceAll(',', '')) >=
+                        100,
                 onPressed: () {
                   _handleOnPressed();
                 },
