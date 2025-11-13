@@ -18,7 +18,7 @@ class AppMessenger {
     }
     switch (type) {
       case MessageType.success:
-        background = Colors.green;
+        background =  appTheme.primaryColor;
         icon = Icons.check_circle_outline;
         break;
       case MessageType.error:
