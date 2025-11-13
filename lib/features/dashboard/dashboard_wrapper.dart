@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
+import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
-import 'package:valarpay/features/dashboard/view/KYC/residential_address.dart';
 import 'package:valarpay/core/services/inactivity_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/biometric_transaction_tracker.dart';
@@ -355,11 +355,10 @@ class _KycVerificationModal extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    // Navigate to KYC residential address screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ResidentialAddressPage(),
+                        builder: (context) => const BVNPage(),
                       ),
                     );
                   },
