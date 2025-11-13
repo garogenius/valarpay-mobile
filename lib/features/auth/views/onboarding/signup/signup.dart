@@ -23,54 +23,55 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(ctx),
-                    icon: const Icon(Icons.arrow_back),
+                  Row(
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.arrow_back),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(height: 24),
+                  ...options.map(
+                    (option) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildDialogOption(option, ctx),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              ...options.map(
-                (option) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildDialogOption(option),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
-  Widget _buildDialogOption<T>(DialogOption<T> option) {
+  Widget _buildDialogOption<T>(DialogOption<T> option, BuildContext ctx) {
     final isSelected = option.isSelected;
     return GestureDetector(
       onTap: () {
         if (option.disabled == false) {
           option.onTap();
-          Navigator.pop(context);
+          Navigator.pop(ctx);
         }
       },
       child: Container(
@@ -79,9 +80,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           color: option.disabled == true ? Colors.grey.shade100 : Colors.white,
           border: Border.all(
             width: 1,
-            color: isSelected
-                ? (option.activeColor ?? appTheme.primaryColor)
-                : Colors.grey.shade300,
+            color:
+                isSelected
+                    ? (option.activeColor ?? appTheme.primaryColor)
+                    : Colors.grey.shade300,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -92,9 +94,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? option.activeColor!.withOpacity(0.2)
-                      : Colors.grey.shade100,
+                  color:
+                      isSelected
+                          ? option.activeColor!.withOpacity(0.2)
+                          : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 alignment: Alignment.center,
@@ -130,7 +133,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               onChanged: (_) {
                 if (option.disabled == false) {
                   option.onTap();
-                  Navigator.pop(context);
                 }
               },
               activeColor: option.activeColor,
@@ -151,7 +153,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           value: 'PERSONAL',
           groupValue: selectedAccountType,
           activeColor: appTheme.primaryColor,
-          onTap: () => setState(() => selectedAccountType = 'Personal'),
+          onTap: () => {setState(() => selectedAccountType = 'Personal')},
         ),
         DialogOption(
           title: 'Business',
@@ -283,18 +285,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 50),
 
             FullWidthButton(
-                text: 'Continue',
-                onPressed: () {
-                  SignUpRequest request = SignUpRequest(
-                      accountType: selectedAccountType.toUpperCase(),
-                      countryCode: selectedCurrency);
+              text: 'Continue',
+              onPressed: () {
+                SignUpRequest request = SignUpRequest(
+                  accountType: selectedAccountType.toUpperCase(),
+                  countryCode: selectedCurrency,
+                );
 
-                  if (selectedAccountType == 'Personal') {
-                    context.push('/personal-details', extra: request);
-                  } else {
-                    context.push('/business-details', extra: request);
-                  }
-                }),
+                if (selectedAccountType == 'Personal') {
+                  context.push('/personal-details', extra: request);
+                } else {
+                  context.push('/business-details', extra: request);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -307,9 +311,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
           child: ClipRRect(
             // Use ClipRRect to apply border radius to the image
             borderRadius: BorderRadius.circular(8),

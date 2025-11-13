@@ -29,11 +29,7 @@ class SwapCurrencyTransactionSuccessScreen extends StatelessWidget {
                   color: Colors.green,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 40,
-                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 40),
               ),
 
               const SizedBox(height: 24),
@@ -71,34 +67,47 @@ class SwapCurrencyTransactionSuccessScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildDetailRow('Transaction ID',
-                        'TXN${DateTime.now().millisecondsSinceEpoch}', isDark),
-                    _buildDetailRow('From Currency',
-                        transactionData['fromCurrency'] ?? 'NGN', isDark),
-                    _buildDetailRow('To Currency',
-                        transactionData['toCurrency'] ?? 'USD', isDark),
                     _buildDetailRow(
-                        'From Amount',
-                        '${_getCurrencySymbol(transactionData['fromCurrency'] ?? 'NGN')}${transactionData['fromAmount'] ?? '0'}',
-                        isDark),
+                      'Transaction ID',
+                      'TXN${DateTime.now().millisecondsSinceEpoch}',
+                      isDark,
+                    ),
                     _buildDetailRow(
-                        'To Amount',
-                        '${_getCurrencySymbol(transactionData['toCurrency'] ?? 'USD')}${transactionData['toAmount'] ?? '0'}',
-                        isDark),
+                      'From Currency',
+                      transactionData['fromCurrency'] ?? 'NGN',
+                      isDark,
+                    ),
                     _buildDetailRow(
-                        'Exchange Rate',
-                        '1 ${transactionData['toCurrency']} = ${_getCurrencySymbol(transactionData['fromCurrency'] ?? 'NGN')}${transactionData['exchangeRate'] ?? '1650'}',
-                        isDark),
+                      'To Currency',
+                      transactionData['toCurrency'] ?? 'USD',
+                      isDark,
+                    ),
                     _buildDetailRow(
-                        'Date',
-                        '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-                        isDark),
+                      'From Amount',
+                      '${_getCurrencySymbol(transactionData['fromCurrency'] ?? 'NGN')}${transactionData['fromAmount'] ?? '0'}',
+                      isDark,
+                    ),
+                    _buildDetailRow(
+                      'To Amount',
+                      '${_getCurrencySymbol(transactionData['toCurrency'] ?? 'USD')}${transactionData['toAmount'] ?? '0'}',
+                      isDark,
+                    ),
+                    _buildDetailRow(
+                      'Exchange Rate',
+                      '1 ${transactionData['toCurrency']} = ${_getCurrencySymbol(transactionData['fromCurrency'] ?? 'NGN')}${transactionData['exchangeRate'] ?? '1650'}',
+                      isDark,
+                    ),
+                    _buildDetailRow(
+                      'Date',
+                      '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+                      isDark,
+                    ),
                   ],
                 ),
               ),
 
               const Spacer(),
-
+              SizedBox(height: 15),
               // Share Receipt Button
               SizedBox(
                 width: double.infinity,

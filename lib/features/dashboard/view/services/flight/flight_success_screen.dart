@@ -33,11 +33,7 @@ class FlightSuccessScreen extends StatelessWidget {
                   color: Colors.green,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 40,
-                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 40),
               ),
 
               const SizedBox(height: 24),
@@ -84,7 +80,7 @@ class FlightSuccessScreen extends StatelessWidget {
               ),
 
               const Spacer(),
-
+              SizedBox(height: 15),
               // Share Receipt Button
               SizedBox(
                 width: double.infinity,

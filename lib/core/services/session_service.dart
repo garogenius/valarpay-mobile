@@ -76,7 +76,8 @@ class SessionService {
   }
 
   static Future<bool> isLoggedIn() async {
-    return await getAccessToken() != null && await getUser() != null;
+    bool isLogged = await getAccessToken() != null && await getUser() != null;
+    return isLogged;
   }
 
   Future<void> logout() async {

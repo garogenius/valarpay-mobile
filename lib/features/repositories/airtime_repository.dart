@@ -77,7 +77,8 @@ class AirtimeRepository {
 Future<AirtimePurchaseResponse> payAirtime(
   AirtimePurchaseRequest request,
 ) async {
-  try {
+  try { http://api.valarpay.com/api/v1/health
+
     final response = await apiClient.post(
       ApiEndpoints.payAirtime,
       data: request.toJson(),

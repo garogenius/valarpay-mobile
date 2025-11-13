@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
@@ -27,8 +28,13 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
   void initState() {
     super.initState();
     // Refresh user profile when screen loads to get latest wallet data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(userNotifierProvider.notifier).refreshUserProfile();
+
+      final bool isLoggedIn = await SessionService.isLoggedIn();
+      if (!isLoggedIn) {
+        SessionService(context).logout();
+      }
     });
   }
 
@@ -46,7 +52,7 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
     } else if (user?.username != null) {
       userName = user!.username;
     }
-    
+
     // Capitalize first letter of username
     if (userName.isNotEmpty) {
       userName = userName[0].toUpperCase() + userName.substring(1);
@@ -54,8 +60,7 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
     final accountNumber = wallet?.accountNumber ?? '0000000000';
     final balance = wallet?.balance ?? 0.0;
 
-    const double rewardsAmount =
-        0.00; 
+    const double rewardsAmount = 0.00;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -186,7 +191,6 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
 
           const SizedBox(height: 20),
 
-        
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -226,9 +230,8 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
                       isBalanceVisible
                           ? currencyFormatter(balance.toString())
                           : "₦ •••••",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),

@@ -116,12 +116,21 @@ class ShareableTransactionReceipt extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              "Thank you for banking with ValarPay. For support, contact us at \n support@Valarpay.com, call +2342013309609 or Head Office: \n C3&C4 Suite 2nd Floor Ejison Plaza 9a New Market Road Main \n Market Onitsha",
-              textAlign: TextAlign.left,
-              style: TextStyle(fontSize: 11),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    "Thank you for banking with ValarPay. For support, contact us at support@Valarpay.com, call +2342013309609 or Head Office: C3&C4 Suite 2nd Floor Ejison Plaza 9a New Market Road Main Market Onitsha.",
+                    textAlign: TextAlign.left,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                    style: const TextStyle(fontSize: 11, height: 1.4),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 25),

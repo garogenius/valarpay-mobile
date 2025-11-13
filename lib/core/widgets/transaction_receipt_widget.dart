@@ -207,6 +207,7 @@ class _TransactionReceiptWidgetState
           ),
         ),
         const SizedBox(width: 25),
+        SizedBox(height: 15,),
         // Share Button
         Expanded(
           child: Container(

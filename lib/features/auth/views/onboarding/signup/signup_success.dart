@@ -47,7 +47,7 @@ class _SignupSuccessScreenState extends ConsumerState<SignupSuccessScreen> {
                   ),
                   SizedBox(height: 48.h),
                   Text(
-                    "Congratulations, ${widget.request.fullname}!\nYou've successfully created your account",
+                    "Congratulations, ${widget.request.fullname}! You've successfully created your account",
                     style: TextStyle(
                       fontSize: 22.sp,
                       fontWeight: FontWeight.bold,
