@@ -153,13 +153,11 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                   ),
                   TransactionDetail(
                     label: 'Fee',
-                    value: currencyFormatter(
-                      _verifyResponse?.fee.toString() ?? '0.0',
-                    ),
+                    value: currencyFormatter('0.0'),
                   ),
                   TransactionDetail(
                     label: 'Total Debit',
-                    value: currencyFormatter(_totalAmount.toString()),
+                    value: currencyFormatter(_planAmount),
                   ),
                 ],
                 bottomDetails: [
@@ -697,6 +695,11 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                                       isDark,
                                     ),
                                     buildDetailRow(
+                                      'Customer Name',
+                                      _verifiedUserName ?? '',
+                                      isDark,
+                                    ),
+                                    buildDetailRow(
                                       'Provider',
                                       ref
                                               .read(
@@ -718,18 +721,13 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                                     ),
                                     buildDetailRow(
                                       'Fee',
-                                      currencyFormatter(
-                                        _verifyResponse?.fee.toString() ??
-                                            '0.0',
-                                      ),
+                                      currencyFormatter('0.0'),
                                       isDark,
                                     ),
                                     const Divider(),
                                     buildDetailRow(
                                       'Total Amount',
-                                      currencyFormatter(
-                                        _totalAmount.toString(),
-                                      ),
+                                      currencyFormatter(_planAmount),
                                       isDark,
                                       isTotal: true,
                                     ),

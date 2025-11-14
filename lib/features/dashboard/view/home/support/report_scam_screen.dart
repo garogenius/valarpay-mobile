@@ -44,7 +44,9 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
     }
 
     // call notifier to upload
-    ref.read(reportScamNotifierProvider.notifier).report(
+    ref
+        .read(reportScamNotifierProvider.notifier)
+        .report(
           title: _titleController.text,
           description: _descriptionController.text,
           screenshot: _screenshot,
@@ -105,9 +107,9 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
               Text(
                 'Title',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: ResponsiveUtils.fontSize16,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: ResponsiveUtils.fontSize16,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -149,9 +151,9 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
               Text(
                 'Describe Your Issue',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: ResponsiveUtils.fontSize16,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: ResponsiveUtils.fontSize16,
+                ),
               ),
               SizedBox(height: ResponsiveUtils.spacing8),
 
@@ -206,10 +208,10 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
 
               SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'Screenshot',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: isDark ? Colors.grey : Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -225,21 +227,22 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
                     border: Border.all(color: Colors.grey.shade300),
                     color: Theme.of(context).cardColor,
                   ),
-                  child: _screenshot == null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.camera_alt, size: 36),
-                              SizedBox(height: 8),
-                              Text('Tap to attach screenshot'),
-                            ],
+                  child:
+                      _screenshot == null
+                          ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.camera_alt, size: 36),
+                                SizedBox(height: 8),
+                                Text('Tap to attach screenshot'),
+                              ],
+                            ),
+                          )
+                          : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(_screenshot!, fit: BoxFit.cover),
                           ),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_screenshot!, fit: BoxFit.cover),
-                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -259,12 +262,10 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
                     Expanded(
                       child: Text(
                         'Our support team will review your complaint and get back to you within 24-48 hours.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(
-                              color: Colors.blue[700],
-                              fontSize: ResponsiveUtils.fontSize12,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.blue[700],
+                          fontSize: ResponsiveUtils.fontSize12,
+                        ),
                       ),
                     ),
                   ],
@@ -273,7 +274,8 @@ class _ReportScamScreenState extends ConsumerState<ReportScamScreen> {
               const SizedBox(height: 32),
               FullWidthButton(
                 text: 'Submit Report',
-                isEnabled: _titleController.text.isNotEmpty &&
+                isEnabled:
+                    _titleController.text.isNotEmpty &&
                     _descriptionController.text.isNotEmpty,
                 onPressed: _submit,
                 isLoading: state.isInitialLoading,

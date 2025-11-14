@@ -165,42 +165,60 @@ class _ConfirmTransactionPinPageState
   }
 
   void _showSuccessDialog(BuildContext context, WidgetRef ref) {
-    // capture parent context before dialog
-    final parentContext = context;
-
     showDialog(
-      context: parentContext,
+      context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return PasscodeSuccessDialog(
           headerText: 'Pin',
           onDone: () async {
-            ref.read(pinControllerProvider.notifier).clearAllPins();
+            try {
+              // Step 1: Clear pins from memory
+              ref.read(pinControllerProvider.notifier).clearAllPins();
 
-            final updatedUser =
-                await ref
-                    .read(userNotifierProvider.notifier)
-                    .refreshUserProfile();
+              // Step 2: Refresh user profile and update state
+              final updatedUser =
+                  await ref
+                      .read(userNotifierProvider.notifier)
+                      .refreshUserProfile();
 
-            if (updatedUser != null) {
-              ref.read(userProvider.notifier).setUser(updatedUser);
+              if (updatedUser != null) {
+                ref.read(userProvider.notifier).setUser(updatedUser);
 
-              final currentToken = await SessionService.getAccessToken();
-              if (currentToken != null) {
-                await SessionService.saveSession(
-                  LoginResponse(
-                    user: updatedUser,
-                    accessToken: currentToken,
-                    message: 'Success',
-                    statusCode: 200,
-                  ),
+                final currentToken = await SessionService.getAccessToken();
+                if (currentToken != null) {
+                  await SessionService.saveSession(
+                    LoginResponse(
+                      user: updatedUser,
+                      accessToken: currentToken,
+                      message: 'Success',
+                      statusCode: 200,
+                    ),
+                  );
+                }
+              }
+
+              // Step 3: Close dialog and navigate - use rootNavigator to close dialog
+              if (mounted) {
+                Navigator.of(dialogContext, rootNavigator: true).pop();
+
+                // Step 4: Navigate to home (this replaces the entire KYC flow)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    context.pushReplacement('/');
+                  }
+                });
+              }
+            } catch (e) {
+              if (mounted) {
+                Navigator.of(dialogContext, rootNavigator: true).pop();
+                AppMessenger.show(
+                  context,
+                  message: 'Error completing PIN setup: $e',
+                  type: MessageType.error,
                 );
               }
             }
-            Navigator.of(dialogContext).pop();
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              context.pushReplacement('/');
-            });
           },
         );
       },

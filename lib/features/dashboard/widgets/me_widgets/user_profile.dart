@@ -131,8 +131,11 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
                         Flexible(
                           child: Text(
                             accountNumber,
-                            style: const TextStyle(
-                              color: Color(0xFF6B7280),
+                            style: TextStyle(
+                              color:
+                                  isDark
+                                      ? const Color(0xFF6B7280)
+                                      : Colors.black,
                               fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -201,10 +204,11 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           "Your Balance",
                           style: TextStyle(
-                            color: Color(0xFF6B7280),
+                            color:
+                                isDark ? const Color(0xFF6B7280) : Colors.black,
                             fontSize: 12,
                           ),
                         ),

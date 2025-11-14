@@ -10,53 +10,65 @@ class OurServicesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     List<ServiceItem> services = [
       ServiceItem(
-          icon: 'assets/images/service_icon/airtime.svg',
-          label: 'Airtime',
-          onTap: () => context.push('/airtime')),
+        icon: 'assets/images/service_icon/airtime.svg',
+        label: 'Airtime',
+        onTap: () => context.push('/airtime'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/Data.svg',
-          label: 'Data',
-          onTap: () => context.push('/data')),
+        icon: 'assets/images/service_icon/Data.svg',
+        label: 'Data',
+        onTap: () => context.push('/data'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/betting.svg',
-          label: 'Betting',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/betting.svg',
+        label: 'Betting',
+        onTap: () => context.push('/coming-soon'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/light.svg',
-          label: 'Electricity',
-          onTap: () => context.push('/electricity')),
+        icon: 'assets/images/service_icon/light.svg',
+        label: 'Electricity',
+        onTap: () => context.push('/electricity'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/cable.svg',
-          label: 'Cable Tv',
-          onTap: () => context.push('/cable-tv')),
+        icon: 'assets/images/service_icon/cable.svg',
+        label: 'Cable Tv',
+        onTap: () => context.push('/cable-tv'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/arrow-swap-horizontal.svg',
-          label: 'Swap Currency',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/arrow-swap-horizontal.svg',
+        label: 'Swap Currency',
+        onTap: () => context.push('/coming-soon'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/internet.svg',
-          label: 'Internet',
-          onTap: () => context.push('/internet')),
+        icon: 'assets/images/service_icon/internet.svg',
+        label: 'Internet',
+        onTap: () => context.push('/internet'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/gift.svg',
-          label: 'Giftcard',
-          onTap: () => context.push('/gift-card')),
+        icon: 'assets/images/service_icon/gift.svg',
+        label: 'Giftcard',
+        onTap: () => context.push('/gift-card'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/int.svg',
-          label: 'Intl. Airtime',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/int.svg',
+        label: 'Intl. Airtime',
+        onTap: () => context.push('/coming-soon'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/Education.svg',
-          label: 'Education',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/Education.svg',
+        label: 'Education',
+        onTap: () => context.push('/coming-soon'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/shoping.svg',
-          label: 'Shopping',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/shoping.svg',
+        label: 'Shopping',
+        onTap: () => context.push('/coming-soon'),
+      ),
       ServiceItem(
-          icon: 'assets/images/service_icon/Insurance.svg',
-          label: 'Insurance',
-          onTap: () => context.push('/coming-soon')),
+        icon: 'assets/images/service_icon/Insurance.svg',
+        label: 'Insurance',
+        onTap: () => context.push('/coming-soon'),
+      ),
       // ServiceItem(
       //     icon: 'assets/images/service_icon/flight.svg',
       //     label: 'Flight',
@@ -96,7 +108,10 @@ class OurServicesWidget extends StatelessWidget {
             itemCount: services.length,
             itemBuilder: (context, index) {
               return _buildServiceItem(
-                  context, services[index], services[index].onTap);
+                context,
+                services[index],
+                services[index].onTap,
+              );
             },
           ),
         ),
@@ -105,7 +120,12 @@ class OurServicesWidget extends StatelessWidget {
   }
 
   Widget _buildServiceItem(
-      BuildContext context, ServiceItem service, Function() onTap) {
+    BuildContext context,
+    ServiceItem service,
+    Function() onTap,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -139,12 +159,13 @@ class OurServicesWidget extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'SF Pro',
                 fontSize: 10,
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w600,
                 height: 14 / 10,
                 letterSpacing: 0.1,
+                color: isDark ? const Color(0xFFF9FAFB) : Colors.black,
               ),
             ),
           ],
@@ -159,6 +180,9 @@ class ServiceItem {
   final String label;
   final Function() onTap;
 
-  const ServiceItem(
-      {required this.icon, required this.label, required this.onTap});
+  const ServiceItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 }

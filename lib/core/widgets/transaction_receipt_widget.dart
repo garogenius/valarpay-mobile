@@ -207,7 +207,7 @@ class _TransactionReceiptWidgetState
           ),
         ),
         const SizedBox(width: 25),
-        SizedBox(height: 15,),
+        SizedBox(height: 15),
         // Share Button
         Expanded(
           child: Container(
@@ -337,9 +337,9 @@ class _TransactionReceiptWidgetState
             textAlign: TextAlign.right,
             overflow: TextOverflow.ellipsis,
             maxLines: 3,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'SF Pro',
-              fontSize: 14,
+              fontSize: detail.label == 'Transaction ID' ? 12 : 14,
               fontWeight: FontWeight.w400,
               height: 1.33,
               letterSpacing: 0.06,
