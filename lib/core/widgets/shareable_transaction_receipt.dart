@@ -164,31 +164,32 @@ class ShareableTransactionReceipt extends StatelessWidget {
     BuildContext context,
     ShareableTransactionReceiptDetail detail,
   ) {
-    String displayValue = detail.value;
-
-    // For Transaction ID, show first 13 characters + ellipsis if too long
-    if (detail.label.toLowerCase().contains('transaction id') &&
-        detail.value.length > 13) {
-      displayValue = '${detail.value.substring(0, 13)}...';
-    }
+    final isTransactionId = detail.label.toLowerCase().contains(
+      'transaction id',
+    );
+    final isBeneficiaryDetails = detail.label.toLowerCase().contains(
+      'beneficiary details',
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             detail.label,
             style: const TextStyle(fontSize: 13, color: Colors.grey),
           ),
+          const SizedBox(width: 8),
           Flexible(
             child: Text(
-              displayValue,
+              detail.value,
               textAlign: TextAlign.end,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: isTransactionId || isBeneficiaryDetails ? null : 1,
+              overflow: TextOverflow.clip,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: isTransactionId || isBeneficiaryDetails ? 11 : 13,
                 fontWeight: FontWeight.w500,
                 color:
                     detail.label == 'Status'

@@ -265,13 +265,16 @@ class AccountSettingsPage extends ConsumerWidget {
     String value, {
     bool showCopy = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF9CA3AF),
+          style: TextStyle(
+            color: isDark ? const Color(0xFF9CA3AF) : Colors.black,
             fontFamily: 'SF Pro',
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -279,37 +282,45 @@ class AccountSettingsPage extends ConsumerWidget {
             letterSpacing: 0.035,
           ),
         ),
-        Row(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'SF Pro',
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                height: 1.43,
-                letterSpacing: 0.035,
-              ),
-            ),
-            if (showCopy) ...[
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: value));
-                  AppMessenger.show(
-                    context,
-                    type: MessageType.success,
-                    message: 'Copied to clipboard',
-                  );
-                },
-                child: const Icon(
-                  Icons.copy,
-                  size: 16,
-                  color: Color(0xFF9CA3AF),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                    height: 1.43,
+                    letterSpacing: 0.035,
+                  ),
                 ),
               ),
+              if (showCopy) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: value));
+                    AppMessenger.show(
+                      context,
+                      type: MessageType.success,
+                      message: 'Copied to clipboard',
+                    );
+                  },
+                  child: const Icon(
+                    Icons.copy,
+                    size: 16,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ],
     );

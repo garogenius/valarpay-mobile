@@ -30,46 +30,47 @@ class NetworkProviderSelector extends StatelessWidget {
     final items = <Widget>[];
 
     // If providers list passed and not empty, use it; otherwise fallback to defaults
-    final list = (providers != null && providers!.isNotEmpty)
-        ? providers!
-        : [
-            NetworkProvider(
-              id: 'airtel',
-              planName: '',
-              network: 'Airtel',
-              countryISOCode: '',
-              operatorId: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-            NetworkProvider(
-              id: 'mtn',
-              planName: '',
-              network: 'MTN',
-              countryISOCode: '',
-              operatorId: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-            NetworkProvider(
-              id: '9mobile',
-              planName: '',
-              network: '9mobile',
-              countryISOCode: '',
-              operatorId: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-            NetworkProvider(
-              id: 'glo',
-              planName: '',
-              network: 'Glo',
-              countryISOCode: '',
-              operatorId: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-          ];
+    final list =
+        (providers != null && providers!.isNotEmpty)
+            ? providers!
+            : [
+              NetworkProvider(
+                id: 'airtel',
+                planName: '',
+                network: 'Airtel',
+                countryISOCode: '',
+                operatorId: 0,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+              NetworkProvider(
+                id: 'mtn',
+                planName: '',
+                network: 'MTN',
+                countryISOCode: '',
+                operatorId: 0,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+              NetworkProvider(
+                id: '9mobile',
+                planName: '',
+                network: '9mobile',
+                countryISOCode: '',
+                operatorId: 0,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+              NetworkProvider(
+                id: 'glo',
+                planName: '',
+                network: 'Glo',
+                countryISOCode: '',
+                operatorId: 0,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+            ];
 
     for (var i = 0; i < list.length; i++) {
       final p = list[i];
@@ -121,14 +122,16 @@ class _NetworkProviderItem extends StatelessWidget {
         height: 80,
         width: 80,
         decoration: BoxDecoration(
-          color: isSelected
-              ? appTheme.primaryColor.withOpacity(0.3)
-              : Theme.of(context).cardColor.withOpacity(0.7),
+          color:
+              isSelected
+                  ? appTheme.primaryColor.withOpacity(0.3)
+                  : Theme.of(context).cardColor.withOpacity(0.7),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? appTheme.primaryColor.withOpacity(0.5)
-                : Colors.grey.shade700,
+            color:
+                isSelected
+                    ? appTheme.primaryColor.withOpacity(0.5)
+                    : Colors.grey.shade700,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -136,12 +139,8 @@ class _NetworkProviderItem extends StatelessWidget {
           child: Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: image,
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            child: Center(child: image),
           ),
         ),
       ),

@@ -170,6 +170,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                         dataSelectedOperatorIdProvider.notifier,
                                       )
                                       .state = plan.operatorId;
+
+                                  // ✅ Auto-fetch variations immediately
+                                  ref
+                                      .read(
+                                        dataVariationNotifierProvider.notifier,
+                                      )
+                                      .getVariation(
+                                        operatorId: plan.operatorId,
+                                      );
                                 }
                               });
                         }
@@ -520,9 +529,17 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : Builder(
                     builder: (context) {
-                      // Map DataPlanInfo to NetworkProvider for the selector
+                      // ✅ Deduplicate by network - get unique networks only
+                      final uniqueNetworkPlans = <String, DataPlanInfo>{};
+                      for (final plan in availablePlans) {
+                        if (!uniqueNetworkPlans.containsKey(plan.network)) {
+                          uniqueNetworkPlans[plan.network] = plan;
+                        }
+                      }
+
+                      // Map unique networks to NetworkProvider models
                       final providerModels =
-                          availablePlans
+                          uniqueNetworkPlans.values
                               .map(
                                 (p) => NetworkProvider(
                                   id: p.id,
@@ -701,10 +718,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             ? dataVariations.first.fixedAmountsDescriptions
             : <String, dynamic>{};
 
-    // Get description for selected amount
+    // Get description for selected amount - try both formats (0 and 0.00)
     final amountKey = double.parse(selectedPlan).toStringAsFixed(0);
+    final amountKeyWithDecimals = double.parse(selectedPlan).toStringAsFixed(2);
+    final description =
+        descriptions[amountKey] ?? descriptions[amountKeyWithDecimals] ?? '';
     final planDescription =
-        descriptions[amountKey] ?? '₦${_amountController.text} Data';
+        description.isNotEmpty
+            ? description
+            : '₦${_amountController.text} Data';
 
     Navigator.push(
       context,
@@ -834,9 +856,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             ? dataVariations.first.fixedAmountsDescriptions
             : <String, dynamic>{};
 
+    // Get description for selected amount - try both formats (0 and 0.00)
     final amountKey = double.parse(selectedPlan).toStringAsFixed(0);
+    final amountKeyWithDecimals = double.parse(selectedPlan).toStringAsFixed(2);
+    final description =
+        descriptions[amountKey] ?? descriptions[amountKeyWithDecimals] ?? '';
     final planDescription =
-        descriptions[amountKey] ?? '₦${_amountController.text} Data';
+        description.isNotEmpty
+            ? description
+            : '₦${_amountController.text} Data';
 
     // Create receipt data while State is mounted
     final receiptData = [

@@ -106,6 +106,8 @@ class AboutUsPage extends ConsumerWidget {
     required VoidCallback onTap,
     required bool showDivider,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         InkWell(
@@ -118,8 +120,8 @@ class AboutUsPage extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF9CA3AF) : Colors.black,
                       fontFamily: 'SF Pro',
                       fontSize: 15,
                       fontWeight: FontWeight.w400,

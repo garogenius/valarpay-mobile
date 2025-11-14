@@ -20,6 +20,17 @@ class ProfileHeader extends ConsumerStatefulWidget {
 }
 
 class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
+  bool _loadingShown = false;
+
+  void _hideLoading() {
+    if (!_loadingShown) return;
+    _loadingShown = false;
+
+    if (mounted && Navigator.canPop(widget.context)) {
+      Navigator.of(widget.context, rootNavigator: true).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
@@ -110,57 +121,76 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                                           );
                                       if (picked != null) {
                                         // show loading
+                                        _loadingShown = true;
                                         showDialog(
                                           context: widget.context,
                                           barrierDismissible: false,
                                           builder:
-                                              (_) => const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
+                                              (_) => WillPopScope(
+                                                onWillPop: () async => false,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
                                               ),
                                         );
-                                        final ok = await ref
-                                            .read(
-                                              profileNotifierProvider.notifier,
-                                            )
-                                            .uploadProfileImage(
-                                              picked.path,
-                                              user?.fullname ?? '',
-                                            );
-                                        Navigator.of(
-                                          widget.context,
-                                        ).pop(); // dismiss loading
-                                        if (ok) {
-                                          final updated =
-                                              await ref
-                                                  .read(
-                                                    userNotifierProvider
-                                                        .notifier,
-                                                  )
-                                                  .refreshUserProfile();
-                                          if (updated != null) {
-                                            ref
-                                                .read(userProvider.notifier)
-                                                .setUser(updated);
-                                          }
-                                          AppMessenger.show(
-                                            widget.context,
-                                            message: 'Profile image updated',
-                                            type: MessageType.success,
-                                          );
+                                        try {
+                                          final ok = await ref
+                                              .read(
+                                                profileNotifierProvider
+                                                    .notifier,
+                                              )
+                                              .uploadProfileImage(
+                                                picked.path,
+                                                user?.fullname ?? '',
+                                              );
+                                          _hideLoading();
 
-                                          if (widget.onEditTap != null)
-                                            widget.onEditTap!();
-                                        } else {
+                                          if (!mounted) return;
+
+                                          if (ok) {
+                                            final updated =
+                                                await ref
+                                                    .read(
+                                                      userNotifierProvider
+                                                          .notifier,
+                                                    )
+                                                    .refreshUserProfile();
+                                            if (updated != null) {
+                                              ref
+                                                  .read(userProvider.notifier)
+                                                  .setUser(updated);
+                                            }
+                                            AppMessenger.show(
+                                              widget.context,
+                                              message: 'Profile image updated',
+                                              type: MessageType.success,
+                                            );
+
+                                            if (widget.onEditTap != null)
+                                              widget.onEditTap!();
+                                          } else {
+                                            AppMessenger.show(
+                                              widget.context,
+                                              message:
+                                                  ref
+                                                      .read(
+                                                        profileNotifierProvider,
+                                                      )
+                                                      .message ??
+                                                  'Failed to update profile',
+                                              type: MessageType.error,
+                                            );
+                                          }
+                                        } catch (e) {
+                                          _hideLoading();
+
+                                          if (!mounted) return;
+
                                           AppMessenger.show(
                                             widget.context,
                                             message:
-                                                ref
-                                                    .read(
-                                                      profileNotifierProvider,
-                                                    )
-                                                    .message ??
-                                                'Failed to update profile',
+                                                'Error updating profile: $e',
                                             type: MessageType.error,
                                           );
                                         }
@@ -178,57 +208,76 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                                             imageQuality: 80,
                                           );
                                       if (picked != null) {
+                                        _loadingShown = true;
                                         showDialog(
                                           context: widget.context,
                                           barrierDismissible: false,
                                           builder:
-                                              (_) => const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
+                                              (_) => WillPopScope(
+                                                onWillPop: () async => false,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
                                               ),
                                         );
-                                        final ok = await ref
-                                            .read(
-                                              profileNotifierProvider.notifier,
-                                            )
-                                            .uploadProfileImage(
-                                              picked.path,
-                                              user?.fullname ?? '',
-                                            );
-                                        Navigator.of(
-                                          widget.context,
-                                        ).pop(); // dismiss loading
-                                        if (ok) {
-                                          final updated =
-                                              await ref
-                                                  .read(
-                                                    userNotifierProvider
-                                                        .notifier,
-                                                  )
-                                                  .refreshUserProfile();
-                                          if (updated != null) {
-                                            ref
-                                                .read(userProvider.notifier)
-                                                .setUser(updated);
-                                          }
-                                          AppMessenger.show(
-                                            widget.context,
-                                            message: 'Profile image updated',
-                                            type: MessageType.success,
-                                          );
+                                        try {
+                                          final ok = await ref
+                                              .read(
+                                                profileNotifierProvider
+                                                    .notifier,
+                                              )
+                                              .uploadProfileImage(
+                                                picked.path,
+                                                user?.fullname ?? '',
+                                              );
+                                          _hideLoading();
 
-                                          if (widget.onEditTap != null)
-                                            widget.onEditTap!();
-                                        } else {
+                                          if (!mounted) return;
+
+                                          if (ok) {
+                                            final updated =
+                                                await ref
+                                                    .read(
+                                                      userNotifierProvider
+                                                          .notifier,
+                                                    )
+                                                    .refreshUserProfile();
+                                            if (updated != null) {
+                                              ref
+                                                  .read(userProvider.notifier)
+                                                  .setUser(updated);
+                                            }
+                                            AppMessenger.show(
+                                              widget.context,
+                                              message: 'Profile image updated',
+                                              type: MessageType.success,
+                                            );
+
+                                            if (widget.onEditTap != null)
+                                              widget.onEditTap!();
+                                          } else {
+                                            AppMessenger.show(
+                                              widget.context,
+                                              message:
+                                                  ref
+                                                      .read(
+                                                        profileNotifierProvider,
+                                                      )
+                                                      .message ??
+                                                  'Failed to update profile',
+                                              type: MessageType.error,
+                                            );
+                                          }
+                                        } catch (e) {
+                                          _hideLoading();
+
+                                          if (!mounted) return;
+
                                           AppMessenger.show(
                                             widget.context,
                                             message:
-                                                ref
-                                                    .read(
-                                                      profileNotifierProvider,
-                                                    )
-                                                    .message ??
-                                                'Failed to update profile',
+                                                'Error updating profile: $e',
                                             type: MessageType.error,
                                           );
                                         }

@@ -33,32 +33,26 @@ class SettingsListTile extends StatelessWidget {
             color: appTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(
-            icon,
-            color: appTheme.primaryColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: appTheme.primaryColor, size: 20),
         ),
         title: Text(
           title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
         ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              )
-            : null,
-        trailing: trailing ??
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey,
-            ),
+        subtitle:
+            subtitle != null
+                ? Text(
+                  subtitle!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                )
+                : null,
+        trailing:
+            trailing ??
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );
@@ -97,26 +91,23 @@ class SettingsToggleTile extends StatelessWidget {
             color: appTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(
-            icon,
-            color: appTheme.primaryColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: appTheme.primaryColor, size: 20),
         ),
         title: Text(
           title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
         ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              )
-            : null,
+        subtitle:
+            subtitle != null
+                ? Text(
+                  subtitle!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                )
+                : null,
         trailing: Switch(
           value: value,
           onChanged: onChanged,
@@ -159,14 +150,16 @@ class _SecurityQuestionDropdownState extends State<SecurityQuestionDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[400],
-              ),
+            color: isDark ? Colors.grey[400] : Colors.black,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -182,16 +175,19 @@ class _SecurityQuestionDropdownState extends State<SecurityQuestionDropdown> {
               value: widget.value,
               hint: Text(
                 'Select a question',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(
+                  color: isDark ? Colors.grey[600] : Colors.black,
+                ),
               ),
               isExpanded: true,
               onChanged: widget.onChanged,
-              items: widget.options.map((String option) {
-                return DropdownMenuItem<String>(
-                  value: option,
-                  child: Text(option),
-                );
-              }).toList(),
+              items:
+                  widget.options.map((String option) {
+                    return DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(option),
+                    );
+                  }).toList(),
             ),
           ),
         ),
@@ -199,9 +195,10 @@ class _SecurityQuestionDropdownState extends State<SecurityQuestionDropdown> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: widget.value != null
-                ? Theme.of(context).cardColor
-                : Theme.of(context).cardColor.withOpacity(0.5),
+            color:
+                widget.value != null
+                    ? Theme.of(context).cardColor
+                    : Theme.of(context).cardColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.withOpacity(0.3)),
           ),
@@ -210,12 +207,17 @@ class _SecurityQuestionDropdownState extends State<SecurityQuestionDropdown> {
             enabled: widget.value != null,
             onChanged: widget.onAnswerChanged,
             decoration: InputDecoration(
-              hintText: widget.value != null
-                  ? 'Your Answer'
-                  : 'Select a question first',
+              hintText:
+                  widget.value != null
+                      ? 'Your Answer'
+                      : 'Select a question first',
               hintStyle: TextStyle(
                 color:
-                    widget.value != null ? Colors.grey[600] : Colors.grey[400],
+                    isDark
+                        ? (widget.value != null
+                            ? Colors.grey[600]
+                            : Colors.grey[400])
+                        : Colors.black,
               ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
@@ -235,10 +237,7 @@ class CloseAccountDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Theme.of(context).cardColor,
-      title: const Text(
-        'Close Account?',
-        style: TextStyle(color: Colors.red),
-      ),
+      title: const Text('Close Account?', style: TextStyle(color: Colors.red)),
       content: const Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,35 +311,41 @@ class _HelpUsImproveDialogState extends State<HelpUsImproveDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-              'Help us improve our service by telling us why you\'re leaving'),
+            'Help us improve our service by telling us why you\'re leaving',
+          ),
           const SizedBox(height: 16),
           const Text('Select a Reason'),
           const SizedBox(height: 12),
-          ...reasons.map((reason) => GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedReason = reason;
-                  });
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: selectedReason == reason
-                                ? appTheme.primaryColor
-                                : Colors.grey,
-                            width: 2,
-                          ),
+          ...reasons.map(
+            (reason) => GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedReason = reason;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color:
+                              selectedReason == reason
+                                  ? appTheme.primaryColor
+                                  : Colors.grey,
+                          width: 2,
                         ),
-                        child: selectedReason == reason
-                            ? Center(
+                      ),
+                      child:
+                          selectedReason == reason
+                              ? Center(
                                 child: Container(
                                   width: 10,
                                   height: 10,
@@ -350,15 +355,14 @@ class _HelpUsImproveDialogState extends State<HelpUsImproveDialog> {
                                   ),
                                 ),
                               )
-                            : null,
-                      ),
-                      Expanded(
-                        child: Text(reason),
-                      ),
-                    ],
-                  ),
+                              : null,
+                    ),
+                    Expanded(child: Text(reason)),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
       actions: [
@@ -367,12 +371,13 @@ class _HelpUsImproveDialogState extends State<HelpUsImproveDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: selectedReason != null
-              ? () {
-                  Navigator.of(context).pop();
-                  _showTransactionPinDialog(context);
-                }
-              : null,
+          onPressed:
+              selectedReason != null
+                  ? () {
+                    Navigator.of(context).pop();
+                    _showTransactionPinDialog(context);
+                  }
+                  : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: appTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -420,10 +425,7 @@ class _TransactionPinDialogState extends State<TransactionPinDialog> {
                 const Expanded(
                   child: Text(
                     'Enter Transaction Pin',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -500,10 +502,7 @@ class _TransactionPinDialogState extends State<TransactionPinDialog> {
         child: Center(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
           ),
         ),
       ),
@@ -523,30 +522,31 @@ class _TransactionPinDialogState extends State<TransactionPinDialog> {
   void _showConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        title: const Text('Are You Sure?'),
-        content: const Text(
-          'Deleting your account will permanently remove all your data. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showAccountDeletedDialog(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: appTheme.primaryColor,
-              foregroundColor: Colors.white,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: const Text('Are You Sure?'),
+            content: const Text(
+              'Deleting your account will permanently remove all your data. This action cannot be undone.',
             ),
-            child: const Text('Yes, Continue'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showAccountDeletedDialog(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: appTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Yes, Continue'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -554,47 +554,41 @@ class _TransactionPinDialogState extends State<TransactionPinDialog> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Account Deleted',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Your account has been successfully deleted. Thank you for using our service.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Navigate to login or onboarding
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: appTheme.primaryColor,
-                  foregroundColor: Colors.white,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Account Deleted',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
-                child: const Text('Done'),
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Your account has been successfully deleted. Thank you for using our service.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Navigate to login or onboarding
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: appTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
@@ -659,10 +653,7 @@ class _QuestionSelectionBottomSheetState
                 const Expanded(
                   child: Text(
                     'Select Question',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -685,8 +676,10 @@ class _QuestionSelectionBottomSheetState
                     Navigator.of(context).pop();
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -695,28 +688,28 @@ class _QuestionSelectionBottomSheetState
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: selectedOption == option
-                                  ? appTheme.primaryColor
-                                  : Colors.grey,
+                              color:
+                                  selectedOption == option
+                                      ? appTheme.primaryColor
+                                      : Colors.grey,
                               width: 2,
                             ),
                           ),
-                          child: selectedOption == option
-                              ? Center(
-                                  child: Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: appTheme.primaryColor,
+                          child:
+                              selectedOption == option
+                                  ? Center(
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: appTheme.primaryColor,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : null,
+                                  )
+                                  : null,
                         ),
-                        Expanded(
-                          child: Text(option),
-                        ),
+                        Expanded(child: Text(option)),
                       ],
                     ),
                   ),
