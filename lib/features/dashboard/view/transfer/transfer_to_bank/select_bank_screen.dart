@@ -14,6 +14,7 @@ class SelectBankScreen extends ConsumerStatefulWidget {
 
 class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
   final TextEditingController searchController = TextEditingController();
+  List<Bank> sortedBanks=[];
   List<Bank> filteredBanks = [];
   List<Bank> allBanks = [];
 
@@ -21,7 +22,7 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkIfBanksAvailable();
+      _fetchBanks();
     });
     searchController.addListener(_filterBanks);
   }
@@ -30,18 +31,6 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
   void dispose() {
     searchController.dispose();
     super.dispose();
-  }
-
-  _checkIfBanksAvailable() {
-    final allBanksState = ref.read(banksNotifierProvider);
-    if (!allBanksState.isDataAvailable) {
-      ref.read(banksNotifierProvider.notifier).fetchBanks(currency: 'NGN');
-    } else {
-      setState(() {
-        allBanks = allBanksState.singleData!.banks;
-        filteredBanks = allBanks;
-      });
-    }
   }
 
   void _filterBanks() {
@@ -54,7 +43,7 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
     });
   }
 
-  void _retry() {
+  void _fetchBanks() {
     ref.read(banksNotifierProvider.notifier).fetchBanks(currency: 'NGN');
   }
 
@@ -65,14 +54,13 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
     ref.listen(banksNotifierProvider, (previous, next) {
       if (next.isDataAvailable && next.data != null) {
         setState(() {
-          allBanks = next.singleData!.banks;
-          filteredBanks = allBanks;
+          filteredBanks = next.singleData!.data;
+          sortedBanks = List.from(filteredBanks)..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
         });
       }
     });
-
-    final sortedBanks = List.from(filteredBanks)
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return Scaffold(
       appBar: AppBar(
@@ -132,11 +120,14 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            FullWidthButton(text: 'Retry', onPressed: _retry),
+                            FullWidthButton(
+                              text: 'Retry',
+                              onPressed: _fetchBanks,
+                            ),
                           ],
                         ),
                       )
-                      : filteredBanks.isEmpty
+                      : filteredBanks.isEmpty && allBanks.isEmpty
                       ? const Center(
                         child: Text(
                           'No banks found',

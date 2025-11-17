@@ -553,7 +553,6 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
             FullWidthButton(
               text: 'Transfer',
               isEnabled: _amount >= 100 && _transferFee != null,
-              isLoading: transferState.isInitialLoading,
               onPressed: _handleOnPressed,
             ),
           ],

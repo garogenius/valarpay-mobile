@@ -15,16 +15,18 @@ class TransferRepository {
       );
       return BanksResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Failed to get banks');
+      throw Exception(e.response?.data!['message'] ?? 'Failed to get banks');
     }
   }
 
-  Future<BanksResponse> getMatchedBanks({required String accountNumber}) async {
+  Future<BankMatchResponse> getMatchedBanks({
+    required String accountNumber,
+  }) async {
     try {
       final response = await apiClient.get(
         '${ApiEndpoints.getMatchedBanks}/$accountNumber',
       );
-      return BanksResponse.fromJson(response.data);
+      return BankMatchResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to match banks');
     }

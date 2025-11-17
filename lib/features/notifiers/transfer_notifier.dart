@@ -36,6 +36,15 @@ class BanksNotifier extends StateNotifier<DataState<BanksResponse>> {
     }
   }
 
+  void reset() => state = DataState<BanksResponse>.initial();
+}
+
+class BankMatchNotifier extends StateNotifier<DataState<BankMatchResponse>> {
+  final TransferRepository _repository;
+
+  BankMatchNotifier(this._repository)
+    : super(DataState<BankMatchResponse>.initial());
+
   Future<void> fetchMatchedBanks({required String accountNumber}) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
@@ -58,9 +67,8 @@ class BanksNotifier extends StateNotifier<DataState<BanksResponse>> {
     }
   }
 
-  void reset() => state = DataState<BanksResponse>.initial();
+  void reset() => state = DataState<BankMatchResponse>.initial();
 }
-
 
 /// Transfer Fee Notifier
 class TransferFeeNotifier extends StateNotifier<DataState<TransferFee>> {
@@ -312,6 +320,11 @@ class QRCodeDataNotifier extends StateNotifier<DataState<QRCodeData>> {
 final banksNotifierProvider =
     StateNotifierProvider<BanksNotifier, DataState<BanksResponse>>(
       (ref) => BanksNotifier(ref.read(transferRepositoryProvider)),
+    );
+
+final bankMatchNotifierProvider =
+    StateNotifierProvider<BankMatchNotifier, DataState<BankMatchResponse>>(
+      (ref) => BankMatchNotifier(ref.read(transferRepositoryProvider)),
     );
 
 final transferFeeNotifierProvider =

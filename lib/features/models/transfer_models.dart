@@ -1,3 +1,25 @@
+class BanksResponse {
+  final List<Bank> data;
+  final String message;
+  final int statusCode;
+
+  BanksResponse({
+    required this.data,
+    required this.message,
+    required this.statusCode,
+  });
+
+  factory BanksResponse.fromJson(Map<String, dynamic> json) => BanksResponse(
+    data:
+        (json['data'] as List<dynamic>?)
+            ?.map((bank) => Bank.fromJson(bank))
+            .toList() ??
+        [],
+    message: json['message'] ?? 'Success',
+    statusCode: json['statusCode'] ?? 200,
+  );
+}
+
 // Bank Models
 class Bank {
   final String name;
@@ -5,7 +27,6 @@ class Bank {
   final String routingKey;
   final String? logoImage;
   final String bankCode;
-  final String categoryId;
   final String? nubanCode;
 
   Bank({
@@ -14,7 +35,6 @@ class Bank {
     required this.routingKey,
     this.logoImage,
     required this.bankCode,
-    required this.categoryId,
     this.nubanCode,
   });
 
@@ -24,7 +44,6 @@ class Bank {
     routingKey: json['routingKey'] ?? '',
     logoImage: json['logoImage'],
     bankCode: json['bankCode'] ?? '',
-    categoryId: json['categoryId'] ?? '',
     nubanCode: json['nubanCode'],
   );
 
@@ -34,7 +53,6 @@ class Bank {
     'routingKey': routingKey,
     if (logoImage != null) 'logoImage': logoImage,
     'bankCode': bankCode,
-    'categoryId': categoryId,
     if (nubanCode != null) 'nubanCode': nubanCode,
   };
 
@@ -42,32 +60,33 @@ class Bank {
   String get displayName => name;
 }
 
-class BanksResponse {
+class BankMatchResponse {
   final List<Bank> banks;
   final AccountDetails? account;
   final String message;
   final int statusCode;
 
-  BanksResponse({
+  BankMatchResponse({
     required this.banks,
     this.account,
     required this.message,
     required this.statusCode,
   });
 
-  factory BanksResponse.fromJson(Map<String, dynamic> json) => BanksResponse(
-    banks:
-        (json['data'] as List<dynamic>?)
-            ?.map((bank) => Bank.fromJson(bank))
-            .toList() ??
-        [],
-    account:
-        json['account'] != null
-            ? AccountDetails.fromJson(json['account'])
-            : null,
-    message: json['message'] ?? 'Success',
-    statusCode: json['statusCode'] ?? 200,
-  );
+  factory BankMatchResponse.fromJson(Map<String, dynamic> json) =>
+      BankMatchResponse(
+        banks:
+            (json['data'] as List<dynamic>?)
+                ?.map((bank) => Bank.fromJson(bank))
+                .toList() ??
+            [],
+        account:
+            json['account'] != null
+                ? AccountDetails.fromJson(json['account'])
+                : null,
+        message: json['message'] ?? 'Success',
+        statusCode: json['statusCode'] ?? 200,
+      );
 }
 
 // Transfer Fee Models
