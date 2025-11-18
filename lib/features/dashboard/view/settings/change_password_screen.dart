@@ -33,7 +33,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   }
 
   bool _isButtonActive() {
-    bool isActive = _oldPasswordController.text.isNotEmpty &&
+    bool isActive =
+        _oldPasswordController.text.isNotEmpty &&
         _confirmPasswordController.text.isNotEmpty &&
         _newPasswordController.text.isNotEmpty;
     return isActive;
@@ -61,7 +62,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   void _changePassword() {
     if (_formKey.currentState!.validate()) {
-      ref.read(changePasswordNotifierProvider.notifier).changePassword(
+      ref
+          .read(changePasswordNotifierProvider.notifier)
+          .changePassword(
             oldPassword: _oldPasswordController.text,
             newPassword: _newPasswordController.text,
           );
@@ -99,10 +102,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         ),
         title: const Text(
           "Change Password",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       body: Padding(
@@ -112,11 +112,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Update your account password",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey,
+                  color:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey
+                          : Colors.black,
                 ),
               ),
               SizedBox(height: 24.h),
@@ -124,10 +127,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // Old Password Field
               const Text(
                 "Current Password",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 8.h),
               TextFormField(
@@ -136,10 +136,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 validator: _validatePassword,
                 decoration: InputDecoration(
                   hintText: 'Enter your current password',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureOldPassword
@@ -182,10 +179,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // New Password Field
               const Text(
                 "New Password",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 8.h),
               TextFormField(
@@ -194,10 +188,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 validator: _validatePassword,
                 decoration: InputDecoration(
                   hintText: 'Enter your new password',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureNewPassword
@@ -240,10 +231,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // Confirm Password Field
               const Text(
                 "Confirm New Password",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 8.h),
               TextFormField(
@@ -252,10 +240,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 validator: _validateConfirmPassword,
                 decoration: InputDecoration(
                   hintText: 'Confirm your new password',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword
