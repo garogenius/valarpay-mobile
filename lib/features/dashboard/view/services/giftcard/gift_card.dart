@@ -95,7 +95,14 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SavedBeneficiaryScreen(),
+                          builder:
+                              (context) => SavedBeneficiaryScreen(
+                                onSelectBeneficiary: (beneficiary) {
+                                  setState(() {
+                                    _codeOptional = beneficiary.cardNumber;
+                                  });
+                                },
+                              ),
                         ),
                       );
                     },

@@ -476,7 +476,22 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SavedBeneficiaryScreen(),
+                          builder:
+                              (context) => SavedBeneficiaryScreen(
+                                onSelectBeneficiary: (beneficiary) {
+                                  setState(() {
+                                    _meterNumberController.text =
+                                        beneficiary.meterNumber;
+                                  });
+                                  // Verify meter number
+                                  if (ref.read(
+                                        electricitySelectedMeterTypeProvider,
+                                      ) !=
+                                      null) {
+                                    _verifyMeterNumber();
+                                  }
+                                },
+                              ),
                         ),
                       );
                     },

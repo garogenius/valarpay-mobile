@@ -161,3 +161,43 @@ final giftCardSelectedAmountProvider = StateProvider<String>(
 final giftCardSelectedAmountValueProvider = StateProvider<double?>(
   (ref) => null,
 );
+
+class GiftcardBeneficiaryNotifier
+    extends StateNotifier<DataState<GiftcardBeneficiary>> {
+  final GiftCardRepository _repository;
+
+  GiftcardBeneficiaryNotifier(this._repository)
+    : super(DataState<GiftcardBeneficiary>.initial());
+
+  Future<void> getGiftcardBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.getGiftcardBeneficiaries();
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: res.data,
+        isDataAvailable: true,
+        message: res.message,
+      );
+      log(
+        '[GiftcardBeneficiaryNotifier] Loaded ${res.data.length} beneficiaries',
+      );
+    } catch (e, stack) {
+      log(
+        '[GiftcardBeneficiaryNotifier getGiftcardBeneficiaries Error] $e\n$stack',
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to load beneficiaries: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<GiftcardBeneficiary>.initial();
+}
+
+final giftcardBeneficiaryNotifierProvider = StateNotifierProvider<
+  GiftcardBeneficiaryNotifier,
+  DataState<GiftcardBeneficiary>
+>((ref) => GiftcardBeneficiaryNotifier(ref.read(giftCardRepositoryProvider)));

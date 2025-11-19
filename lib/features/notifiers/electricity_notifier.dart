@@ -128,6 +128,54 @@ class ElectricityPaymentNotifier
   void reset() => state = DataState<ElectricityPaymentResponse>.initial();
 }
 
+class ElectricityBeneficiaryNotifier
+    extends StateNotifier<DataState<ElectricityBeneficiary>> {
+  final ElectricityRepository _repository;
+
+  ElectricityBeneficiaryNotifier(this._repository)
+    : super(DataState<ElectricityBeneficiary>.initial());
+
+  Future<void> getElectricityBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final response = await _repository.getElectricityBeneficiaries(
+        userId: '',
+      );
+
+      final electricityBeneficiaries =
+          response.data.where((benef) {
+            final billType = benef.billType?.toLowerCase() ?? '';
+            final isAirtimeOrData =
+                billType.contains('airtime') || billType.contains('data');
+            final hasElectricityFields =
+                (benef.discoName != null && benef.discoName!.isNotEmpty) ||
+                (benef.meterNumber.isNotEmpty) ||
+                (benef.meterType != null && benef.meterType!.isNotEmpty);
+
+            return !isAirtimeOrData && hasElectricityFields;
+          }).toList();
+
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: electricityBeneficiaries,
+        isDataAvailable: electricityBeneficiaries.isNotEmpty,
+        message: electricityBeneficiaries.isEmpty ? null : response.message,
+      );
+    } catch (e, stack) {
+      log(
+        '[ElectricityBeneficiaryNotifier getElectricityBeneficiaries] $e\n$stack',
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to get electricity beneficiaries: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<ElectricityBeneficiary>.initial();
+}
+
 // Providers
 final electricityRepositoryProvider = Provider(
   (ref) => ElectricityRepository(ref.read(apiClientProvider)),
@@ -149,6 +197,14 @@ final electricityPaymentNotifierProvider = StateNotifierProvider<
   ElectricityPaymentNotifier,
   DataState<ElectricityPaymentResponse>
 >((ref) => ElectricityPaymentNotifier(ref.read(electricityRepositoryProvider)));
+
+final electricityBeneficiaryNotifierProvider = StateNotifierProvider<
+  ElectricityBeneficiaryNotifier,
+  DataState<ElectricityBeneficiary>
+>(
+  (ref) =>
+      ElectricityBeneficiaryNotifier(ref.read(electricityRepositoryProvider)),
+);
 
 // UI State Providers
 final electricitySelectedDiscoProvider = StateProvider<ElectricityPlan?>(

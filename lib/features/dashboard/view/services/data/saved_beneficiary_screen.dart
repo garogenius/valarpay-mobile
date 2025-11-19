@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
-import 'package:valarpay/features/models/cable_models.dart';
-import 'package:valarpay/features/notifiers/cable_notifier.dart';
+import 'package:valarpay/core/utils/network_icon_helper.dart';
+import 'package:valarpay/features/models/data_models.dart';
+import 'package:valarpay/features/notifiers/data_notifier.dart';
 
-class CableTvSavedBeneficiaryScreen extends ConsumerStatefulWidget {
-  final ValueChanged<CableBeneficiary>? onSelectBeneficiary;
+class DataSavedBeneficiaryScreen extends ConsumerStatefulWidget {
+  final ValueChanged<DataBeneficiary>? onSelectBeneficiary;
 
-  const CableTvSavedBeneficiaryScreen({super.key, this.onSelectBeneficiary});
+  const DataSavedBeneficiaryScreen({super.key, this.onSelectBeneficiary});
 
   @override
-  ConsumerState<CableTvSavedBeneficiaryScreen> createState() =>
-      _CableTvSavedBeneficiaryScreenState();
+  ConsumerState<DataSavedBeneficiaryScreen> createState() =>
+      _DataSavedBeneficiaryScreenState();
 }
 
-class _CableTvSavedBeneficiaryScreenState
-    extends ConsumerState<CableTvSavedBeneficiaryScreen> {
+class _DataSavedBeneficiaryScreenState
+    extends ConsumerState<DataSavedBeneficiaryScreen> {
   String _searchQuery = '';
 
   @override
@@ -23,11 +24,11 @@ class _CableTvSavedBeneficiaryScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Reset and fetch fresh data
-      ref.read(cableBeneficiaryNotifierProvider.notifier).reset();
+      ref.read(dataBeneficiaryNotifierProvider.notifier).reset();
       Future.delayed(const Duration(milliseconds: 100), () {
         ref
-            .read(cableBeneficiaryNotifierProvider.notifier)
-            .getCableBeneficiaries();
+            .read(dataBeneficiaryNotifierProvider.notifier)
+            .getDataBeneficiaries();
       });
     });
   }
@@ -35,7 +36,7 @@ class _CableTvSavedBeneficiaryScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final state = ref.watch(cableBeneficiaryNotifierProvider);
+    final state = ref.watch(dataBeneficiaryNotifierProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
@@ -87,12 +88,12 @@ class _CableTvSavedBeneficiaryScreenState
                     ElevatedButton(
                       onPressed: () {
                         ref
-                            .read(cableBeneficiaryNotifierProvider.notifier)
+                            .read(dataBeneficiaryNotifierProvider.notifier)
                             .reset();
                         Future.delayed(const Duration(milliseconds: 100), () {
                           ref
-                              .read(cableBeneficiaryNotifierProvider.notifier)
-                              .getCableBeneficiaries();
+                              .read(dataBeneficiaryNotifierProvider.notifier)
+                              .getDataBeneficiaries();
                         });
                       },
                       child: const Text('Retry'),
@@ -114,7 +115,7 @@ class _CableTvSavedBeneficiaryScreenState
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: 'Search by smart card number',
+                        hintText: 'Search by phone number',
                         hintStyle: TextStyle(
                           color: isDark ? Colors.grey[600] : Colors.grey[400],
                         ),
@@ -137,18 +138,15 @@ class _CableTvSavedBeneficiaryScreenState
   }
 
   Widget _buildBeneficiariesList(bool isDark) {
-    final state = ref.watch(cableBeneficiaryNotifierProvider);
+    final state = ref.watch(dataBeneficiaryNotifierProvider);
 
     // Filter beneficiaries by search query
     final filtered =
         state.data!
             .where(
               (b) =>
-                  b.smartCardNumber.contains(_searchQuery) ||
-                  (b.providerName?.toLowerCase() ?? '').contains(
-                    _searchQuery.toLowerCase(),
-                  ) ||
-                  (b.customerName?.toLowerCase() ?? '').contains(
+                  b.phoneNumber.contains(_searchQuery) ||
+                  (b.network?.toLowerCase() ?? '').contains(
                     _searchQuery.toLowerCase(),
                   ),
             )
@@ -175,7 +173,7 @@ class _CableTvSavedBeneficiaryScreenState
 
   Widget _buildBeneficiaryTile(
     BuildContext context,
-    CableBeneficiary beneficiary,
+    DataBeneficiary beneficiary,
     bool isDark,
   ) {
     return InkWell(
@@ -198,10 +196,16 @@ class _CableTvSavedBeneficiaryScreenState
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: appTheme.primaryColor.withOpacity(0.1),
+                color: NetworkIconHelper.getNetworkColor(
+                  beneficiary.network,
+                ).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.tv, color: Color(0xFFF76301), size: 20),
+              child: Icon(
+                NetworkIconHelper.getNetworkIcon(beneficiary.network),
+                color: NetworkIconHelper.getNetworkColor(beneficiary.network),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             // Details
@@ -210,7 +214,7 @@ class _CableTvSavedBeneficiaryScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    beneficiary.smartCardNumber,
+                    beneficiary.phoneNumber,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -218,17 +222,9 @@ class _CableTvSavedBeneficiaryScreenState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  if (beneficiary.providerName != null)
+                  if (beneficiary.network != null)
                     Text(
-                      beneficiary.providerName!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
-                  if (beneficiary.customerName != null)
-                    Text(
-                      beneficiary.customerName!,
+                      beneficiary.network ?? 'Unknown Network',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -261,7 +257,11 @@ class _CableTvSavedBeneficiaryScreenState
               color: appTheme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.tv, size: 60, color: Color(0xFFF76301)),
+            child: const Icon(
+              Icons.signal_cellular_4_bar,
+              size: 60,
+              color: Color(0xFFF76301),
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -274,7 +274,7 @@ class _CableTvSavedBeneficiaryScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Save smart card numbers to make cable TV payments faster',
+            'Save phone numbers to make data purchases faster',
             style: TextStyle(
               color: isDark ? Colors.white70 : Colors.grey[600],
               fontSize: 14,

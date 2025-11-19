@@ -136,3 +136,39 @@ final cableSelectedProviderProvider = StateProvider<CablePlanInfo?>(
   (ref) => null,
 );
 final cableSelectedPlanProvider = StateProvider<String?>((ref) => null);
+
+class CableBeneficiaryNotifier
+    extends StateNotifier<DataState<CableBeneficiary>> {
+  final CableRepository _repository;
+
+  CableBeneficiaryNotifier(this._repository)
+    : super(DataState<CableBeneficiary>.initial());
+
+  Future<void> getCableBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.getCableBeneficiaries();
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: res.data,
+        isDataAvailable: true,
+        message: res.message,
+      );
+      log('[CableBeneficiaryNotifier] Loaded ${res.data.length} beneficiaries');
+    } catch (e, stack) {
+      log('[CableBeneficiaryNotifier getCableBeneficiaries Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to load beneficiaries: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<CableBeneficiary>.initial();
+}
+
+final cableBeneficiaryNotifierProvider = StateNotifierProvider<
+  CableBeneficiaryNotifier,
+  DataState<CableBeneficiary>
+>((ref) => CableBeneficiaryNotifier(ref.read(cableRepositoryProvider)));

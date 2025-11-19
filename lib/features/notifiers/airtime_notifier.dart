@@ -240,3 +240,51 @@ final internationalPurchaseNotifierProvider = StateNotifierProvider<
   InternationalPurchaseNotifier,
   DataState<AirtimePurchaseResponse>
 >((ref) => InternationalPurchaseNotifier(ref.read(airtimeRepositoryProvider)));
+
+class AirtimeBeneficiaryNotifier
+    extends StateNotifier<DataState<AirtimeBeneficiary>> {
+  final AirtimeRepository _repository;
+
+  AirtimeBeneficiaryNotifier(this._repository)
+    : super(DataState<AirtimeBeneficiary>.initial());
+
+  Future<void> getAirtimeBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      // Get the actual userId from somewhere - for now using empty string
+      // The API endpoint probably doesn't need userId since it uses the auth token
+      final response = await _repository.getAirtimeBeneficiaries(userId: '');
+
+      log(
+        '[AirtimeBeneficiaryNotifier] Response data count: ${response.data.length}',
+      );
+      log('[AirtimeBeneficiaryNotifier] Response data: ${response.data}');
+      for (var i = 0; i < response.data.length; i++) {
+        log(
+          '[AirtimeBeneficiaryNotifier] Beneficiary $i: ${response.data[i].phoneNumber}',
+        );
+      }
+
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: response.data,
+        isDataAvailable: response.data.isNotEmpty,
+        message: response.message,
+      );
+    } catch (e, stack) {
+      log('[AirtimeBeneficiaryNotifier getAirtimeBeneficiaries] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to get airtime beneficiaries: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<AirtimeBeneficiary>.initial();
+}
+
+final airtimeBeneficiaryNotifierProvider = StateNotifierProvider<
+  AirtimeBeneficiaryNotifier,
+  DataState<AirtimeBeneficiary>
+>((ref) => AirtimeBeneficiaryNotifier(ref.read(airtimeRepositoryProvider)));

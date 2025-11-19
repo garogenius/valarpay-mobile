@@ -61,7 +61,8 @@ class ElectricityPlanResponse {
     return ElectricityPlanResponse(
       message: json['message'] ?? '',
       statusCode: json['statusCode'] ?? 0,
-      data: (json['data'] as List?)
+      data:
+          (json['data'] as List?)
               ?.map((item) => ElectricityPlan.fromJson(item))
               .toList() ??
           [],
@@ -200,7 +201,8 @@ class ElectricityBillInfoResponse {
     return ElectricityBillInfoResponse(
       message: json['message'] ?? '',
       statusCode: json['statusCode'] ?? 0,
-      data: (json['data'] as List?)
+      data:
+          (json['data'] as List?)
               ?.map((item) => ElectricityBillInfo.fromJson(item))
               .toList() ??
           [],
@@ -251,9 +253,10 @@ class VerifyMeterNumberResponse {
     return VerifyMeterNumberResponse(
       message: json['message'] ?? '',
       statusCode: json['statusCode'] ?? 0,
-      data: json['data'] != null
-          ? VerifyMeterNumberData.fromJson(json['data'])
-          : null,
+      data:
+          json['data'] != null
+              ? VerifyMeterNumberData.fromJson(json['data'])
+              : null,
     );
   }
 
@@ -394,19 +397,116 @@ class ElectricityPaymentResponse {
 class ElectricityPaymentData {
   final String rechargeToken;
 
-  ElectricityPaymentData({
-    required this.rechargeToken,
-  });
+  ElectricityPaymentData({required this.rechargeToken});
 
   factory ElectricityPaymentData.fromJson(Map<String, dynamic> json) {
-    return ElectricityPaymentData(
-      rechargeToken: json['recharge_token'] ?? '',
-    );
+    return ElectricityPaymentData(rechargeToken: json['recharge_token'] ?? '');
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'recharge_token': rechargeToken,
-    };
+    return {'recharge_token': rechargeToken};
+  }
+}
+
+// Electricity Beneficiary Model
+class ElectricityBeneficiary {
+  final String id;
+  final String meterNumber;
+  final String? discoName;
+  final String? meterType;
+  final String? customerName;
+  final String? userId;
+  final String? type;
+  final String? billType;
+  final String? currency;
+  final String? createdAt;
+  final String? updatedAt;
+  final String? network;
+  final String? operatorId;
+
+  ElectricityBeneficiary({
+    required this.id,
+    required this.meterNumber,
+    this.discoName,
+    this.meterType,
+    this.customerName,
+    this.userId,
+    this.type,
+    this.billType,
+    this.currency,
+    this.createdAt,
+    this.updatedAt,
+    this.network,
+    this.operatorId,
+  });
+
+  factory ElectricityBeneficiary.fromJson(Map<String, dynamic> json) =>
+      ElectricityBeneficiary(
+        id: json['id'] ?? '',
+        meterNumber:
+            json['meterNumber'] ??
+            json['meter_number'] ??
+            json['billerNumber'] ??
+            '',
+        discoName: json['discoName'] ?? json['disco_name'],
+        meterType: json['meterType'] ?? json['meter_type'],
+        customerName: json['customerName'] ?? json['customer_name'],
+        userId: json['userId'] ?? json['user_id'],
+        type: json['type'],
+        billType: json['billType'] ?? json['bill_type'],
+        currency: json['currency'],
+        createdAt: json['createdAt'],
+        updatedAt: json['updatedAt'],
+        network: json['network'],
+        operatorId:
+            json['operatorId']?.toString() ?? json['operator_id']?.toString(),
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'meterNumber': meterNumber,
+    'discoName': discoName,
+    'meterType': meterType,
+    'customerName': customerName,
+    'userId': userId,
+    'type': type,
+    'billType': billType,
+    'currency': currency,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+    'network': network,
+    'operatorId': operatorId,
+  };
+}
+
+// Electricity Beneficiaries Response
+class ElectricityBeneficiariesResponse {
+  final List<ElectricityBeneficiary> data;
+  final String message;
+  final int statusCode;
+  final bool success;
+
+  ElectricityBeneficiariesResponse({
+    required this.data,
+    required this.message,
+    required this.statusCode,
+    required this.success,
+  });
+
+  factory ElectricityBeneficiariesResponse.fromJson(Map<String, dynamic> json) {
+    final dataList = json['data'] as List? ?? [];
+    return ElectricityBeneficiariesResponse(
+      data:
+          dataList
+              .map(
+                (item) => ElectricityBeneficiary.fromJson(
+                  item as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
+      message: json['message'] ?? 'Success',
+      statusCode: json['statusCode'] ?? 200,
+      success: json['success'] ?? true,
+    );
   }
 }

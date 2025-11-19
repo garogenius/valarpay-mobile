@@ -23,6 +23,7 @@ import 'package:valarpay/features/dashboard/widgets/services_widgets/network_pro
 import 'package:valarpay/features/models/network_provider.dart';
 import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
+import 'package:valarpay/features/dashboard/view/services/data/saved_beneficiary_screen.dart';
 
 class DataScreen extends ConsumerStatefulWidget {
   const DataScreen({super.key});
@@ -38,6 +39,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   );
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
+  DataBeneficiary? _selectedBeneficiary;
 
   @override
   void dispose() {
@@ -107,7 +109,60 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             isBvnVerified
                 ? [
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => DataSavedBeneficiaryScreen(
+                                onSelectBeneficiary: (beneficiary) {
+                                  setState(() {
+                                    _selectedBeneficiary = beneficiary;
+                                    _phoneController.text =
+                                        beneficiary.phoneNumber;
+                                  });
+                                  // Auto-detect network and operator
+                                  if (beneficiary.network != null &&
+                                      beneficiary.operatorId != null) {
+                                    ref
+                                        .read(
+                                          dataSelectedNetworkProvider.notifier,
+                                        )
+                                        .state = beneficiary.network!;
+                                    ref
+                                        .read(
+                                          dataSelectedOperatorIdProvider
+                                              .notifier,
+                                        )
+                                        .state = beneficiary.operatorId!;
+                                    // Reset selected plan for new operator
+                                    ref
+                                        .read(dataSelectedPlanProvider.notifier)
+                                        .state = '';
+                                    // Fetch plans to populate network selector
+                                    ref
+                                        .read(
+                                          dataPlansNotifierProvider.notifier,
+                                        )
+                                        .getPlans(
+                                          phone: beneficiary.phoneNumber,
+                                          currency: 'NGN',
+                                        );
+                                    // Fetch variations for this operator
+                                    ref
+                                        .read(
+                                          dataVariationNotifierProvider
+                                              .notifier,
+                                        )
+                                        .getVariation(
+                                          operatorId: beneficiary.operatorId!,
+                                        );
+                                  }
+                                },
+                              ),
+                        ),
+                      );
+                    },
                     child: Text(
                       'Saved Beneficiary',
                       style: TextStyle(
@@ -601,6 +656,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             ? dataVariations.first.fixedAmounts
             : <double>[];
 
+    // Deduplicate amounts to avoid dropdown issues
+    final uniqueAmounts = <double>{...fixedAmounts}.toList();
+
     // Get descriptions if available
     final descriptions =
         dataVariations.isNotEmpty
@@ -611,7 +669,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (fixedAmounts.isEmpty) {
+    if (uniqueAmounts.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -662,7 +720,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                 color: isDark ? Colors.white : Colors.black,
               ),
               items:
-                  fixedAmounts.map((amount) {
+                  uniqueAmounts.map((amount) {
                     final amountKey = amount.toStringAsFixed(2);
                     final description = descriptions[amountKey] ?? '';
                     final displayText =
@@ -790,7 +848,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         operatorId: selectedOperatorId,
         phone: _phoneController.text,
         currency: 'NGN',
-        addBeneficiary: false,
+        addBeneficiary: _saveBeneficiary,
       );
 
       await ref.read(dataPurchaseNotifierProvider.notifier).purchase(request);

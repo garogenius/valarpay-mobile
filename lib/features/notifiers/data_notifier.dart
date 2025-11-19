@@ -138,6 +138,48 @@ class DataPurchaseNotifier
   void reset() => state = DataState<DataPurchaseResponse>.initial();
 }
 
+/// Provider: data beneficiaries
+class DataBeneficiaryNotifier
+    extends StateNotifier<DataState<DataBeneficiary>> {
+  final DataRepository _repository;
+
+  DataBeneficiaryNotifier(this._repository)
+    : super(DataState<DataBeneficiary>.initial());
+
+  Future<void> getDataBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final response = await _repository.getDataBeneficiaries(userId: '');
+
+      log(
+        '[DataBeneficiaryNotifier] Response data count: ${response.data.length}',
+      );
+      log('[DataBeneficiaryNotifier] Response data: ${response.data}');
+      for (var i = 0; i < response.data.length; i++) {
+        log(
+          '[DataBeneficiaryNotifier] Beneficiary $i: ${response.data[i].phoneNumber}',
+        );
+      }
+
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: response.data,
+        isDataAvailable: response.data.isNotEmpty,
+        message: response.message,
+      );
+    } catch (e, stack) {
+      log('[DataBeneficiaryNotifier getDataBeneficiaries] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Failed to get data beneficiaries: ${e.toString()}',
+      );
+    }
+  }
+
+  void reset() => state = DataState<DataBeneficiary>.initial();
+}
+
 // Riverpod providers
 final dataProvidersNotifierProvider =
     StateNotifierProvider<DataProvidersNotifier, DataState<NetworkProvider>>(
@@ -158,6 +200,11 @@ final dataPurchaseNotifierProvider = StateNotifierProvider<
   DataPurchaseNotifier,
   DataState<DataPurchaseResponse>
 >((ref) => DataPurchaseNotifier(ref.read(dataRepositoryProvider)));
+
+final dataBeneficiaryNotifierProvider =
+    StateNotifierProvider<DataBeneficiaryNotifier, DataState<DataBeneficiary>>(
+      (ref) => DataBeneficiaryNotifier(ref.read(dataRepositoryProvider)),
+    );
 
 /// UI StateProviders for data screen selections
 final dataSelectedNetworkProvider = StateProvider<String>((ref) => '');

@@ -289,3 +289,89 @@ class AirtimePurchaseResponse {
         success: json['success'] ?? true,
       );
 }
+
+// Airtime Beneficiary Model
+class AirtimeBeneficiary {
+  final String id;
+  final String phoneNumber;
+  final String? network;
+  final int? operatorId;
+  final String? userId;
+  final String? type;
+  final String? billType;
+  final String? currency;
+  final String? createdAt;
+  final String? updatedAt;
+
+  AirtimeBeneficiary({
+    required this.id,
+    required this.phoneNumber,
+    this.network,
+    this.operatorId,
+    this.userId,
+    this.type,
+    this.billType,
+    this.currency,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory AirtimeBeneficiary.fromJson(Map<String, dynamic> json) =>
+      AirtimeBeneficiary(
+        id: json['id'] ?? '',
+        phoneNumber:
+            json['billerNumber'] ?? json['phoneNumber'] ?? json['phone'] ?? '',
+        network: json['network'],
+        operatorId: json['operatorId'],
+        userId: json['userId'],
+        type: json['type'],
+        billType: json['billType'],
+        currency: json['currency'],
+        createdAt: json['createdAt'],
+        updatedAt: json['updatedAt'],
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'phoneNumber': phoneNumber,
+    'network': network,
+    'operatorId': operatorId,
+    'userId': userId,
+    'type': type,
+    'billType': billType,
+    'currency': currency,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+  };
+}
+
+// Airtime Beneficiaries Response
+class AirtimeBeneficiariesResponse {
+  final List<AirtimeBeneficiary> data;
+  final String message;
+  final int statusCode;
+  final bool success;
+
+  AirtimeBeneficiariesResponse({
+    required this.data,
+    required this.message,
+    required this.statusCode,
+    required this.success,
+  });
+
+  factory AirtimeBeneficiariesResponse.fromJson(Map<String, dynamic> json) {
+    final dataList = json['data'] as List? ?? [];
+    return AirtimeBeneficiariesResponse(
+      data:
+          dataList
+              .map(
+                (item) =>
+                    AirtimeBeneficiary.fromJson(item as Map<String, dynamic>),
+              )
+              .toList(),
+      message: json['message'] ?? 'Success',
+      statusCode: json['statusCode'] ?? 200,
+      success: json['success'] ?? true,
+    );
+  }
+}

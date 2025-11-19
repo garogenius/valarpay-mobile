@@ -8,10 +8,7 @@ import 'package:valarpay/features/notifiers/transaction_notifier.dart';
 class InternalRecentAndSavedBeneficiary extends ConsumerStatefulWidget {
   final ValueChanged<String>? onSelectAccount;
 
-  const InternalRecentAndSavedBeneficiary({
-    super.key,
-    this.onSelectAccount,
-  });
+  const InternalRecentAndSavedBeneficiary({super.key, this.onSelectAccount});
 
   @override
   ConsumerState<InternalRecentAndSavedBeneficiary> createState() =>
@@ -27,13 +24,15 @@ class _InternalRecentAndSavedBeneficiaryState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(beneficiaryNotifierProvider.notifier).getBeneficiaries(
-            category: 'TRANSFER',
-            transferType: 'intra',
-          );
-      ref
-          .read(transactionNotifierProvider.notifier)
-          .fetchTransactions(type: 'DEBIT', category: 'TRANSFER', limit: 100);
+      if (mounted) {
+        ref
+            .read(beneficiaryNotifierProvider.notifier)
+            .getBeneficiaries(category: 'TRANSFER', transferType: 'intra');
+        ref
+            .read(transactionNotifierProvider.notifier)
+            .fetchTransactions(type: 'DEBIT', category: 'TRANSFER', limit: 100)
+            .catchError((_) {});
+      }
     });
   }
 
@@ -42,10 +41,11 @@ class _InternalRecentAndSavedBeneficiaryState
 
     if (state.isInitialLoading) {
       return const Center(
-          child: Padding(
-        padding: EdgeInsets.only(top: 20),
-        child: CircularProgressIndicator(),
-      ));
+        child: Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (state.data!.isEmpty) {
@@ -61,27 +61,34 @@ class _InternalRecentAndSavedBeneficiaryState
     }
 
     // Filter + only valid ones
-    final filtered = state.data!
-        .where((b) =>
-            b.transferDetails?.beneficiaryAccountNumber != null &&
-            b.transferDetails!.beneficiaryName!
-                .toLowerCase()
-                .contains('valarpay'))
-        .where((b) {
-      final d = b.transferDetails!;
-      final name = d.beneficiaryName?.toLowerCase() ?? '';
-      final acct = d.beneficiaryAccountNumber?.toLowerCase() ?? '';
-      final bank = d.beneficiaryBankName?.toLowerCase() ?? '';
-      return name.contains(_searchQuery.toLowerCase()) ||
-          acct.contains(_searchQuery.toLowerCase()) ||
-          bank.contains(_searchQuery.toLowerCase());
-    }).toList();
+    final filtered =
+        state.data!
+            .where(
+              (b) =>
+                  b.transferDetails?.beneficiaryAccountNumber != null &&
+                  (b.transferDetails?.beneficiaryName?.toLowerCase().contains(
+                        'valarpay',
+                      ) ??
+                      false),
+            )
+            .where((b) {
+              final d = b.transferDetails;
+              if (d == null) return false;
+              final name = d.beneficiaryName?.toLowerCase() ?? '';
+              final acct = d.beneficiaryAccountNumber?.toLowerCase() ?? '';
+              final bank = d.beneficiaryBankName?.toLowerCase() ?? '';
+              return name.contains(_searchQuery.toLowerCase()) ||
+                  acct.contains(_searchQuery.toLowerCase()) ||
+                  bank.contains(_searchQuery.toLowerCase());
+            })
+            .toList();
 
     if (filtered.isEmpty) {
       return const Center(
         child: Padding(
-            padding: EdgeInsets.only(top: 20),
-            child: Text("No recent transfers found")),
+          padding: EdgeInsets.only(top: 20),
+          child: Text("No recent transfers found"),
+        ),
       );
     }
 
@@ -144,10 +151,8 @@ class _InternalRecentAndSavedBeneficiaryState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName??''}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                        ),
+                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName ?? ''}',
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ],
                   ),
@@ -165,36 +170,39 @@ class _InternalRecentAndSavedBeneficiaryState
 
     if (state.isInitialLoading) {
       return const Center(
-          child: Padding(
-              padding: EdgeInsets.only(top: 20),
-              child: CircularProgressIndicator()));
+        child: Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (state.data!.isEmpty) {
       return Center(
         child: Padding(
           padding: EdgeInsets.only(top: 20),
-          child: Text(
-            'No saved beneficiaries',
-          ),
+          child: Text('No saved beneficiaries'),
         ),
       );
     }
 
     // ✅ Filter by search
-    final beneficiaries = state.data!
-        .where((b) =>
-            b.accountName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            b.accountNumber
-                .toLowerCase()
-                .contains(_searchQuery.toLowerCase()) ||
-            b.bankName.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+    final beneficiaries =
+        state.data!
+            .where(
+              (b) =>
+                  b.accountName.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  b.accountNumber.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  b.bankName.toLowerCase().contains(_searchQuery.toLowerCase()),
+            )
+            .toList();
 
     if (beneficiaries.isEmpty) {
-      return const Center(
-        child: Text("No saved beneficiaries found"),
-      );
+      return const Center(child: Text("No saved beneficiaries found"));
     }
 
     return ListView.builder(
@@ -206,7 +214,7 @@ class _InternalRecentAndSavedBeneficiaryState
         return InkWell(
           onTap: () {
             final acct = b.accountNumber;
-            if (acct != null && acct.isNotEmpty) {
+            if (acct.isNotEmpty) {
               widget.onSelectAccount?.call(acct);
             }
           },
@@ -241,9 +249,7 @@ class _InternalRecentAndSavedBeneficiaryState
                       const SizedBox(height: 2),
                       Text(
                         '${b.accountNumber}   ${b.bankName}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                        ),
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ],
                   ),

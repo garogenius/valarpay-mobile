@@ -8,8 +8,9 @@ class ElectricityRepository {
 
   ElectricityRepository(this.apiClient);
 
-  Future<ElectricityPlanResponse> getElectricityPlans(
-      {required String currency}) async {
+  Future<ElectricityPlanResponse> getElectricityPlans({
+    required String currency,
+  }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getElectricityPlan,
@@ -18,12 +19,14 @@ class ElectricityRepository {
       return ElectricityPlanResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to get electricity plans');
+        e.response?.data['message'] ?? 'Failed to get electricity plans',
+      );
     }
   }
 
-  Future<ElectricityBillInfoResponse> getBillInfo(
-      {required String billerCode}) async {
+  Future<ElectricityBillInfoResponse> getBillInfo({
+    required String billerCode,
+  }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getElectricityBillInfo,
@@ -32,12 +35,14 @@ class ElectricityRepository {
       return ElectricityBillInfoResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to get bill information');
+        e.response?.data['message'] ?? 'Failed to get bill information',
+      );
     }
   }
 
   Future<VerifyMeterNumberResponse> verifyMeterNumber(
-      VerifyMeterNumberRequest request) async {
+    VerifyMeterNumberRequest request,
+  ) async {
     try {
       final response = await apiClient.post(
         ApiEndpoints.verifyMeterNumber,
@@ -50,7 +55,8 @@ class ElectricityRepository {
   }
 
   Future<ElectricityPaymentResponse> payElectricity(
-      ElectricityPaymentRequest request) async {
+    ElectricityPaymentRequest request,
+  ) async {
     try {
       final response = await apiClient.post(
         ApiEndpoints.payElectricity,
@@ -59,6 +65,25 @@ class ElectricityRepository {
       return ElectricityPaymentResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Payment failed');
+    }
+  }
+
+
+  Future<ElectricityBeneficiariesResponse> getElectricityBeneficiaries({
+    required String userId,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getUserBeneficiaries,
+        query: {'type': 'BILL'},
+      );
+
+      return ElectricityBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ??
+            'Failed to fetch electricity beneficiaries',
+      );
     }
   }
 }

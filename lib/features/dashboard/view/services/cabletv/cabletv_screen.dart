@@ -324,8 +324,14 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                         context,
                         MaterialPageRoute(
                           builder:
-                              (context) =>
-                                  const CableTvSavedBeneficiaryScreen(),
+                              (context) => CableTvSavedBeneficiaryScreen(
+                                onSelectBeneficiary: (beneficiary) {
+                                  setState(() {
+                                    _smartcardController.text =
+                                        beneficiary.smartCardNumber;
+                                  });
+                                },
+                              ),
                         ),
                       );
                     },

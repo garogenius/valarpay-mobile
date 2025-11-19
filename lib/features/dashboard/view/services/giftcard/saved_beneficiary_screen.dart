@@ -1,62 +1,56 @@
 import 'package:flutter/material.dart';
-import '/core/themes/color_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/themes/color_utils.dart';
+import 'package:valarpay/features/models/giftcard.dart';
+import 'package:valarpay/features/notifiers/giftcard_notifier.dart';
 
-class SavedBeneficiaryScreen extends StatelessWidget {
-  const SavedBeneficiaryScreen({super.key});
+class SavedBeneficiaryScreen extends ConsumerStatefulWidget {
+  final ValueChanged<GiftcardBeneficiary>? onSelectBeneficiary;
+
+  const SavedBeneficiaryScreen({super.key, this.onSelectBeneficiary});
+
+  @override
+  ConsumerState<SavedBeneficiaryScreen> createState() =>
+      _SavedBeneficiaryScreenState();
+}
+
+class _SavedBeneficiaryScreenState
+    extends ConsumerState<SavedBeneficiaryScreen> {
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Reset and fetch fresh data
+      ref.read(giftcardBeneficiaryNotifierProvider.notifier).reset();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        ref
+            .read(giftcardBeneficiaryNotifierProvider.notifier)
+            .getGiftcardBeneficiaries();
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final beneficiaries = [
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-      {
-        'name': 'Apple iTunes',
-        'country': 'United Kingdom',
-        'icon': Icons.apple,
-      },
-    ];
+    final state = ref.watch(giftcardBeneficiaryNotifierProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: isDark ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Saved Beneficiary',
+          'Saved Beneficiaries',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontSize: 18,
@@ -64,9 +58,203 @@ class SavedBeneficiaryScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: beneficiaries.isEmpty
-          ? _buildEmptyState(isDark)
-          : _buildBeneficiaryList(beneficiaries, isDark),
+      body:
+          state.isInitialLoading
+              ? const Center(child: CircularProgressIndicator())
+              : state.message != null && !state.isDataAvailable
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 60,
+                      color: isDark ? Colors.red[400] : Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        state.message ?? 'Failed to load beneficiaries',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref
+                            .read(giftcardBeneficiaryNotifierProvider.notifier)
+                            .reset();
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          ref
+                              .read(
+                                giftcardBeneficiaryNotifierProvider.notifier,
+                              )
+                              .getGiftcardBeneficiaries();
+                        });
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+              : state.data?.isEmpty ?? true
+              ? _buildEmptyState(isDark)
+              : Column(
+                children: [
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search by card or brand',
+                        hintStyle: TextStyle(
+                          color: isDark ? Colors.grey[600] : Colors.grey[400],
+                        ),
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor:
+                            isDark ? const Color(0xFF2B2725) : Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Beneficiaries List
+                  Expanded(child: _buildBeneficiariesList(isDark)),
+                ],
+              ),
+    );
+  }
+
+  Widget _buildBeneficiariesList(bool isDark) {
+    final state = ref.watch(giftcardBeneficiaryNotifierProvider);
+
+    // Filter beneficiaries by search query
+    final filtered =
+        state.data!
+            .where(
+              (b) =>
+                  b.cardNumber.contains(_searchQuery) ||
+                  (b.brandName?.toLowerCase() ?? '').contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  (b.productName?.toLowerCase() ?? '').contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  (b.recipientEmail?.toLowerCase() ?? '').contains(
+                    _searchQuery.toLowerCase(),
+                  ),
+            )
+            .toList();
+
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'No matching beneficiaries found',
+          style: TextStyle(color: isDark ? Colors.white70 : Colors.grey[600]),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final beneficiary = filtered[index];
+        return _buildBeneficiaryTile(context, beneficiary, isDark);
+      },
+    );
+  }
+
+  Widget _buildBeneficiaryTile(
+    BuildContext context,
+    GiftcardBeneficiary beneficiary,
+    bool isDark,
+  ) {
+    return InkWell(
+      onTap: () {
+        // Call the callback with the entire beneficiary object
+        widget.onSelectBeneficiary?.call(beneficiary);
+        Navigator.pop(context);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2B2725) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: appTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.card_giftcard,
+                color: Color(0xFFF76301),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    beneficiary.cardNumber,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (beneficiary.brandName != null)
+                    Text(
+                      beneficiary.brandName!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  if (beneficiary.productName != null)
+                    Text(
+                      beneficiary.productName!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Arrow icon
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -79,18 +267,18 @@ class SavedBeneficiaryScreen extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
+              color: appTheme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.person_add_disabled,
+              Icons.card_giftcard,
               size: 60,
-              color: AppColors.primaryColor,
+              color: Color(0xFFF76301),
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            'No beneficiaries added yet',
+            'No saved beneficiaries yet',
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
               fontSize: 18,
@@ -99,84 +287,15 @@ class SavedBeneficiaryScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add beneficiaries to make transactions faster',
+            'Save gift cards to make transactions faster',
             style: TextStyle(
-              color: Colors.grey[600],
+              color: isDark ? Colors.white70 : Colors.grey[600],
               fontSize: 14,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBeneficiaryList(
-      List<Map<String, dynamic>> beneficiaries, bool isDark) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: beneficiaries.length,
-      itemBuilder: (context, index) {
-        final beneficiary = beneficiaries[index];
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2B2725) : Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  beneficiary['icon'] as IconData,
-                  color: AppColors.primaryColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      beneficiary['name'] as String,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      beneficiary['country'] as String,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  // Show options menu
-                },
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

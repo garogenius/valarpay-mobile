@@ -22,6 +22,7 @@ import 'package:valarpay/features/notifiers/airtime_notifier.dart';
 import 'package:valarpay/features/providers/airtime_providers.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/models/airtime_models.dart';
+import 'saved_beneficiary_screen.dart';
 
 class AirtimeScreen extends ConsumerStatefulWidget {
   const AirtimeScreen({super.key});
@@ -35,6 +36,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
   final _amountController = TextEditingController();
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
+  AirtimeBeneficiary? _selectedBeneficiary;
 
   @override
   void dispose() {
@@ -52,6 +54,28 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     if (n.contains('glo')) return 'assets/images/glo.png';
     // fallback
     return 'assets/images/default.png';
+  }
+
+  String _formatTo11(String raw) {
+    if (raw.isEmpty) return raw;
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+
+    // If starts with country code '234', strip it
+    if (digits.startsWith('234')) {
+      final rest = digits.substring(3);
+      if (rest.length == 10) return '0$rest';
+      if (rest.length == 11 && rest.startsWith('0')) return rest;
+      // fallback to last 10 digits
+      if (rest.length > 10) return '0' + rest.substring(rest.length - 10);
+    }
+
+    // If starts with leading '+' (already stripped) or other
+    if (digits.length == 11 && digits.startsWith('0')) return digits;
+    if (digits.length == 10) return '0$digits';
+    if (digits.length > 11) return '0' + digits.substring(digits.length - 10);
+
+    // otherwise return as-is
+    return digits;
   }
 
   void _showLoading() {
@@ -82,6 +106,34 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
       _amountController.text.isNotEmpty &&
       network.isNotEmpty &&
       operatorId > 0;
+
+  void _detectNetworkProvider(String phoneNumber) {
+    final formatted = _formatTo11(phoneNumber);
+    final cleanedPhone = formatted.replaceAll(RegExp(r'\D'), '');
+
+    if (cleanedPhone.length >= 10) {
+      ref
+          .read(airtimePlanNotifierProvider.notifier)
+          .getPlan(phone: formatted, currency: 'NGN')
+          .then((_) {
+            final s = ref.read(airtimePlanNotifierProvider);
+            if (s.isDataAvailable && s.data!.isNotEmpty) {
+              final p = s.data!.first;
+              ref.read(airtimeSelectedNetworkProvider.notifier).state = p.name;
+              ref.read(airtimeSelectedOperatorIdProvider.notifier).state =
+                  p.operatorId;
+            }
+            if (mounted) {
+              setState(() {});
+            }
+          })
+          .catchError((e) {
+            if (mounted) {
+              setState(() {});
+            }
+          });
+    }
+  }
 
   Future<void> _handlePin({bool biometric = false}) async {
     final user = ref.read(userProvider);
@@ -450,7 +502,28 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
             isVerified
                 ? [
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => AirtimeSavedBeneficiaryScreen(
+                                onSelectBeneficiary: (beneficiary) {
+                                  setState(() {
+                                    _selectedBeneficiary = beneficiary;
+                                    _phoneController.text =
+                                        beneficiary.phoneNumber;
+                                  });
+
+                                  // Trigger network detection for saved beneficiary
+                                  _detectNetworkProvider(
+                                    beneficiary.phoneNumber,
+                                  );
+                                },
+                              ),
+                        ),
+                      );
+                    },
                     child: Text(
                       'Saved Beneficiary',
                       style: TextStyle(color: appTheme.primaryColor),
@@ -471,6 +544,80 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Display Selected Beneficiary if available
+                      if (_selectedBeneficiary != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: appTheme.primaryColor.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Network Icon
+                                Container(
+                                  width: 45,
+                                  height: 45,
+                                  decoration: BoxDecoration(
+                                    color: appTheme.primaryColor.withOpacity(
+                                      0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.phone,
+                                    color: Color(0xFFF76301),
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Beneficiary Details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _selectedBeneficiary!.phoneNumber,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      if (_selectedBeneficiary!.network != null)
+                                        Text(
+                                          _selectedBeneficiary!.network!
+                                              .toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                // Clear button
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedBeneficiary = null;
+                                      _phoneController.clear();
+                                    });
+                                  },
+                                  tooltip: 'Clear selection',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const Text(
                         'Phone Number',
                         style: TextStyle(
@@ -503,31 +650,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                         ),
                         onChanged: (v) {
                           setState(() {});
-                          if (v.replaceAll(RegExp(r'\D'), '').length >= 10) {
-                            ref
-                                .read(airtimePlanNotifierProvider.notifier)
-                                .getPlan(phone: v, currency: 'NGN')
-                                .then((_) {
-                                  final s = ref.read(
-                                    airtimePlanNotifierProvider,
-                                  );
-                                  if (s.isDataAvailable && s.data!.isNotEmpty) {
-                                    final p = s.data!.first;
-                                    ref
-                                        .read(
-                                          airtimeSelectedNetworkProvider
-                                              .notifier,
-                                        )
-                                        .state = p.name;
-                                    ref
-                                        .read(
-                                          airtimeSelectedOperatorIdProvider
-                                              .notifier,
-                                        )
-                                        .state = p.operatorId;
-                                  }
-                                });
-                          }
+                          _detectNetworkProvider(v);
                         },
                         isReadOnly: false,
                         showCountryLabel: true,
@@ -545,7 +668,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child:
-                            planState.isInitialLoading
+                            (planState.isInitialLoading && plan == null)
                                 ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
@@ -603,6 +726,53 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                         prefixText: '₦',
                         hintText: '500',
                         onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 16),
+                      // Quick Amount Selection
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            [100, 200, 300, 400, 500, 1000, 2000]
+                                .map(
+                                  (amount) => InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _amountController.text =
+                                            amount.toString();
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).cardColor.withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: appTheme.primaryColor
+                                              .withOpacity(0.3),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '₦$amount',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color:
+                                              _amountController.text ==
+                                                      amount.toString()
+                                                  ? appTheme.primaryColor
+                                                  : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                       ),
                       const SizedBox(height: 30),
                       FullWidthButton(
