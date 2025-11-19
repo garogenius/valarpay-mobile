@@ -435,6 +435,74 @@ class _InternalTransferAmountScreenState
 
               SizedBox(height: 25.h),
 
+              // Quick Amount Buttons
+              Text(
+                'Quick Amount',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                  fontSize: 15.sp,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    [
+                          1000,
+                          2000,
+                          3000,
+                          5000,
+                          10000,
+                          20000,
+                          50000,
+                          100000,
+                          1000000,
+                          5000000,
+                        ]
+                        .map(
+                          (amount) => InkWell(
+                            onTap:
+                                () => setState(() {
+                                  _amountController.text = amount.toString();
+                                }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).cardColor.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: appTheme.primaryColor.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                '₦${NumberFormat('#,###').format(amount)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color:
+                                      _amountController.text ==
+                                              amount.toString()
+                                          ? appTheme.primaryColor
+                                          : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+
+              SizedBox(height: 25.h),
+
               // Narration Field
               Text(
                 'Narration (Optional)',

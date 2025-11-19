@@ -37,7 +37,8 @@ class CableRepository {
   }
 
   Future<VerifyCableResponse> verifyCableNumber(
-      VerifyCableRequest request) async {
+    VerifyCableRequest request,
+  ) async {
     try {
       final response = await apiClient.post(
         ApiEndpoints.verifyCableNumber,
@@ -46,7 +47,8 @@ class CableRepository {
 
       if (response.data != null && response.data is Map<String, dynamic>) {
         return VerifyCableResponse.fromJson(
-            response.data as Map<String, dynamic>);
+          response.data as Map<String, dynamic>,
+        );
       }
 
       // If API returned non-map data, return response without typed data
@@ -75,6 +77,20 @@ class CableRepository {
       );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Payment failed');
+    }
+  }
+
+  Future<CableBeneficiariesResponse> getCableBeneficiaries() async {
+    try {
+      final response = await apiClient.get(
+        '/api/v1/user/get-beneficiaries',
+        query: {'transferType': 'TRANSFER', 'billType': 'cable'},
+      );
+      return CableBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to get beneficiaries',
+      );
     }
   }
 }

@@ -74,39 +74,44 @@ class AirtimeRepository {
   //     throw Exception(e.response?.data['message'] ?? 'Airtime purchase failed');
   //   }
   // }
-Future<AirtimePurchaseResponse> payAirtime(
-  AirtimePurchaseRequest request,
-) async {
-  try { http://api.valarpay.com/api/v1/health
+  Future<AirtimePurchaseResponse> payAirtime(
+    AirtimePurchaseRequest request,
+  ) async {
+    try {
+      final requestData = request.toJson();
+      print('[AirtimeRepository] Purchase request data: $requestData');
+      print(
+        '[AirtimeRepository] addBeneficiary value: ${request.addBeneficiary}',
+      );
 
-    final response = await apiClient.post(
-      ApiEndpoints.payAirtime,
-      data: request.toJson(),
-    );
-    final data = response.data;
-    return AirtimePurchaseResponse.fromJson(data);
-  } on DioException catch (e) {
-    final message = (e.response?.data?['message'] ??
-            e.message ??
-            'Airtime purchase failed')
-        .toString()
-        .replaceAll('Exception: ', '')
-        .trim();
+      final response = await apiClient.post(
+        ApiEndpoints.payAirtime,
+        data: requestData,
+      );
+      final data = response.data;
+      return AirtimePurchaseResponse.fromJson(data);
+    } on DioException catch (e) {
+      final message =
+          (e.response?.data?['message'] ??
+                  e.message ??
+                  'Airtime purchase failed')
+              .toString()
+              .replaceAll('Exception: ', '')
+              .trim();
 
-    return AirtimePurchaseResponse(
-      message: message,
-      statusCode: e.response?.statusCode ?? 400,
-      success: false,
-    );
-  } catch (e) {
-    return AirtimePurchaseResponse(
-      message: 'Unexpected error: ${e.toString()}',
-      statusCode: 500,
-      success: false,
-    );
+      return AirtimePurchaseResponse(
+        message: message,
+        statusCode: e.response?.statusCode ?? 400,
+        success: false,
+      );
+    } catch (e) {
+      return AirtimePurchaseResponse(
+        message: 'Unexpected error: ${e.toString()}',
+        statusCode: 500,
+        success: false,
+      );
+    }
   }
-}
-
 
   /// Get international FX rate
   Future<InternationalFxRateResponse> getInternationalFxRate({
@@ -157,6 +162,27 @@ Future<AirtimePurchaseResponse> payAirtime(
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'International airtime purchase failed',
+      );
+    }
+  }
+
+  /// Get saved airtime beneficiaries
+  Future<AirtimeBeneficiariesResponse> getAirtimeBeneficiaries({
+    required String userId,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getUserBeneficiaries,
+        query: {'transferType': 'TRANSFER', 'billType': 'airtime'},
+      );
+
+      // Debug log the raw response
+      print('[AirtimeRepository] Raw response: ${response.data}');
+
+      return AirtimeBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to fetch airtime beneficiaries',
       );
     }
   }

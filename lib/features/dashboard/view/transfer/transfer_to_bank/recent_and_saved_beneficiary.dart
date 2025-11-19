@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
@@ -116,12 +119,10 @@ class _TransferToBankRecentAndSavedBeneficiariesState
               // Get the banks list to lookup bank code by bank name
               final banksState = ref.read(banksNotifierProvider);
               String bankCode = '';
-
-              // Try to find matching bank by name
               if (banksState.isDataAvailable && banksState.data != null) {
                 final bankName = details.beneficiaryBankName ?? '';
                 try {
-                  final matchingBank = banksState.singleData!.banks.firstWhere(
+                  final matchingBank = banksState.singleData!.data.firstWhere(
                     (bank) => bank.name.toLowerCase().contains(
                       bankName.toLowerCase(),
                     ),
@@ -131,6 +132,8 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                   // Bank not found, will use empty string (will likely fail)
                 }
               }
+
+              log(jsonEncode(details));
               // Convert transaction details to Beneficiary model
               final beneficiary = Beneficiary(
                 id: '',
@@ -186,7 +189,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName??''}',
+                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName ?? ''}',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],

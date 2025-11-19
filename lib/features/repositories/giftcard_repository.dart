@@ -15,12 +15,14 @@ class GiftCardRepository {
       return data.map((item) => GiftCardCategory.fromJson(item)).toList();
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to get categories');
+        e.response?.data['message'] ?? 'Failed to get categories',
+      );
     }
   }
 
-  Future<GiftCardProductResponse> getProducts(
-      {required String currency}) async {
+  Future<GiftCardProductResponse> getProducts({
+    required String currency,
+  }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardProducts,
@@ -34,17 +36,15 @@ class GiftCardRepository {
 
   Future<void> payForGiftCard(GiftCardPaymentRequest request) async {
     try {
-      await apiClient.post(
-        ApiEndpoints.payGiftCard,
-        data: request.toJson(),
-      );
+      await apiClient.post(ApiEndpoints.payGiftCard, data: request.toJson());
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Payment failed');
     }
   }
 
-  Future<GiftCardRedeemCodeResponse> getRedeemCode(
-      {required String transactionId}) async {
+  Future<GiftCardRedeemCodeResponse> getRedeemCode({
+    required String transactionId,
+  }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardRedeemCode,
@@ -53,7 +53,8 @@ class GiftCardRepository {
       return GiftCardRedeemCodeResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to get redeem code');
+        e.response?.data['message'] ?? 'Failed to get redeem code',
+      );
     }
   }
 
@@ -64,14 +65,25 @@ class GiftCardRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardFxRate,
-        query: {
-          'currency': currency,
-          'amount': amount,
-        },
+        query: {'currency': currency, 'amount': amount},
       );
       return GiftCardFxRateResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to get FX rate');
+    }
+  }
+
+  Future<GiftcardBeneficiariesResponse> getGiftcardBeneficiaries() async {
+    try {
+      final response = await apiClient.get(
+        '/api/v1/user/get-beneficiaries',
+        query: {'transferType': 'TRANSFER', 'billType': 'giftcard'},
+      );
+      return GiftcardBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to get beneficiaries',
+      );
     }
   }
 }

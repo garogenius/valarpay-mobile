@@ -76,10 +76,10 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
       });
 
       await ref
-          .read(banksNotifierProvider.notifier)
+          .read(bankMatchNotifierProvider.notifier)
           .fetchMatchedBanks(accountNumber: accountNumber);
 
-      final banksState = ref.read(banksNotifierProvider);
+      final banksState = ref.read(bankMatchNotifierProvider);
 
       if (banksState.isDataAvailable && mounted) {
         setState(() {
@@ -194,7 +194,6 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
-
 
     // Listen to account verification state
     ref.listen(accountVerificationNotifierProvider, (previous, next) {
@@ -316,71 +315,62 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Select Bank
-                      if (matchedBanks.isEmpty)
-                        const Text(
-                          "Select Bank",
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      if (matchedBanks.isEmpty) const SizedBox(height: 8),
-                      if (matchedBanks.isEmpty)
-                        GestureDetector(
-                          onTap: _selectBank,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).cardColor.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor:
-                                      selectedBank != null
-                                          ? appTheme.primaryColor.withValues(
-                                            alpha: 0.1,
-                                          )
-                                          : Colors.black,
-                                  child:
-                                      selectedBank != null
-                                          ? Text(
-                                            selectedBank!.name
-                                                .substring(0, 1)
-                                                .toUpperCase(),
-                                            style: TextStyle(
-                                              color: appTheme.primaryColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          )
-                                          : const Icon(
-                                            Icons.account_balance,
-                                            color: Colors.white,
-                                            size: 18,
+                      const Text("Select Bank", style: TextStyle(fontSize: 14)),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _selectBank,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).cardColor.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor:
+                                    selectedBank != null
+                                        ? appTheme.primaryColor.withValues(
+                                          alpha: 0.1,
+                                        )
+                                        : Colors.black,
+                                child:
+                                    selectedBank != null
+                                        ? Text(
+                                          selectedBank!.name,
+                                          style: TextStyle(
+                                            color: appTheme.primaryColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
                                           ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    selectedBank?.name ?? "Select Bank",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                        )
+                                        : const Icon(
+                                          Icons.account_balance,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  selectedBank?.name ?? "Select Bank",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right),
-                              ],
-                            ),
+                              ),
+                              const Icon(Icons.chevron_right),
+                            ],
                           ),
                         ),
+                      ),
                       const SizedBox(height: 14),
 
                       // If there are matched banks show them inline for user selection
@@ -400,59 +390,6 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                               Text('Matching banks...'),
                             ],
                           ),
-                        )
-                      else if (matchedBanks.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(
-                              "Matched Bank(s)",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ...matchedBanks.map((bank) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: appTheme.primaryColor
-                                        .withValues(alpha: 0.1),
-                                    child: Text(
-                                      bank.name.substring(0, 2).toUpperCase(),
-                                      style: TextStyle(
-                                        color: appTheme.primaryColor,
-                                      ),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    bank.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      selectedBank = bank;
-                                      matchedBanks = [];
-                                      matchError = null;
-                                    });
-                                    _verifyAccount();
-                                  },
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  tileColor: Theme.of(
-                                    context,
-                                  ).cardColor.withValues(alpha: 0.5),
-                                ),
-                              );
-                            }).toList(),
-                          ],
                         ),
                       const SizedBox(height: 20),
 
@@ -480,8 +417,9 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                               ),
                             ),
                           ],
-                        )
-                      else if (verifiedAccount != null)
+                        ),
+
+                      if (verifiedAccount != null)
                         Row(
                           children: [
                             Icon(

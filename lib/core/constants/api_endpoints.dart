@@ -96,6 +96,8 @@ class ApiEndpoints {
       '/api/v1/bill/electricity/verify-meter-number';
   static const String payElectricity = '/api/v1/bill/electricity/pay';
 
+  // Beneficiary endpoints
+  static const String getUserBeneficiaries = '/api/v1/user/get-beneficiaries';
 
   // Transfer endpoints
   static const String getBanks = '/api/v1/wallet/get-banks';

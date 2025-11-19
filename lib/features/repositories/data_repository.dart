@@ -13,12 +13,14 @@ class DataRepository {
   /// Uses airtime network providers endpoint since data providers endpoint doesn't exist
   Future<NetworkProvidersResponse> getDataNetworkProviders() async {
     try {
-      final response =
-          await apiClient.get(ApiEndpoints.getAirtimeNetworkProviders);
+      final response = await apiClient.get(
+        ApiEndpoints.getAirtimeNetworkProviders,
+      );
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ??
-          'Failed to fetch data network providers');
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to fetch data network providers',
+      );
     }
   }
 
@@ -30,15 +32,13 @@ class DataRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getDataPlan,
-        query: {
-          'phone': phone,
-          'currency': currency,
-        },
+        query: {'phone': phone, 'currency': currency},
       );
       return DataPlanResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to fetch data plan');
+        e.response?.data['message'] ?? 'Failed to fetch data plan',
+      );
     }
   }
 
@@ -49,14 +49,13 @@ class DataRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getDataVariation,
-        query: {
-          'operatorId': operatorId.toString(),
-        },
+        query: {'operatorId': operatorId.toString()},
       );
       return DataVariationResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to fetch data variation');
+        e.response?.data['message'] ?? 'Failed to fetch data variation',
+      );
     }
   }
 
@@ -70,6 +69,27 @@ class DataRepository {
       return DataPurchaseResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Data purchase failed');
+    }
+  }
+
+  /// Get saved data beneficiaries
+  Future<DataBeneficiariesResponse> getDataBeneficiaries({
+    required String userId,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getUserBeneficiaries,
+        query: {'transferType': 'TRANSFER', 'billType': 'data'},
+      );
+
+      // Debug log the raw response
+      print('[DataRepository] Raw response: ${response.data}');
+
+      return DataBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to fetch data beneficiaries',
+      );
     }
   }
 }

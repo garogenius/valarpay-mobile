@@ -16,7 +16,7 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
   final Ref _ref;
 
   TransactionNotifier(this._repository, this._ref)
-      : super(DataState<TransactionModel>.initial());
+    : super(DataState<TransactionModel>.initial());
 
   int _currentPage = 1;
   int _totalPages = 1;
@@ -70,7 +70,9 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
 
     state = state.copyWith(isInitialLoading: _currentPage == 1, message: null);
 
-    final user = _ref.read(userNotifierProvider).data?.first;
+    final userData = _ref.read(userNotifierProvider).data;
+    final user =
+        userData != null && userData.isNotEmpty ? userData.first : null;
     if (user == null) {
       state = state.copyWith(
         isInitialLoading: false,
