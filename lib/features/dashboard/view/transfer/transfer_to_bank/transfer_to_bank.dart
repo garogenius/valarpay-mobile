@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -343,7 +344,10 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
                                 child:
                                     selectedBank != null
                                         ? Text(
-                                          selectedBank!.name,
+                                          selectedBank!.name
+                                              .toString()
+                                              .substring(0, 2)
+                                              .toUpperCase(),
                                           style: TextStyle(
                                             color: appTheme.primaryColor,
                                             fontWeight: FontWeight.bold,
