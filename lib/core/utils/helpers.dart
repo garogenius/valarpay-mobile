@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:intl/intl.dart';
 
 class Helpers {
@@ -36,6 +38,13 @@ class Helpers {
     return months[month - 1];
   }
 
+  static String generateTransferRef() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = Random.secure();
+    final code =
+        List.generate(12, (_) => chars[rand.nextInt(chars.length)]).join();
+    return 'TRF-$code';
+  }
 
   static String formatTo11(String raw) {
     var digits = raw.replaceAll(RegExp(r'\D'), '');
@@ -48,5 +57,3 @@ class Helpers {
     return digits;
   }
 }
-
-

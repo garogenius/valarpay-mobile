@@ -5,6 +5,7 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:valarpay/core/utils/helpers.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_amount_textfield.dart';
@@ -155,7 +156,7 @@ class _BeneficiaryTransferAmountScreenState
             description: _descriptionController.text.trim(),
             pin: pin,
             saveBeneficiary: _saveBeneficiary,
-            sessionId: _verifiedAccount!.sessionId,
+            sessionId: _verifiedAccount!.sessionId ,
           );
 
       _hideLoading();
@@ -347,7 +348,7 @@ class _BeneficiaryTransferAmountScreenState
                       topDetails: [
                         TransactionDetail(
                           label: 'Transaction ID',
-                          value: _verifiedAccount!.sessionId,
+                          value: _verifiedAccount!.sessionId ,
                           showCopyIcon: true,
                         ),
                         TransactionDetail(
