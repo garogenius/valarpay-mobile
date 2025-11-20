@@ -292,8 +292,7 @@ class _InternalTransferAmountScreenState
           ),
         ShareableTransactionReceiptDetail(
           label: 'Transaction ID',
-          value:
-              widget.accountDetails.sessionId ,
+          value: widget.accountDetails.sessionId,
         ),
         ShareableTransactionReceiptDetail(
           label: 'Status',
@@ -451,28 +450,21 @@ class _InternalTransferAmountScreenState
                 ),
               ),
               SizedBox(height: 8.h),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    [
-                          1000,
-                          2000,
-                          3000,
-                          5000,
-                          10000,
-                          20000,
-                          50000,
-                          100000,
-                          1000000,
-                          5000000,
-                        ]
-                        .map(
-                          (amount) => InkWell(
-                            onTap:
-                                () => setState(() {
-                                  _amountController.text = amount.toString();
-                                }),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children:
+                      [1000, 2000, 3000, 4000, 5000, 10000, 20000, 50000].map((
+                        amount,
+                      ) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _amountController.text = amount.toString();
+                              });
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -481,16 +473,14 @@ class _InternalTransferAmountScreenState
                               decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).cardColor.withValues(alpha: 0.6),
+                                ).cardColor.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: appTheme.primaryColor.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: appTheme.primaryColor.withOpacity(0.3),
                                 ),
                               ),
                               child: Text(
-                                '₦${NumberFormat('#,###').format(amount)}',
+                                '₦$amount',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -503,8 +493,9 @@ class _InternalTransferAmountScreenState
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
+                        );
+                      }).toList(),
+                ),
               ),
 
               SizedBox(height: 25.h),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
-import 'package:valarpay/features/models/transaction_model.dart';
 import 'package:valarpay/features/notifiers/beneficiary_notifier.dart';
 import 'package:valarpay/features/notifiers/transaction_notifier.dart';
 
@@ -37,7 +36,7 @@ class _InternalRecentAndSavedBeneficiaryState
   }
 
   Widget _buildRecentBeneficiaries() {
-    final state = ref.watch(transactionNotifierProvider);
+    final state = ref.watch(beneficiaryNotifierProvider);
 
     if (state.isInitialLoading) {
       return const Center(
@@ -59,31 +58,7 @@ class _InternalRecentAndSavedBeneficiaryState
         ),
       );
     }
-
-    // Filter + only valid ones
-    final filtered =
-        state.data!
-            .where(
-              (b) =>
-                  b.transferDetails?.beneficiaryAccountNumber != null &&
-                  (b.transferDetails?.beneficiaryName?.toLowerCase().contains(
-                        'valarpay',
-                      ) ??
-                      false),
-            )
-            .where((b) {
-              final d = b.transferDetails;
-              if (d == null) return false;
-              final name = d.beneficiaryName?.toLowerCase() ?? '';
-              final acct = d.beneficiaryAccountNumber?.toLowerCase() ?? '';
-              final bank = d.beneficiaryBankName?.toLowerCase() ?? '';
-              return name.contains(_searchQuery.toLowerCase()) ||
-                  acct.contains(_searchQuery.toLowerCase()) ||
-                  bank.contains(_searchQuery.toLowerCase());
-            })
-            .toList();
-
-    if (filtered.isEmpty) {
+    if (state.data!.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.only(top: 20),
@@ -91,35 +66,15 @@ class _InternalRecentAndSavedBeneficiaryState
         ),
       );
     }
-
-    /// ✅ Merge duplicates: same beneficiary name + account number
-    final Map<String, TransactionModel> uniqueMap = {};
-
-    for (var tx in filtered) {
-      final d = tx.transferDetails!;
-      final key =
-          "${d.beneficiaryName}-${d.beneficiaryAccountNumber}".toLowerCase();
-
-      // Only keep one instance — first or latest, depending on your need
-      if (!uniqueMap.containsKey(key)) {
-        uniqueMap[key] = tx;
-      }
-    }
-
-    final mergedList = uniqueMap.values.toList();
-
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: mergedList.length,
+      itemCount: state.data!.length,
       itemBuilder: (context, index) {
-        final b = mergedList[index];
+        final beneficiary = state.data![index];
         return InkWell(
           onTap: () {
-            final acct = b.transferDetails?.beneficiaryAccountNumber;
-            if (acct != null && acct.isNotEmpty) {
-              widget.onSelectAccount?.call(acct);
-            }
+            widget.onSelectAccount?.call(beneficiary.accountNumber);
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -133,7 +88,10 @@ class _InternalRecentAndSavedBeneficiaryState
                 CircleAvatar(
                   radius: 18,
                   child: Text(
-                    (b.transferDetails?.beneficiaryBankName?[0] ?? 'B'),
+                    beneficiary.accountName.toString().toUpperCase().substring(
+                      0,
+                      2,
+                    ),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -143,7 +101,7 @@ class _InternalRecentAndSavedBeneficiaryState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        b.transferDetails?.beneficiaryName ?? '',
+                        beneficiary.accountName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -151,7 +109,7 @@ class _InternalRecentAndSavedBeneficiaryState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName ?? ''}',
+                        '${beneficiary.accountNumber} ${beneficiary.bankName}',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],
@@ -210,10 +168,10 @@ class _InternalRecentAndSavedBeneficiaryState
       physics: const NeverScrollableScrollPhysics(),
       itemCount: beneficiaries.length,
       itemBuilder: (context, index) {
-        final b = beneficiaries[index];
+        final beneficiary = beneficiaries[index];
         return InkWell(
           onTap: () {
-            final acct = b.accountNumber;
+            final acct = beneficiary.accountNumber;
             if (acct.isNotEmpty) {
               widget.onSelectAccount?.call(acct);
             }
@@ -230,7 +188,10 @@ class _InternalRecentAndSavedBeneficiaryState
                 CircleAvatar(
                   radius: 18,
                   child: Text(
-                    (b.bankName.isNotEmpty ? b.bankName[0] : 'B'),
+                    beneficiary.accountName.toString().toUpperCase().substring(
+                      0,
+                      2,
+                    ),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -240,7 +201,7 @@ class _InternalRecentAndSavedBeneficiaryState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        b.accountName,
+                        beneficiary.accountName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -248,7 +209,7 @@ class _InternalRecentAndSavedBeneficiaryState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.accountNumber}   ${b.bankName}',
+                        '${beneficiary.accountNumber}   ${beneficiary.bankName}',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],

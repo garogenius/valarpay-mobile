@@ -1,15 +1,9 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
 import 'package:valarpay/features/dashboard/view/transfer/transfer_to_bank/beneficiary_transfer_amount_screen.dart';
-import 'package:valarpay/features/models/beneficiary_models.dart';
-import 'package:valarpay/features/models/transaction_model.dart';
 import 'package:valarpay/features/notifiers/beneficiary_notifier.dart';
 import 'package:valarpay/features/notifiers/transaction_notifier.dart';
-import 'package:valarpay/features/notifiers/transfer_notifier.dart';
 
 class TransferToBankRecentAndSavedBeneficiaries extends ConsumerStatefulWidget {
   final ValueChanged<String>? onSelectAccount;
@@ -43,7 +37,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
   }
 
   Widget _buildRecentBeneficiaries() {
-    final state = ref.watch(transactionNotifierProvider);
+    final state = ref.watch(beneficiaryNotifierProvider);
 
     if (state.isInitialLoading) {
       return const Center(
@@ -66,22 +60,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
       );
     }
 
-    // Filter + only valid ones
-    final filtered =
-        state.data!
-            .where((b) => b.transferDetails?.beneficiaryAccountNumber != null)
-            .where((b) {
-              final d = b.transferDetails!;
-              final name = d.beneficiaryName?.toLowerCase() ?? '';
-              final acct = d.beneficiaryAccountNumber?.toLowerCase() ?? '';
-              final bank = d.beneficiaryBankName?.toLowerCase() ?? '';
-              return name.contains(_searchQuery.toLowerCase()) ||
-                  acct.contains(_searchQuery.toLowerCase()) ||
-                  bank.contains(_searchQuery.toLowerCase());
-            })
-            .toList();
-
-    if (filtered.isEmpty) {
+    if (state.data!.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.only(top: 20),
@@ -89,87 +68,25 @@ class _TransferToBankRecentAndSavedBeneficiariesState
         ),
       );
     }
-
-    /// ✅ Merge duplicates: same beneficiary name + account number
-    final Map<String, TransactionModel> uniqueMap = {};
-
-    for (var tx in filtered) {
-      final d = tx.transferDetails!;
-      final key =
-          "${d.beneficiaryName}-${d.beneficiaryAccountNumber}".toLowerCase();
-
-      // Only keep one instance — first or latest, depending on your need
-      if (!uniqueMap.containsKey(key)) {
-        uniqueMap[key] = tx;
-      }
-    }
-
-    final mergedList = uniqueMap.values.toList();
+    final mergedList = state.data!;
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: mergedList.length,
       itemBuilder: (context, index) {
-        final b = mergedList[index];
+        final beneficiary = mergedList[index];
         return InkWell(
           onTap: () {
-            final details = b.transferDetails;
-            if (details != null && details.beneficiaryAccountNumber != null) {
-              // Get the banks list to lookup bank code by bank name
-              final banksState = ref.read(banksNotifierProvider);
-              String bankCode = '';
-
-              // Only proceed if banks data is available and not empty
-              if (banksState.isDataAvailable &&
-                  banksState.singleData != null &&
-                  banksState.singleData!.data.isNotEmpty) {
-                final bankName = details.beneficiaryBankName ?? '';
-                if (bankName.isNotEmpty) {
-                  try {
-                    // Try to find exact or partial match
-                    final matchingBanks =
-                        banksState.singleData!.data
-                            .where(
-                              (bank) => bank.name.toLowerCase().contains(
-                                bankName.toLowerCase(),
-                              ),
-                            )
-                            .toList();
-
-                    if (matchingBanks.isNotEmpty) {
-                      bankCode = matchingBanks.first.bankCode;
-                    }
-                  } catch (e) {
-                    log('Bank lookup error: $e');
-                  }
-                }
-              }
-              log(jsonEncode(details));
-              // Convert transaction details to Beneficiary model
-              final beneficiary = Beneficiary(
-                id: '',
-                userId: '',
-                type: 'TRANSFER',
-                accountName: details.beneficiaryName ?? '',
-                accountNumber: details.beneficiaryAccountNumber ?? '',
-                bankName: details.beneficiaryBankName ?? '',
-                bankCode: bankCode, // ✅ Now has bank code from lookup
-                currency: 'NGN',
-                createdAt: '',
-                updatedAt: '',
-              );
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => BeneficiaryTransferAmountScreen(
-                        beneficiaryDetails: beneficiary,
-                      ),
-                ),
-              );
-            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => BeneficiaryTransferAmountScreen(
+                      beneficiaryDetails: beneficiary,
+                    ),
+              ),
+            );
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -183,7 +100,10 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                 CircleAvatar(
                   radius: 18,
                   child: Text(
-                    (b.transferDetails?.beneficiaryBankName?[0] ?? 'B'),
+                    beneficiary.accountName.toString().toUpperCase().substring(
+                      0,
+                      2,
+                    ),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -193,7 +113,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        b.transferDetails?.beneficiaryName ?? '',
+                        beneficiary.accountName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -201,7 +121,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.transferDetails?.beneficiaryAccountNumber}   ${b.transferDetails?.beneficiaryBankName ?? ''}',
+                        beneficiary.accountNumber,
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],
@@ -260,55 +180,15 @@ class _TransferToBankRecentAndSavedBeneficiariesState
       physics: const NeverScrollableScrollPhysics(),
       itemCount: beneficiaries.length,
       itemBuilder: (context, index) {
-        final b = beneficiaries[index];
+        final beneficiary = beneficiaries[index];
         return InkWell(
           onTap: () {
-            // Lookup bank code if empty
-            final banksState = ref.watch(banksNotifierProvider);
-            String bankCode = b.bankCode;
-
-            if (bankCode.isEmpty && b.bankName.isNotEmpty) {
-              try {
-                if (banksState.isDataAvailable &&
-                    banksState.singleData != null) {
-                  final matchingBanks =
-                      banksState.singleData!.data
-                          .where(
-                            (bank) => bank.name.toLowerCase().contains(
-                              b.bankName.toLowerCase(),
-                            ),
-                          )
-                          .toList();
-
-                  if (matchingBanks.isNotEmpty) {
-                    bankCode = matchingBanks.first.bankCode;
-                  }
-                }
-              } catch (e) {
-                log('Bank lookup error: $e');
-              }
-            }
-
-            // Create beneficiary with valid bank code
-            final beneficiaryWithBankCode = Beneficiary(
-              id: b.id,
-              userId: b.userId,
-              type: b.type,
-              accountName: b.accountName,
-              accountNumber: b.accountNumber,
-              bankName: b.bankName,
-              bankCode: bankCode, // ✅ Now has bank code from lookup
-              currency: b.currency,
-              createdAt: b.createdAt,
-              updatedAt: b.updatedAt,
-            );
-
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder:
                     (_) => BeneficiaryTransferAmountScreen(
-                      beneficiaryDetails: beneficiaryWithBankCode,
+                      beneficiaryDetails: beneficiary,
                     ),
               ),
             );
@@ -325,7 +205,10 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                 CircleAvatar(
                   radius: 18,
                   child: Text(
-                    (b.bankName.isNotEmpty ? b.bankName[0] : 'B'),
+                    beneficiary.accountName.toString().toUpperCase().substring(
+                      0,
+                      2,
+                    ),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -335,7 +218,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        b.accountName,
+                        beneficiary.accountName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -343,7 +226,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${b.accountNumber}   ${b.bankName}',
+                        '${beneficiary.accountNumber}   ${beneficiary.bankName}',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],
@@ -432,9 +315,7 @@ class _TransferToBankRecentAndSavedBeneficiariesState
             });
           },
         ),
-
         const SizedBox(height: 16),
-
         isRecentTab ? _buildRecentBeneficiaries() : _buildSavedBeneficiaries(),
       ],
     );

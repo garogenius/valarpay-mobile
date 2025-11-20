@@ -156,7 +156,7 @@ class _BeneficiaryTransferAmountScreenState
             description: _descriptionController.text.trim(),
             pin: pin,
             saveBeneficiary: _saveBeneficiary,
-            sessionId: _verifiedAccount!.sessionId ,
+            sessionId: _verifiedAccount!.sessionId,
           );
 
       _hideLoading();
@@ -348,7 +348,7 @@ class _BeneficiaryTransferAmountScreenState
                       topDetails: [
                         TransactionDetail(
                           label: 'Transaction ID',
-                          value: _verifiedAccount!.sessionId ,
+                          value: _verifiedAccount!.sessionId,
                           showCopyIcon: true,
                         ),
                         TransactionDetail(
@@ -604,28 +604,22 @@ class _BeneficiaryTransferAmountScreenState
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    [
-                          1000,
-                          2000,
-                          3000,
-                          5000,
-                          10000,
-                          20000,
-                          50000,
-                          100000,
-                          1000000,
-                          5000000,
-                        ]
-                        .map(
-                          (amount) => InkWell(
-                            onTap:
-                                () => setState(() {
-                                  _amountController.text = amount.toString();
-                                }),
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children:
+                      [1000, 2000, 3000, 4000, 5000, 10000, 20000, 50000].map((
+                        amount,
+                      ) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _amountController.text = amount.toString();
+                              });
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -634,16 +628,14 @@ class _BeneficiaryTransferAmountScreenState
                               decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).cardColor.withValues(alpha: 0.6),
+                                ).cardColor.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: appTheme.primaryColor.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: appTheme.primaryColor.withOpacity(0.3),
                                 ),
                               ),
                               child: Text(
-                                '₦${_formatter.format(amount)}',
+                                '₦$amount',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -656,8 +648,9 @@ class _BeneficiaryTransferAmountScreenState
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
+                        );
+                      }).toList(),
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -703,7 +696,6 @@ class _BeneficiaryTransferAmountScreenState
               FullWidthButton(
                 text: 'Transfer',
                 isEnabled: amount >= 100 && _transferFee != null,
-                isLoading: transferState.isInitialLoading,
                 onPressed: _handleOnPressed,
               ),
             ],

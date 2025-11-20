@@ -729,13 +729,16 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                       ),
                       const SizedBox(height: 16),
                       // Quick Amount Selection
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children:
-                            [100, 200, 300, 400, 500, 1000, 2000]
-                                .map(
-                                  (amount) => InkWell(
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children:
+                              [100, 200, 300, 400, 500, 1000, 2000,3000,5000].map((
+                                amount,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InkWell(
                                     onTap: () {
                                       setState(() {
                                         _amountController.text =
@@ -771,8 +774,9 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                                       ),
                                     ),
                                   ),
-                                )
-                                .toList(),
+                                );
+                              }).toList(),
+                        ),
                       ),
                       const SizedBox(height: 30),
                       FullWidthButton(
