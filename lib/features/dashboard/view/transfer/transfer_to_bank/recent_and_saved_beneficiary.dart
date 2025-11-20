@@ -119,20 +119,32 @@ class _TransferToBankRecentAndSavedBeneficiariesState
               // Get the banks list to lookup bank code by bank name
               final banksState = ref.read(banksNotifierProvider);
               String bankCode = '';
-              if (banksState.isDataAvailable && banksState.data != null) {
+
+              // Only proceed if banks data is available and not empty
+              if (banksState.isDataAvailable &&
+                  banksState.singleData != null &&
+                  banksState.singleData!.data.isNotEmpty) {
                 final bankName = details.beneficiaryBankName ?? '';
-                try {
-                  final matchingBank = banksState.singleData!.data.firstWhere(
-                    (bank) => bank.name.toLowerCase().contains(
-                      bankName.toLowerCase(),
-                    ),
-                  );
-                  bankCode = matchingBank.bankCode;
-                } catch (_) {
-                  // Bank not found, will use empty string (will likely fail)
+                if (bankName.isNotEmpty) {
+                  try {
+                    // Try to find exact or partial match
+                    final matchingBanks =
+                        banksState.singleData!.data
+                            .where(
+                              (bank) => bank.name.toLowerCase().contains(
+                                bankName.toLowerCase(),
+                              ),
+                            )
+                            .toList();
+
+                    if (matchingBanks.isNotEmpty) {
+                      bankCode = matchingBanks.first.bankCode;
+                    }
+                  } catch (e) {
+                    log('Bank lookup error: $e');
+                  }
                 }
               }
-
               log(jsonEncode(details));
               // Convert transaction details to Beneficiary model
               final beneficiary = Beneficiary(
@@ -251,12 +263,53 @@ class _TransferToBankRecentAndSavedBeneficiariesState
         final b = beneficiaries[index];
         return InkWell(
           onTap: () {
+            // Lookup bank code if empty
+            final banksState = ref.watch(banksNotifierProvider);
+            String bankCode = b.bankCode;
+
+            if (bankCode.isEmpty && b.bankName.isNotEmpty) {
+              try {
+                if (banksState.isDataAvailable &&
+                    banksState.singleData != null) {
+                  final matchingBanks =
+                      banksState.singleData!.data
+                          .where(
+                            (bank) => bank.name.toLowerCase().contains(
+                              b.bankName.toLowerCase(),
+                            ),
+                          )
+                          .toList();
+
+                  if (matchingBanks.isNotEmpty) {
+                    bankCode = matchingBanks.first.bankCode;
+                  }
+                }
+              } catch (e) {
+                log('Bank lookup error: $e');
+              }
+            }
+
+            // Create beneficiary with valid bank code
+            final beneficiaryWithBankCode = Beneficiary(
+              id: b.id,
+              userId: b.userId,
+              type: b.type,
+              accountName: b.accountName,
+              accountNumber: b.accountNumber,
+              bankName: b.bankName,
+              bankCode: bankCode, // ✅ Now has bank code from lookup
+              currency: b.currency,
+              createdAt: b.createdAt,
+              updatedAt: b.updatedAt,
+            );
+
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder:
-                    (_) =>
-                        BeneficiaryTransferAmountScreen(beneficiaryDetails: b),
+                    (_) => BeneficiaryTransferAmountScreen(
+                      beneficiaryDetails: beneficiaryWithBankCode,
+                    ),
               ),
             );
           },

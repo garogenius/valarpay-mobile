@@ -505,137 +505,208 @@ class _BeneficiaryTransferAmountScreenState
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Recipient Details
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Recipient Details",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: appTheme.primaryColor.withValues(
-                          alpha: 0.1,
-                        ),
-                        child: Text(
-                          widget.beneficiaryDetails.bankName
-                              .substring(0, 1)
-                              .toUpperCase(),
-                          style: TextStyle(
-                            color: appTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Recipient Details
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Recipient Details",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: appTheme.primaryColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          child: Text(
+                            widget.beneficiaryDetails.bankName.isNotEmpty
+                                ? widget.beneficiaryDetails.bankName
+                                    .substring(0, 1)
+                                    .toUpperCase()
+                                : 'B',
+                            style: TextStyle(
+                              color: appTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.beneficiaryDetails.accountName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.beneficiaryDetails.accountName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "${widget.beneficiaryDetails.accountNumber} • ${widget.beneficiaryDetails.bankName}",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey,
+                              const SizedBox(height: 4),
+                              Text(
+                                "${widget.beneficiaryDetails.accountNumber} • ${widget.beneficiaryDetails.bankName}",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Amount Input
-            const Text(
-              "Amount",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            ReuseableAmountTextfield(
-              prefixText: '₦',
-              amountController: _amountController,
-              hintText: "Enter amount",
-            ),
-            if (_isNotMinimumAmount) SizedBox(height: 5),
-            if (_isNotMinimumAmount)
-              Text(
-                'Minimum transfer amount is ₦100',
-                style: TextStyle(color: Colors.red, fontSize: 13),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Description Input
-            const Text(
-              "Description (Optional)",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: "What's this transfer for?",
-                filled: true,
-                fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Fee Information
-            if (_isLoadingFee)
-              const Row(
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 8),
-                  Text("Calculating fee..."),
-                ],
+              // Amount Input
+              const Text(
+                "Amount",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
-            const SizedBox(height: 60),
+              const SizedBox(height: 8),
+              ReuseableAmountTextfield(
+                prefixText: '₦',
+                amountController: _amountController,
+                hintText: "Enter amount",
+              ),
+              if (_isNotMinimumAmount) SizedBox(height: 5),
+              if (_isNotMinimumAmount)
+                Text(
+                  'Minimum transfer amount is ₦100',
+                  style: TextStyle(color: Colors.red, fontSize: 13),
+                ),
 
-            // Transfer Button
-            FullWidthButton(
-              text: 'Transfer',
-              isEnabled: amount >= 100 && _transferFee != null,
-              isLoading: transferState.isInitialLoading,
-              onPressed: _handleOnPressed,
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              // Quick Amount Buttons
+              Text(
+                "Quick Amount",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    [
+                          1000,
+                          2000,
+                          3000,
+                          5000,
+                          10000,
+                          20000,
+                          50000,
+                          100000,
+                          1000000,
+                          5000000,
+                        ]
+                        .map(
+                          (amount) => InkWell(
+                            onTap:
+                                () => setState(() {
+                                  _amountController.text = amount.toString();
+                                }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).cardColor.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: appTheme.primaryColor.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                '₦${_formatter.format(amount)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color:
+                                      _amountController.text ==
+                                              amount.toString()
+                                          ? appTheme.primaryColor
+                                          : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Description Input
+              const Text(
+                "Description (Optional)",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "What's this transfer for?",
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Fee Information
+              if (_isLoadingFee)
+                const Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 8),
+                    Text("Calculating fee..."),
+                  ],
+                ),
+              const SizedBox(height: 60),
+
+              // Transfer Button
+              FullWidthButton(
+                text: 'Transfer',
+                isEnabled: amount >= 100 && _transferFee != null,
+                isLoading: transferState.isInitialLoading,
+                onPressed: _handleOnPressed,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -59,4 +59,19 @@ class InternetRepository {
       throw Exception(e.response?.data['message'] ?? 'Payment failed');
     }
   }
+
+  Future<InternetBeneficiariesResponse> getInternetBeneficiaries() async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getBeneficiaries,
+        query: {'transferType': 'TRANSFER', 'billType': 'internet'},
+      );
+
+      return InternetBeneficiariesResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to load internet beneficiaries',
+      );
+    }
+  }
 }

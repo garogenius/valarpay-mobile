@@ -35,8 +35,11 @@ class InternetPlanResponse {
   factory InternetPlanResponse.fromJson(Map<String, dynamic> json) {
     final list = <InternetPlanInfo>[];
     if (json['data'] != null && json['data'] is List) {
-      list.addAll((json['data'] as List)
-          .map((e) => InternetPlanInfo.fromJson(e as Map<String, dynamic>)));
+      list.addAll(
+        (json['data'] as List).map(
+          (e) => InternetPlanInfo.fromJson(e as Map<String, dynamic>),
+        ),
+      );
     }
     return InternetPlanResponse(
       data: list,
@@ -79,9 +82,10 @@ class InternetVariationInfo {
         labelName: json['label_name'] ?? json['labelName'] ?? '',
         amount: (json['amount'] ?? 0).toDouble(),
         isResolvable: json['is_resolvable'] ?? json['isResolvable'] ?? false,
-        payAmount: json['payAmount'] != null
-            ? (json['payAmount'] as num).toDouble()
-            : null,
+        payAmount:
+            json['payAmount'] != null
+                ? (json['payAmount'] as num).toDouble()
+                : null,
       );
 }
 
@@ -99,8 +103,11 @@ class InternetVariationResponse {
   factory InternetVariationResponse.fromJson(Map<String, dynamic> json) {
     final list = <InternetVariationInfo>[];
     if (json['data'] != null && json['data'] is List) {
-      list.addAll((json['data'] as List).map(
-          (e) => InternetVariationInfo.fromJson(e as Map<String, dynamic>)));
+      list.addAll(
+        (json['data'] as List).map(
+          (e) => InternetVariationInfo.fromJson(e as Map<String, dynamic>),
+        ),
+      );
     }
     return InternetVariationResponse(
       data: list,
@@ -130,14 +137,14 @@ class InternetPayRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'walletPin': walletPin,
-        if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,
-        'itemCode': itemCode,
-        'billerCode': billerCode,
-        'currency': currency,
-        'amount': amount,
-        'billerNumber': billerNumber,
-      };
+    'walletPin': walletPin,
+    if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,
+    'itemCode': itemCode,
+    'billerCode': billerCode,
+    'currency': currency,
+    'amount': amount,
+    'billerNumber': billerNumber,
+  };
 }
 
 class InternetPaymentResponse {
@@ -151,4 +158,82 @@ class InternetPaymentResponse {
         message: json['message'] ?? 'Success',
         statusCode: json['statusCode'] ?? 200,
       );
+}
+
+// Internet Beneficiary Model
+class InternetBeneficiary {
+  final String id;
+  final String phoneNumber;
+  final String? providerName;
+  final String? billerCode;
+  final String? customerName;
+  final String currency;
+  final String userId;
+  final String type;
+  final String billType;
+
+  InternetBeneficiary({
+    required this.id,
+    required this.phoneNumber,
+    this.providerName,
+    this.billerCode,
+    this.customerName,
+    required this.currency,
+    required this.userId,
+    required this.type,
+    required this.billType,
+  });
+
+  factory InternetBeneficiary.fromJson(Map<String, dynamic> json) =>
+      InternetBeneficiary(
+        id: json['id']?.toString() ?? '',
+        phoneNumber:
+            json['phone_number'] ??
+            json['phoneNumber'] ??
+            json['billerNumber'] ??
+            '',
+        providerName: json['provider_name'] ?? json['providerName'],
+        billerCode: json['biller_code'] ?? json['billerCode'],
+        customerName: json['customer_name'] ?? json['customerName'],
+        currency: json['currency']?.toString() ?? 'NGN',
+        userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
+        type: json['type']?.toString() ?? 'INTERNET',
+        billType:
+            json['bill_type']?.toString() ?? json['billType'] ?? 'internet',
+      );
+
+  @override
+  String toString() =>
+      'InternetBeneficiary(id: $id, phoneNumber: $phoneNumber, providerName: $providerName)';
+}
+
+class InternetBeneficiariesResponse {
+  final List<InternetBeneficiary> data;
+  final String message;
+  final int statusCode;
+  final bool success;
+
+  InternetBeneficiariesResponse({
+    required this.data,
+    required this.message,
+    required this.statusCode,
+    required this.success,
+  });
+
+  factory InternetBeneficiariesResponse.fromJson(Map<String, dynamic> json) {
+    final list = <InternetBeneficiary>[];
+    if (json['data'] != null && json['data'] is List) {
+      list.addAll(
+        (json['data'] as List).map(
+          (item) => InternetBeneficiary.fromJson(item as Map<String, dynamic>),
+        ),
+      );
+    }
+    return InternetBeneficiariesResponse(
+      data: list,
+      message: json['message'] ?? 'Success',
+      statusCode: json['statusCode'] ?? 200,
+      success: json['success'] ?? true,
+    );
+  }
 }
