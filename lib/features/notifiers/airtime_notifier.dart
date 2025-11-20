@@ -255,21 +255,11 @@ class AirtimeBeneficiaryNotifier
       // The API endpoint probably doesn't need userId since it uses the auth token
       final response = await _repository.getAirtimeBeneficiaries(userId: '');
 
-      log(
-        '[AirtimeBeneficiaryNotifier] Response data count: ${response.data.length}',
-      );
-      log('[AirtimeBeneficiaryNotifier] Response data: ${response.data}');
-      for (var i = 0; i < response.data.length; i++) {
-        log(
-          '[AirtimeBeneficiaryNotifier] Beneficiary $i: ${response.data[i].phoneNumber}',
-        );
-      }
-
       state = state.copyWith(
         isInitialLoading: false,
         data: response.data,
         isDataAvailable: response.data.isNotEmpty,
-        message: response.message,
+        message: response.data.isEmpty ? null : response.message,
       );
     } catch (e, stack) {
       log('[AirtimeBeneficiaryNotifier getAirtimeBeneficiaries] $e\n$stack');

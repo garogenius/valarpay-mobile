@@ -121,3 +121,49 @@ final internetSelectedProviderProvider = StateProvider<InternetPlanInfo?>(
   (ref) => null,
 );
 final internetSelectedPlanProvider = StateProvider<String?>((ref) => null);
+
+// Internet Beneficiary Notifier
+class InternetBeneficiaryNotifier
+    extends StateNotifier<DataState<InternetBeneficiary>> {
+  final InternetRepository _repository;
+
+  InternetBeneficiaryNotifier(this._repository)
+    : super(DataState<InternetBeneficiary>.initial());
+
+  Future<void> getInternetBeneficiaries() async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.getInternetBeneficiaries();
+
+      if (res.data.isEmpty) {
+        state = state.copyWith(
+          isInitialLoading: false,
+          data: [],
+          isDataAvailable: true,
+          message: null,
+        );
+      } else {
+        state = state.copyWith(
+          isInitialLoading: false,
+          data: res.data,
+          isDataAvailable: true,
+          message: res.message,
+        );
+      }
+    } catch (e, stack) {
+      log('[InternetBeneficiaryNotifier getInternetBeneficiaries] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'No saved beneficiaries yet',
+      );
+    }
+  }
+
+  void reset() => state = DataState<InternetBeneficiary>.initial();
+}
+
+final internetBeneficiaryNotifierProvider = StateNotifierProvider<
+  InternetBeneficiaryNotifier,
+  DataState<InternetBeneficiary>
+>((ref) => InternetBeneficiaryNotifier(ref.read(internetRepositoryProvider)));

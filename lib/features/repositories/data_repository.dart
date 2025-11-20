@@ -82,9 +82,6 @@ class DataRepository {
         query: {'transferType': 'TRANSFER', 'billType': 'data'},
       );
 
-      // Debug log the raw response
-      print('[DataRepository] Raw response: ${response.data}');
-
       return DataBeneficiariesResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
