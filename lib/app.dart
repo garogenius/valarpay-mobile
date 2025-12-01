@@ -6,6 +6,7 @@ import 'package:valarpay/core/services/connectivity_service.dart';
 import '../core/routing/app_router.dart';
 import '../core/themes/app_theme.dart';
 import '../core/providers/theme_provider.dart';
+import '../core/widgets/global_loading_overlay.dart';
 
 class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
@@ -38,29 +39,31 @@ class _MyAppState extends ConsumerState<MyApp> {
       minTextAdapt: true,
       builder: (context, child) {
         return Listener(
-            onPointerDown: (_) => UserActivityService.resetTimer(context, ref),
-            child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => UserActivityService.resetTimer(context, ref),
-                child: MaterialApp.router(
-                  title: 'ValarPay - Beyond Banking',
-                  debugShowCheckedModeBanner: false,
-                  theme: AppTheme.lightTheme,
-                  darkTheme: AppTheme.darkTheme,
-                  themeMode: themeMode,
-                  routerConfig: router,
-                  builder: (context, child) {
-                    return Navigator(
-                      key: ConnectivityService.navigatorKey,
-                      onPopPage: (route, result) => route.didPop(result),
-                      pages: [
-                        MaterialPage(
-                          child: child ?? const SizedBox.shrink(),
-                        ),
-                      ],
-                    );
-                  },
-                )));
+          onPointerDown: (_) => UserActivityService.resetTimer(context, ref),
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => UserActivityService.resetTimer(context, ref),
+            child: MaterialApp.router(
+              title: 'ValarPay - Beyond Banking',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              routerConfig: router,
+              builder: (context, child) {
+                return GlobalLoadingOverlay(
+                  child: Navigator(
+                    key: ConnectivityService.navigatorKey,
+                    onPopPage: (route, result) => route.didPop(result),
+                    pages: [
+                      MaterialPage(child: child ?? const SizedBox.shrink()),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
       },
     );
   }

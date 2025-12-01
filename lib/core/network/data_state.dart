@@ -1,4 +1,5 @@
 class DataState<T> {
+  final bool isOverlayHidden;
   final bool isInitialLoading;
   final bool isPaginating;
   final bool isDataAvailable;
@@ -9,6 +10,7 @@ class DataState<T> {
   final T? singleData;
 
   const DataState({
+    this.isOverlayHidden = false,
     this.isInitialLoading = false,
     this.isPaginating = false,
     this.isDataAvailable = false,
@@ -20,17 +22,19 @@ class DataState<T> {
   });
 
   factory DataState.initial() => DataState<T>(
-        isInitialLoading: false,
-        isPaginating: false,
-        isDataAvailable: false,
-        currentPage: 1,
-        totalPages: 1,
-        message: null,
-        data: const [],
-        singleData: null
-      );
+    isOverlayHidden: false,
+    isInitialLoading: false,
+    isPaginating: false,
+    isDataAvailable: false,
+    currentPage: 1,
+    totalPages: 1,
+    message: null,
+    data: const [],
+    singleData: null,
+  );
 
   DataState<T> copyWith({
+    bool? isOverlayHidden,
     bool? isInitialLoading,
     bool? isPaginating,
     bool? isDataAvailable,
@@ -38,9 +42,10 @@ class DataState<T> {
     int? totalPages,
     String? message,
     List<T>? data,
-    T? singleData
+    T? singleData,
   }) {
     return DataState<T>(
+      isOverlayHidden: isOverlayHidden ?? this.isOverlayHidden,
       isInitialLoading: isInitialLoading ?? this.isInitialLoading,
       isPaginating: isPaginating ?? this.isPaginating,
       isDataAvailable: isDataAvailable ?? this.isDataAvailable,
@@ -48,7 +53,7 @@ class DataState<T> {
       totalPages: totalPages ?? this.totalPages,
       message: message ?? this.message,
       data: data ?? this.data,
-      singleData: singleData ?? this.singleData
+      singleData: singleData ?? this.singleData,
     );
   }
 }
