@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/device_utils.dart';
@@ -29,6 +32,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   bool _obscurePassword = true;
   bool _hasIncorrectCred = false;
   bool _hasStoredUsername = false;
+  bool _isBiometricEnabled = false;
 
   _login() async {
     if (_formKey.currentState!.validate()) {
@@ -89,6 +93,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         _hasStoredUsername = true;
       });
     }
+
+    // Check biometric settings
+    await _checkBiometricSettings();
+  }
+
+  Future<void> _checkBiometricSettings() async {
+    final fpEnabled = await LocalStorageService.getBool(
+      'pref_biometric_fingerprint',
+    );
+    final faceEnabled = await LocalStorageService.getBool(
+      'pref_biometric_faceid',
+    );
+
+    setState(() {
+      _isBiometricEnabled = (fpEnabled ?? false) || (faceEnabled ?? false);
+    });
   }
 
   @override
@@ -282,22 +302,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         opacity: _hasStoredUsername ? 1.0 : 0.5,
                         child: Column(
                           children: [
-                            _buildLoginOption(
-                              icon: Icons.fingerprint,
-                              label: 'Login with Thumbprint',
-                              onTap:
-                                  _hasStoredUsername
-                                      ? () => context.push('/biometric-login')
-                                      : () {
-                                        AppMessenger.show(
-                                          context,
-                                          message:
-                                              'Please login once before enabling biometric login.',
-                                          type: MessageType.warning,
-                                        );
-                                      },
-                            ),
-                            SizedBox(height: 12.h),
+                            // Only show biometric login if enabled in settings
+                            if (_isBiometricEnabled && _hasStoredUsername)
+                              _buildLoginOption(
+                                icon:
+                                    Platform.isIOS
+                                        ? Icons.face
+                                        : Icons.fingerprint,
+                                label:
+                                    Platform.isIOS
+                                        ? 'Login with Face ID'
+                                        : 'Login with Fingerprint',
+                                onTap: () => context.push('/biometric-login'),
+                              ),
+                            if (_isBiometricEnabled && _hasStoredUsername)
+                              SizedBox(height: 12.h),
                             _buildLoginOption(
                               icon: Icons.lock_outline,
                               label: 'Login with Passcode',

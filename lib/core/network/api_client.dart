@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
@@ -26,12 +27,12 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // log("Api call:${options.path}");
-          // log("Request:${options.data.toString()}");
+          _logRequest(options);
           return handler.next(options);
         },
         onResponse: (response, handler) {
-           log("Response: ${response.statusCode}");
+          _logResponse(response);
+
           if (response.statusCode == 200) {
             final data = response.data;
 
@@ -57,6 +58,7 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
+          _logError(e);
           return handler.next(e);
         },
       ),
@@ -99,6 +101,122 @@ class ApiClient {
     final options = Options();
     await _withAuth(options);
     return await dio.put(path, data: data, options: options);
+  }
+
+  void _logRequest(RequestOptions options) {
+    log(
+      '╔════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ 🌐 API REQUEST');
+    log(
+      '╠════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ Method: ${options.method}');
+    log('║ URL: ${options.baseUrl}${options.path}');
+
+    if (options.queryParameters.isNotEmpty) {
+      log('║ Query Parameters: ${options.queryParameters}');
+    }
+
+    if (options.headers.isNotEmpty) {
+      log('║ Headers:');
+      options.headers.forEach((key, value) {
+        // Mask sensitive headers
+        if (key.toLowerCase() == 'authorization') {
+          log('║   $key: Bearer ***');
+        } else if (key.toLowerCase() == 'x-api-key') {
+          log('║   $key: ***');
+        } else {
+          log('║   $key: $value');
+        }
+      });
+    }
+
+    if (options.data != null) {
+      log('║ Payload:');
+      log('║ ${_formatJson(options.data)}');
+    }
+
+    log(
+      '╚════════════════════════════════════════════════════════════════════════════',
+    );
+  }
+
+  void _logResponse(Response response) {
+    log(
+      '╔════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ ✅ API RESPONSE');
+    log(
+      '╠════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ Method: ${response.requestOptions.method}');
+    log(
+      '║ URL: ${response.requestOptions.baseUrl}${response.requestOptions.path}',
+    );
+    log(
+      '║ Status Code: ${response.statusCode} ${response.statusMessage ?? ''}',
+    );
+
+    if (response.headers.map.isNotEmpty) {
+      log('║ Response Headers:');
+      response.headers.map.forEach((key, value) {
+        log('║   $key: ${value.join(', ')}');
+      });
+    }
+
+    if (response.data != null) {
+      log('║ Response Data:');
+      log('║ ${_formatJson(response.data)}');
+    }
+
+    log(
+      '╚════════════════════════════════════════════════════════════════════════════',
+    );
+  }
+
+  void _logError(DioException error) {
+    log(
+      '╔════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ ❌ API ERROR');
+    log(
+      '╠════════════════════════════════════════════════════════════════════════════',
+    );
+    log('║ Method: ${error.requestOptions.method}');
+    log('║ URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}');
+    log('║ Error Type: ${error.type}');
+    log('║ Error Message: ${error.message}');
+
+    if (error.response != null) {
+      log('║ Status Code: ${error.response!.statusCode}');
+      log('║ Response Data:');
+      log('║ ${_formatJson(error.response!.data)}');
+    }
+
+    log('║ Stack Trace:');
+    log('║ ${error.stackTrace.toString().split('\n').take(5).join('\n║ ')}');
+
+    log(
+      '╚════════════════════════════════════════════════════════════════════════════',
+    );
+  }
+
+  String _formatJson(dynamic data) {
+    try {
+      if (data == null) return 'null';
+      if (data is String) return data;
+
+      // Pretty print JSON with indentation
+      final encoder = const JsonEncoder.withIndent('  ');
+      return encoder
+          .convert(data)
+          .split('\n')
+          .map((line) => '   $line')
+          .join('\n║');
+    } catch (e) {
+      return data.toString();
+    }
   }
 
   Future<Response> delete(String path) async {

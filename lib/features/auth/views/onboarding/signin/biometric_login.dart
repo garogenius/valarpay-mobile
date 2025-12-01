@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -480,14 +481,16 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
                                 ],
                               ),
                               child: Icon(
-                                Icons.fingerprint,
+                                Platform.isIOS ? Icons.face : Icons.fingerprint,
                                 size: 50.sp,
                                 color: appTheme.primaryColor,
                               ),
                             ),
                             SizedBox(height: 14.h),
                             Text(
-                              'Tap fingerprint to login',
+                              Platform.isIOS
+                                  ? 'Tap to use Face ID'
+                                  : 'Tap fingerprint to login',
                               style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w500,

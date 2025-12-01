@@ -48,9 +48,11 @@
 		<key>NSFaceIDUsageDescription</key>
 		<string>We use Face ID or fingerprint to verify your identity securely.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>We need access to your camera for identity verification to keep your account secure.</string>
-		<key>NSCameraUsageDescription</key>
         <string>This app uses the camera to verify your identity.</string>
+         <key>NSPhotoLibraryUsageDescription</key>
+        <string>ValarPay needs library access to capture the item you want to upload or for change of display picture</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>Allow access to use microphone for sending a voice note to customer support</string>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 		<key>LSSupportsOpeningDocumentsInPlace</key>

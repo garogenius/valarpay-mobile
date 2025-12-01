@@ -16,7 +16,11 @@ class WalletRepository {
         ApiEndpoints.verifyBvn,
         data: request.toJson(),
       );
+      print(response);
+      print(response.data);
+
       return ApiResponse.fromJson(response.data);
+
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'BVN verification failed',

@@ -84,7 +84,24 @@ class _CameraPermissionPageState extends ConsumerState<CameraPermissionPage> {
       },
     );
   }
+@override
+  void initState() {
+    Future.microtask(() {
+      ref
+          .read(kycStepProvider.notifier)
+          .state = 5;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              IdentityVerificationPage(request: widget.request),
+        ),
+      );
+    });
 
+    super.initState();
+
+  }
   @override
   Widget build(BuildContext context) {
     final currentStep = ref.watch(kycStepProvider);
