@@ -16,13 +16,37 @@ import 'package:valarpay/features/notifiers/transfer_notifier.dart';
 import 'package:valarpay/features/notifiers/update_details_notifier.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 
-class GlobalLoadingOverlay extends ConsumerWidget {
+class GlobalLoadingOverlay extends ConsumerStatefulWidget {
   final Widget child;
 
   const GlobalLoadingOverlay({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GlobalLoadingOverlay> createState() =>
+      _GlobalLoadingOverlayState();
+}
+
+class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Critical Flows
     final authState = ref.watch(authNotifierProvider);
     final userState = ref.watch(userNotifierProvider);
@@ -72,61 +96,140 @@ class GlobalLoadingOverlay extends ConsumerWidget {
 
     return Stack(
       children: [
-        child,
+        widget.child,
         if (isLoading)
           Container(
             width: double.infinity,
             height: double.infinity,
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withOpacity(0.7),
             child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 100,
-                    height: 100,
-                    child: ShaderMask(
-                      shaderCallback: (Rect bounds) {
-                        return const SweepGradient(
-                          colors: [
-                            appTheme.primaryColor,
-                            Colors.orangeAccent,
-                            Colors.white,
-                            appTheme.primaryColor,
-                          ],
-                          stops: [0.0, 0.5, 0.75, 1.0],
-                          tileMode: TileMode.repeated,
-                        ).createShader(bounds);
-                      },
-                      child: CircularProgressIndicator(
-                        strokeWidth: 8,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Colors.white,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer ring - rotates clockwise
+                      Transform.rotate(
+                        angle: _controller.value * 2 * 3.14159,
+                        child: SizedBox(
+                          width: 120,
+                          height: 120,
+                          child: CustomPaint(
+                            painter: _GradientArcPainter(
+                              progress: _controller.value,
+                              radius: 60,
+                              strokeWidth: 6,
+                              sweepAngle: 4.71239, // 270 degrees
+                            ),
+                          ),
                         ),
-                        backgroundColor: Colors.white.withOpacity(0.1),
                       ),
-                    ),
-                  ),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                    padding: const EdgeInsets.all(2),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/logo2.png',
-                        fit: BoxFit.cover,
+                      // Inner ring - rotates counter-clockwise
+                      Transform.rotate(
+                        angle: -_controller.value * 2 * 3.14159,
+                        child: SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: CustomPaint(
+                            painter: _GradientArcPainter(
+                              progress: _controller.value,
+                              radius: 45,
+                              strokeWidth: 5,
+                              sweepAngle: 4.71239, // 270 degrees
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                      // Pulsing logo in center
+                      Transform.scale(
+                        scale:
+                            1.0 +
+                            (0.05 * (0.5 - (_controller.value - 0.5).abs())),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: appTheme.primaryColor.withOpacity(0.2),
+                                blurRadius: 15,
+                                spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(10),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
       ],
     );
+  }
+}
+
+class _GradientArcPainter extends CustomPainter {
+  final double progress;
+  final double radius;
+  final double strokeWidth;
+  final double sweepAngle;
+
+  _GradientArcPainter({
+    required this.progress,
+    required this.radius,
+    required this.strokeWidth,
+    required this.sweepAngle,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Draw the gradient arc
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final gradient = SweepGradient(
+      colors: [
+        appTheme.primaryColor,
+        appTheme.primaryColor.withOpacity(0.7),
+        appTheme.primaryColor.withOpacity(0.3),
+        appTheme.primaryColor.withOpacity(0.0),
+      ],
+      stops: const [0.0, 0.3, 0.6, 1.0],
+    );
+
+    final paint =
+        Paint()
+          ..shader = gradient.createShader(rect)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.round;
+
+    // Draw arc with gap (not a complete circle)
+    canvas.drawArc(
+      rect,
+      -3.14159 / 2, // Start from top
+      sweepAngle, // Sweep angle (270 degrees = 4.71239 radians)
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GradientArcPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.radius != radius ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.sweepAngle != sweepAngle;
   }
 }
