@@ -172,7 +172,7 @@ class _SplashScreenState extends State<SplashScreen>
                           _borderRadiusAnimation.value,
                         ),
                         child: Image.asset(
-                          'assets/images/launcher.png',
+                          'assets/gifs/valarpay.gif',
                           width: _scaleAnimation.value * 0.8,
                           height: _scaleAnimation.value * 0.8,
                           fit: BoxFit.cover,
@@ -181,21 +181,21 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   // App name fade-in
-                  Opacity(
-                    opacity: _textOpacityAnimation.value,
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 16),
-                      child: Text(
-                        'ValarPay',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'SF Pro',
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Opacity(
+                  //   opacity: _textOpacityAnimation.value,
+                  //   child: const Padding(
+                  //     padding: EdgeInsets.only(left: 16),
+                  //     child: Text(
+                  //       'ValarPay',
+                  //       style: TextStyle(
+                  //         color: Colors.white,
+                  //         fontSize: 32,
+                  //         fontWeight: FontWeight.w600,
+                  //         fontFamily: 'SF Pro',
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -203,5 +203,71 @@ class _SplashScreenState extends State<SplashScreen>
         },
       ),
     );
+
+    // return AnnotatedRegion<SystemUiOverlayStyle>(
+    // value: const SystemUiOverlayStyle(
+    //   statusBarColor: Colors.transparent,
+    //   statusBarIconBrightness: Brightness.light,
+    // ),
+    // child: AnimatedBuilder(
+    //   animation: Listenable.merge([
+    //     _scaleController,
+    //     _backgroundController,
+    //     _textController,
+    //   ]),
+    //   builder: (context, child) {
+    //     return Scaffold(
+    //       backgroundColor: _backgroundAnimation.value,
+    //       body: Center(
+    //         child: Row(
+    //           mainAxisAlignment: MainAxisAlignment.center,
+    //           crossAxisAlignment: CrossAxisAlignment.center,
+    //           children: [
+    //             // Logo animation
+    //             Container(
+    //               width: _scaleAnimation.value,
+    //               height: _scaleAnimation.value,
+    //               decoration: BoxDecoration(
+    //                 borderRadius: BorderRadius.circular(
+    //                   _borderRadiusAnimation.value,
+    //                 ),
+    //               ),
+    //               child: Center(
+    //                 child: ClipRRect(
+    //                   borderRadius: BorderRadius.circular(
+    //                     _borderRadiusAnimation.value,
+    //                   ),
+    //                   child: Image.asset(
+    //                     'assets/images/launcher.png',
+    //                     width: _scaleAnimation.value * 0.8,
+    //                     height: _scaleAnimation.value * 0.8,
+    //                     fit: BoxFit.cover,
+    //                   ),
+    //                 ),
+    //               ),
+    //             ),
+    //             // App name fade-in
+    //             Opacity(
+    //               opacity: _textOpacityAnimation.value,
+    //               child: const Padding(
+    //                 padding: EdgeInsets.only(left: 16),
+    //                 child: Text(
+    //                   'ValarPay',
+    //                   style: TextStyle(
+    //                     color: Colors.white,
+    //                     fontSize: 32,
+    //                     fontWeight: FontWeight.w600,
+    //                     fontFamily: 'SF Pro',
+    //                   ),
+    //                 ),
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //       ),
+    //     );
+    //   },
+    // ),
+    // );
   }
 }

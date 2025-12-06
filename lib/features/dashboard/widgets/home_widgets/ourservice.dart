@@ -37,7 +37,8 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/arrow-swap-horizontal.svg',
         label: 'Swap Currency',
-        onTap: () => context.push('/coming-soon'),
+        onTap: () => context.push('/swap-currency'),
+        // onTap: () => context.push('/coming-soon'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/internet.svg',
@@ -52,12 +53,13 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/int.svg',
         label: 'Intl. Airtime',
-        onTap: () => context.push('/coming-soon'),
+        // onTap: () => context.push('/coming-soon'),
+        onTap: () => context.push('/international-airtime'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/Education.svg',
         label: 'Education',
-        onTap: () => context.push('/coming-soon'),
+        onTap: () => context.push('/education'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/shoping.svg',
@@ -69,10 +71,11 @@ class OurServicesWidget extends StatelessWidget {
         label: 'Insurance',
         onTap: () => context.push('/coming-soon'),
       ),
-      // ServiceItem(
-      //     icon: 'assets/images/service_icon/flight.svg',
-      //     label: 'Flight',
-      //     onTap: () => context.push('/flight')),
+      ServiceItem(
+        icon: 'assets/images/service_icon/flight.svg',
+        label: 'Flight',
+        onTap: () => context.push('/flight'),
+      ),
     ];
 
     return Column(

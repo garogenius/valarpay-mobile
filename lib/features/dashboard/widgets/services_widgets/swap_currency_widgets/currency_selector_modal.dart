@@ -1,8 +1,61 @@
 import 'package:flutter/material.dart';
 
+class CurrencyModel {
+  final String code;
+  final String name;
+  final String flagAsset;
+  final String symbol; // ✅ new field
+
+  const CurrencyModel({
+    required this.code,
+    required this.name,
+    required this.flagAsset,
+    required this.symbol, // ✅ include in constructor
+  });
+}
+
+const List<CurrencyModel> supportedCurrencies = [
+  CurrencyModel(
+    code: 'NGN',
+    name: 'Nigerian Naira',
+    flagAsset: 'assets/images/nigerian.png',
+    symbol: '₦',
+  ),
+  CurrencyModel(
+    code: 'USD',
+    name: 'US Dollar',
+    flagAsset: 'assets/images/USA.png',
+    symbol: '\$',
+  ),
+  CurrencyModel(
+    code: 'EUR',
+    name: 'Euro',
+    flagAsset: 'assets/images/POUNDS.png',
+    symbol: '€',
+  ),
+  CurrencyModel(
+    code: 'GBP',
+    name: 'British Pound',
+    flagAsset: 'assets/images/POUNDS.png',
+    symbol: '£',
+  ),
+  CurrencyModel(
+    code: 'CAD',
+    name: 'Canadian Dollar',
+    flagAsset: 'assets/images/POUNDS.png',
+    symbol: 'C\$',
+  ),
+  CurrencyModel(
+    code: 'AUD',
+    name: 'Australian Dollar',
+    flagAsset: 'assets/images/uk.png',
+    symbol: 'A\$',
+  ),
+];
+
 class CurrencySelectorModal extends StatelessWidget {
   final String selectedCurrency;
-  final Function(String) onCurrencySelected;
+  final ValueChanged<CurrencyModel> onCurrencySelected;
 
   const CurrencySelectorModal({
     super.key,
@@ -13,15 +66,7 @@ class CurrencySelectorModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final currencies = [
-      {'code': 'NGN', 'name': 'Nigerian Naira', 'flag': Colors.green},
-      {'code': 'USD', 'name': 'US Dollar', 'flag': Colors.blue},
-      {'code': 'EUR', 'name': 'Euro', 'flag': Colors.blue},
-      {'code': 'GBP', 'name': 'British Pound', 'flag': Colors.red},
-      {'code': 'CAD', 'name': 'Canadian Dollar', 'flag': Colors.red},
-      {'code': 'AUD', 'name': 'Australian Dollar', 'flag': Colors.blue},
-    ];
+    final List<CurrencyModel> currencies = supportedCurrencies;
 
     return Container(
       decoration: BoxDecoration(
@@ -74,52 +119,61 @@ class CurrencySelectorModal extends StatelessWidget {
               itemCount: currencies.length,
               itemBuilder: (context, index) {
                 final currency = currencies[index];
-                final isSelected = currency['code'] == selectedCurrency;
+                final isSelected = currency.code == selectedCurrency;
 
                 return ListTile(
                   leading: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 24,
-                        height: 16,
+                        width: 28,
+                        height: 20,
                         decoration: BoxDecoration(
-                          color: currency['flag'] as Color,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(4),
+                          image: DecorationImage(
+                            image: AssetImage(currency.flagAsset),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Container(
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFFF76301)
-                                : Colors.grey,
+                            color:
+                                isSelected
+                                    ? const Color(0xFFF76301)
+                                    : Colors.grey,
                             width: 2,
                           ),
                         ),
-                        child: isSelected
-                            ? const Icon(
-                                Icons.circle,
-                                color: Color(0xFFF76301),
-                                size: 12,
-                              )
-                            : null,
+                        child:
+                            isSelected
+                                ? const Center(
+                                  child: Icon(
+                                    Icons.circle,
+                                    color: Color(0xFFF76301),
+                                    size: 12,
+                                  ),
+                                )
+                                : null,
                       ),
                     ],
                   ),
                   title: Text(
-                    '${currency['code']} - ${currency['name']}',
+                    '${currency.code} - ${currency.name}',
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black,
                       fontSize: 16,
                     ),
                   ),
                   onTap: () {
-                    onCurrencySelected(currency['code'] as String);
+                    onCurrencySelected(currency);
                     Navigator.pop(context);
                   },
                 );

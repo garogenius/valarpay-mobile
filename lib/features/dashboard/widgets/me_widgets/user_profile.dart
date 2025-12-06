@@ -7,6 +7,7 @@ import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:valarpay/features/providers/idle_provider.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 
@@ -34,6 +35,7 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
       final bool isLoggedIn = await SessionService.isLoggedIn();
       if (!isLoggedIn) {
         SessionService(context).logout();
+        ref.read(userIdleProvider.notifier).stopMonitoring();
       }
     });
   }

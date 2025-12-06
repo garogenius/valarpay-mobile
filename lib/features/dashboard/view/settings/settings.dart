@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
+import 'package:valarpay/features/providers/idle_provider.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/settings_widgets.dart';
 
@@ -96,45 +97,47 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   ///  Logout confirmation dialog
- void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-  final parentContext = context; // store router context
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    final parentContext = context; // store router context
 
-  showDialog(
-    context: context,
-    builder: (dialogCtx) => AlertDialog(
-      title: const Text('Logout'),
-      content: const Text('Are you sure you want to logout?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogCtx).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            Navigator.of(dialogCtx).pop();
+    showDialog(
+      context: context,
+      builder:
+          (dialogCtx) => AlertDialog(
+            title: const Text('Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(dialogCtx).pop();
 
-            await ref.read(userProvider.notifier).clearUser();
-            SessionService(context).logout();
+                  await ref.read(userProvider.notifier).clearUser();
+                  SessionService(context).logout();
+                  ref.read(userIdleProvider.notifier).stopMonitoring();
 
-            AppMessenger.show(
-              parentContext,
-              message: 'You have been logged out successfully',
-              type: MessageType.success,
-            );
+                  AppMessenger.show(
+                    parentContext,
+                    message: 'You have been logged out successfully',
+                    type: MessageType.success,
+                  );
 
-            if (parentContext.mounted) {
-              final username = await SessionService.getUsername();
-              if (username != null) {
-                parentContext.push('/biometric-login');
-              } else {
-                parentContext.go('/signin');
-              }
-            }
-          },
-          child: const Text('Logout'),
-        ),
-      ],
-    ),
-  );
-}
+                  if (parentContext.mounted) {
+                    final username = await SessionService.getUsername();
+                    if (username != null) {
+                      parentContext.push('/biometric-login');
+                    } else {
+                      parentContext.go('/signin');
+                    }
+                  }
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          ),
+    );
+  }
 }

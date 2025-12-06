@@ -16,7 +16,7 @@ class PlanSelectorModal extends StatelessWidget {
 
     final plans = [
       {'name': 'Plan A', 'rate': '₦500'},
-      {'name': 'Plan B', 'rate': '₦1000'},
+      {'name': 'Plan B', 'rate': '₦1000'}, 
       {'name': 'Plan C', 'rate': '₦1500'},
       {'name': 'Plan D', 'rate': '₦2000'},
       {'name': 'Plan E', 'rate': '₦2500'},

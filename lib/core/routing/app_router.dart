@@ -162,8 +162,8 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/signin',
-      pageBuilder: (context, state) =>
-          const NoTransitionPage(child: SignInScreen()),
+      pageBuilder:
+          (context, state) => const NoTransitionPage(child: SignInScreen()),
     ),
     GoRoute(
       path: '/biometric-login',
@@ -378,7 +378,8 @@ final router = GoRouter(
     GoRoute(
       path: '/notification-view',
       builder: (context, state) {
-        final Map<String, String> data = state.extra as Map<String, String>? ??
+        final Map<String, String> data =
+            state.extra as Map<String, String>? ??
             {'title': 'Notification', 'content': 'No content'};
         return NotificationViewScreen(
           title: data['title']!,
@@ -391,7 +392,8 @@ final router = GoRouter(
     GoRoute(
       path: '/faq-detail',
       builder: (context, state) {
-        final Map<String, String> data = state.extra as Map<String, String>? ??
+        final Map<String, String> data =
+            state.extra as Map<String, String>? ??
             {'question': 'FAQ', 'answer': 'No answer available'};
         return FAQDetailScreen(
           question: data['question']!,
@@ -403,10 +405,10 @@ final router = GoRouter(
       path: '/electricity',
       builder: (context, state) => const ElectricityScreen(),
     ),
-    // GoRoute(
-    //   path: '/flight',
-    //   builder: (context, state) => const FlightSelectionScreen(),
-    // ),
+    GoRoute(
+      path: '/flight',
+      builder: (context, state) => const FlightSelectionScreen(),
+    ),
     GoRoute(
       path: '/swap-currency',
       builder: (context, state) => const SwapCurrencyScreen(),
@@ -415,14 +417,14 @@ final router = GoRouter(
     //   path: '/insurance',
     //   builder: (context, state) => const InsuranceScreen(),
     // ),
-    // GoRoute(
-    //   path: '/international-airtime',
-    //   builder: (context, state) => const InternationalAirtimeScreen(),
-    // ),
-    // GoRoute(
-    //   path: '/education',
-    //   builder: (context, state) => const EducationScreen(),
-    // ),
+    GoRoute(
+      path: '/international-airtime',
+      builder: (context, state) => const InternationalAirtimeScreen(),
+    ),
+    GoRoute(
+      path: '/education',
+      builder: (context, state) => const EducationScreen(),
+    ),
     GoRoute(
       path: '/internet',
       builder: (context, state) => const InternetScreen(),
@@ -490,6 +492,7 @@ final router = GoRouter(
       path: '/cable-tv',
       builder: (context, state) => const CableTvScreen(),
     ),
+
     // GoRoute(
     //   path: '/betting',
     //   builder: (context, state) => const BettingScreen(),
@@ -498,12 +501,11 @@ final router = GoRouter(
     //   path: '/shopping',
     //   builder: (context, state) => const ShoppingScreen(),
     // ),
-
     GoRoute(
       path: '/gift-card',
       builder: (context, state) => const GiftCardScreen(),
     ),
-        GoRoute(
+    GoRoute(
       path: '/terms-and-conditions',
       builder: (context, state) => const TermsAndConditionsScreen(),
     ),

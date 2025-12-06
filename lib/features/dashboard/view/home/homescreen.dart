@@ -7,6 +7,7 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/providers/idle_provider.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/payment_widget_icons.dart';
 import '../../widgets/home_widgets/kyc_widget.dart';
@@ -39,6 +40,8 @@ class _HomescreenState extends ConsumerState<Homescreen> {
     // Fetch user data immediately on first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
+      ref.read(userIdleProvider.notifier).startMonitoring();
+
     });
   }
 

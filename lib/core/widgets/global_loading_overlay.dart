@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/notifiers/airtime_notifier.dart';
 import 'package:valarpay/features/notifiers/auth_notifier.dart';
@@ -103,75 +104,84 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
             height: double.infinity,
             color: Colors.black.withOpacity(0.7),
             child: Center(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Outer ring - rotates clockwise
-                      Transform.rotate(
-                        angle: _controller.value * 2 * 3.14159,
-                        child: SizedBox(
-                          width: 120,
-                          height: 120,
-                          child: CustomPaint(
-                            painter: _GradientArcPainter(
-                              progress: _controller.value,
-                              radius: 60,
-                              strokeWidth: 6,
-                              sweepAngle: 4.71239, // 270 degrees
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Inner ring - rotates counter-clockwise
-                      Transform.rotate(
-                        angle: -_controller.value * 2 * 3.14159,
-                        child: SizedBox(
-                          width: 90,
-                          height: 90,
-                          child: CustomPaint(
-                            painter: _GradientArcPainter(
-                              progress: _controller.value,
-                              radius: 45,
-                              strokeWidth: 5,
-                              sweepAngle: 4.71239, // 270 degrees
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Pulsing logo in center
-                      Transform.scale(
-                        scale:
-                            1.0 +
-                            (0.05 * (0.5 - (_controller.value - 0.5).abs())),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: appTheme.primaryColor.withOpacity(0.2),
-                                blurRadius: 15,
-                                spreadRadius: 3,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(10),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              child: Image.asset(
+                'assets/gifs/valarpay.gif',
+                width: 85.w,
+                height: 85.h,
+                fit: BoxFit.contain,
               ),
             ),
+            // child:
+            // Center(
+            //   child: AnimatedBuilder(
+            //     animation: _controller,
+            //     builder: (context, child) {
+            //       return Stack(
+            //         alignment: Alignment.center,
+            //         children: [
+            //           // Outer ring - rotates clockwise
+            //           Transform.rotate(
+            //             angle: _controller.value * 2 * 3.14159,
+            //             child: SizedBox(
+            //               width: 120,
+            //               height: 120,
+            //               child: CustomPaint(
+            //                 painter: _GradientArcPainter(
+            //                   progress: _controller.value,
+            //                   radius: 60,
+            //                   strokeWidth: 6,
+            //                   sweepAngle: 4.71239, // 270 degrees
+            //                 ),
+            //               ),
+            //             ),
+            //           ),
+            //           // Inner ring - rotates counter-clockwise
+            //           Transform.rotate(
+            //             angle: -_controller.value * 2 * 3.14159,
+            //             child: SizedBox(
+            //               width: 90,
+            //               height: 90,
+            //               child: CustomPaint(
+            //                 painter: _GradientArcPainter(
+            //                   progress: _controller.value,
+            //                   radius: 45,
+            //                   strokeWidth: 5,
+            //                   sweepAngle: 4.71239, // 270 degrees
+            //                 ),
+            //               ),
+            //             ),
+            //           ),
+            //           // Pulsing logo in center
+            //           Transform.scale(
+            //             scale:
+            //                 1.0 +
+            //                 (0.05 * (0.5 - (_controller.value - 0.5).abs())),
+            //             child: Container(
+            //               width: 60,
+            //               height: 60,
+            //               decoration: BoxDecoration(
+            //                 shape: BoxShape.circle,
+            //                 color: Colors.white,
+            //                 boxShadow: [
+            //                   BoxShadow(
+            //                     color: appTheme.primaryColor.withOpacity(0.2),
+            //                     blurRadius: 15,
+            //                     spreadRadius: 3,
+            //                   ),
+            //                 ],
+            //               ),
+            //               padding: const EdgeInsets.all(10),
+            //               child: Image.asset(
+            //                 'assets/images/logo.png',
+            //                 fit: BoxFit.contain,
+            //               ),
+            //             ),
+            //           ),
+            //         ],
+            //       );
+            //     },
+            //   ),
+            // ),
           ),
       ],
     );

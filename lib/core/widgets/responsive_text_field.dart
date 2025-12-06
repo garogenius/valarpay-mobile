@@ -38,14 +38,10 @@ class ResponsiveTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: ResponsiveUtils.bodyMedium.copyWith(
-            color: Colors.black,
-          ),
-        ),
+        Text(label, style: ResponsiveUtils.bodyMedium.copyWith()),
         SizedBox(height: ResponsiveUtils.spacing8),
         TextFormField(
           controller: controller,
@@ -99,9 +95,7 @@ class ResponsiveTextField extends StatelessWidget {
           SizedBox(height: ResponsiveUtils.spacing4),
           Text(
             errorText!,
-            style: ResponsiveUtils.bodySmall.copyWith(
-              color: Colors.red,
-            ),
+            style: ResponsiveUtils.bodySmall.copyWith(color: Colors.red),
           ),
         ],
       ],

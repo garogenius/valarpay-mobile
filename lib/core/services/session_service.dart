@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:valarpay/core/routing/app_router.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/features/models/login.dart';
 import 'package:valarpay/features/models/user.dart';
@@ -96,6 +97,25 @@ class SessionService {
       context.pushReplacement('/biometric-login');
     } else {
       context.pushReplacement('/signin');
+    }
+  }
+
+  Future<void> logout2() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userDetailsKey);
+    await prefs.remove(_userAccessToken);
+
+    final fpEnabled = await LocalStorageService.getBool(
+      'pref_biometric_fingerprint',
+    );
+    final faceEnabled = await LocalStorageService.getBool(
+      'pref_biometric_faceid',
+    );
+    if (await SessionService.getUsername() != null &&
+        (fpEnabled == true || faceEnabled == true)) {
+      router.go('/biometric-login');
+    } else {
+      router.go('/signin');
     }
   }
 

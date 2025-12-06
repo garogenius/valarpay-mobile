@@ -12,5 +12,5 @@ void main() async {
 ]);
   final container = ProviderContainer();
   await container.read(userProvider.notifier).loadUser();
-  runApp(UncontrolledProviderScope(container: container, child: MyApp()));
+  runApp(UncontrolledProviderScope(container: container, child: Listener(child: MyApp())));
 }
