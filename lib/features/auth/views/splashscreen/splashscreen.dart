@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
-import 'package:valarpay/core/services/inactivity_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -75,22 +74,16 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkSession() async {
-    final loggedIn = await SessionService.isLoggedIn();
     final savedUsername = await SessionService.getUsername();
-
-    // Check if auto-logout should happen
-    final shouldLogout = await InactivityService.shouldLogoutOnResume();
 
     if (!mounted) return;
 
-    if (shouldLogout && loggedIn) {
-      await SessionService(context).logout();
-      return;
-    }
+    // On app restart, always require login
+    // If user has saved credentials, go to biometric/passcode login
+    // Otherwise, go to signin
 
-    if (loggedIn && savedUsername != null) {
-      // User is logged in and has username saved
-      // Check if they have biometric or passcode enabled
+    if (savedUsername != null) {
+      // Has saved username, go to biometric/passcode login
       final fpEnabled = await LocalStorageService.getBool(
         'pref_biometric_fingerprint',
       );
@@ -99,32 +92,18 @@ class _SplashScreenState extends State<SplashScreen>
       );
       final hasPasscode = await LocalStorageService.getBool('has_passcode');
 
-      // Check auto-logout setting
-      final autoLogoutSetting = await LocalStorageService.get(
-        'auto_logout_setting',
-      );
-
-      // If "Password Free Log in", go directly to home
-      if (autoLogoutSetting == 'Password Free Log in') {
-        context.pushReplacement('/');
-        return;
-      }
-
       // If any lock method is enabled, show lock screen
       if ((fpEnabled ?? false) ||
           (faceEnabled ?? false) ||
           (hasPasscode ?? false)) {
         context.pushReplacement('/biometric-login');
       } else {
-        // No lock enabled, go directly to home
-        context.pushReplacement('/');
+        // No lock enabled, go to passcode login
+        context.pushReplacement('/passcode-login');
       }
-    } else if (savedUsername != null) {
-      // Not logged in but has username (logged out)
-      context.pushReplacement('/biometric-login');
     } else {
-      // No session at all, show intro
-      context.pushReplacement('/intro');
+      // No saved username, go to signin
+      context.pushReplacement('/signin');
     }
   }
 

@@ -21,7 +21,8 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(userNotifierProvider);
-    final user = userState.data?.isNotEmpty == true ? userState.data!.first : null;
+    final user =
+        userState.data?.isNotEmpty == true ? userState.data!.first : null;
     final isNinVerified = user?.isNinVerified ?? false;
     final isAddressSubmitted = user?.isAddressVerified ?? false;
 
@@ -34,10 +35,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
         ),
         title: Text(
           'Upgrade your account',
-          style: TextStyle(
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: false,
       ),
@@ -48,6 +46,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
             // Tier 1 Card
             Tier1Card(
               isExpanded: _isTier1Expanded,
+              user: user,
               onToggle: () {
                 setState(() {
                   _isTier1Expanded = !_isTier1Expanded;
@@ -59,6 +58,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
             // Tier 2 Card
             Tier2Card(
               isExpanded: _isTier2Expanded,
+              user: user,
               onToggle: () {
                 setState(() {
                   _isTier2Expanded = !_isTier2Expanded;
@@ -72,6 +72,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
               isExpanded: _isTier3Expanded,
               isNinVerified: isNinVerified,
               isAddressSubmitted: isAddressSubmitted,
+              user: user,
               onToggle: () {
                 setState(() {
                   _isTier3Expanded = !_isTier3Expanded;

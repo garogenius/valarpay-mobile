@@ -36,7 +36,10 @@ class AccountSettingsPage extends ConsumerWidget {
 
     // Get user data
     final accountName = user?.fullname ?? 'N/A';
-    final accountNumber = wallet?.accountNumber ?? '0000000000';
+    final accountNumber =
+        (wallet?.accountNumber != null && wallet!.accountNumber.isNotEmpty)
+            ? wallet.accountNumber
+            : 'Not Available';
     final dailyLimit =
         user?.dailyCummulativeTransactionLimit != null
             ? currencyFormatter(

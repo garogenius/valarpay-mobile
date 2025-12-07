@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
+import 'package:valarpay/features/models/user.dart';
 
 class Tier2Card extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
+  final UserModel? user;
 
   const Tier2Card({
     Key? key,
     this.isExpanded = false,
     required this.onToggle,
+    this.user,
   }) : super(key: key);
 
   @override
@@ -19,14 +22,14 @@ class Tier2Card extends StatefulWidget {
 class _Tier2CardState extends State<Tier2Card> {
   @override
   Widget build(BuildContext context) {
+    final nin = widget.user?.nin;
+    final isNinVerified = widget.user?.isNinVerified ?? false;
+
     return Container(
       width: 335.w,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        border: Border.all(
-          color: const Color(0xFFFFEEE3),
-          width: 6,
-        ),
+        border: Border.all(color: const Color(0xFFFFEEE3), width: 6),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Column(
@@ -54,19 +57,24 @@ class _Tier2CardState extends State<Tier2Card> {
                     child: Row(
                       children: [
                         Text(
-                          'Upgrade to Tier 2',
+                          isNinVerified ? 'Tier 2' : 'Upgrade to Tier 2',
                           style: TextStyle(
-                            color: const Color(0xFFF76301),
+                            color:
+                                isNinVerified
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFFF76301),
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(width: 4.w),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: const Color(0xFFF76301),
-                          size: 14.sp,
-                        ),
+                        if (!isNinVerified) ...[
+                          SizedBox(width: 4.w),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: const Color(0xFFF76301),
+                            size: 14.sp,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -98,46 +106,69 @@ class _Tier2CardState extends State<Tier2Card> {
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(8.w, 12.h, 20.w, 0),
+              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                Text(
-                  'Requirements',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[400]
-                        : const Color(0xFF9CA3AF),
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w400,
+                  Text(
+                    'Requirements',
+                    style: TextStyle(
+                      color:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[400]
+                              : const Color(0xFF9CA3AF),
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  'NIN',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFF111827),
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
+                  SizedBox(height: 12.h),
+
+                  // NIN Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'NIN',
+                        style: TextStyle(
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : const Color(0xFF111827),
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          if (nin != null && nin.isNotEmpty) ...[
+                            Text(
+                              '***${nin.substring(nin.length - 4)}',
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF6B7280),
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                          ],
+                          Icon(
+                            isNinVerified ? Icons.check_circle : Icons.cancel,
+                            color: isNinVerified ? Colors.green : Colors.red,
+                            size: 16.sp,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'NIN Verification',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFF111827),
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
 
           // Limits Section (shown when expanded)
@@ -153,9 +184,10 @@ class _Tier2CardState extends State<Tier2Card> {
                     height: 2.h,
                     child: CustomPaint(
                       painter: DashedLinePainter(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[600]!
-                            : const Color(0xFF111827),
+                        color:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[600]!
+                                : const Color(0xFF111827),
                       ),
                     ),
                   ),
@@ -173,9 +205,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               'Single Credit Limit',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.grey[400]
-                                    : const Color(0xFF9CA3AF),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF9CA3AF),
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -184,9 +218,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               '₦5,000,000.00',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : const Color(0xFF111827),
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -195,9 +231,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               'Daily Credit Limit',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.grey[400]
-                                    : const Color(0xFF9CA3AF),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF9CA3AF),
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -206,9 +244,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               '₦10,000,000.00',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : const Color(0xFF111827),
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -225,9 +265,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               'Single Debit Limit',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.grey[400]
-                                    : const Color(0xFF9CA3AF),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF9CA3AF),
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -236,9 +278,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               '₦5,000,000.00',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : const Color(0xFF111827),
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -247,9 +291,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               'Daily Debit Limit',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.grey[400]
-                                    : const Color(0xFF9CA3AF),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF9CA3AF),
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -258,9 +304,11 @@ class _Tier2CardState extends State<Tier2Card> {
                             Text(
                               '₦10,000,000.00',
                               style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : const Color(0xFF111827),
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -289,21 +337,18 @@ class DashedLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke;
 
     const dashWidth = 5.0;
     const dashSpace = 3.0;
     double startX = 0;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }

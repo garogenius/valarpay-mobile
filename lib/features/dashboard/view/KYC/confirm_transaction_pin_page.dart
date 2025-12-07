@@ -198,16 +198,13 @@ class _ConfirmTransactionPinPageState
                 }
               }
 
-              // Step 3: Close dialog and navigate - use rootNavigator to close dialog
+              // Step 3: Close dialog first
               if (mounted) {
                 Navigator.of(dialogContext, rootNavigator: true).pop();
 
-                // Step 4: Navigate to home (this replaces the entire KYC flow)
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    context.pushReplacement('/');
-                  }
-                });
+                // Step 4: Navigate to home immediately after closing dialog
+                // Use the parent context (from the widget state, not dialog)
+                context.pushReplacement('/');
               }
             } catch (e) {
               if (mounted) {

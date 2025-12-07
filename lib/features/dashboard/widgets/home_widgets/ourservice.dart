@@ -74,7 +74,7 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/flight.svg',
         label: 'Flight',
-        onTap: () => context.push('/flight'),
+        onTap: () => context.push('/coming-soon'),
       ),
     ];
 

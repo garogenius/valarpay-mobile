@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
 
 class ReuseableTextFieldWithCountry extends StatelessWidget {
@@ -12,6 +13,8 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
   String hintText;
   bool showCountryLabel;
   TextInputType textInputType;
+  List<TextInputFormatter>? inputFormatters;
+
   ReuseableTextFieldWithCountry({
     this.countryCode,
     this.flagImagePath,
@@ -23,6 +26,7 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
     this.suffixWidget,
     required this.showCountryLabel,
     this.maxLength,
+    this.inputFormatters,
     super.key,
   });
 
@@ -60,6 +64,7 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
             keyboardType: textInputType,
             readOnly: isReadOnly,
             maxLength: maxLength,
+            inputFormatters: inputFormatters,
             decoration: InputDecoration(
               counterText: '',
               hintText: hintText,

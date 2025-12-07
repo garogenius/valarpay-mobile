@@ -23,13 +23,11 @@ class _LoginSettingsScreenState extends ConsumerState<LoginSettingsScreen> {
   static const _keyFingerprint = 'pref_biometric_fingerprint';
   static const _keyFaceId = 'pref_biometric_faceid';
 
-  bool fingerprintEnabled = false;
-  bool faceIdEnabled = false;
-  bool logInWithFaceId = false;
+  bool biometricEnabled = false;
 
   // Device capability flags
-  bool hasFingerprintAvailable = false;
-  bool hasFaceAvailable = false;
+  BiometricType? availableBiometricType;
+  String biometricLabel = 'Biometric';
   bool canCheckBiometrics = false;
 
   final _localAuth = LocalAuthentication();
@@ -37,34 +35,26 @@ class _LoginSettingsScreenState extends ConsumerState<LoginSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
     _checkDeviceBiometrics();
+    _loadPreferences();
   }
 
   Future<void> _checkDeviceBiometrics() async {
     try {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
       final canCheck = await _localAuth.canCheckBiometrics;
-      final availableBiometrics = await _localAuth.getAvailableBiometrics();
 
-      bool fingerprint = false;
-      bool face = false;
-
-      // Some devices (Android 11+) may report BiometricType.strong
-      // instead of fingerprint or face.
-      for (final bio in availableBiometrics) {
-        if (bio == BiometricType.fingerprint || bio == BiometricType.strong) {
-          fingerprint = true;
-        }
-        if (bio == BiometricType.face) {
-          face = true;
-        }
+      // Use platform-based labeling
+      String label = 'Biometric';
+      if (Theme.of(context).platform == TargetPlatform.iOS) {
+        label = 'Face ID';
+      } else if (Theme.of(context).platform == TargetPlatform.android) {
+        label = 'Fingerprint';
       }
 
       setState(() {
         canCheckBiometrics = canCheck && isDeviceSupported;
-        hasFingerprintAvailable = fingerprint;
-        hasFaceAvailable = face;
+        biometricLabel = label;
       });
     } catch (e) {
       debugPrint('Biometric check failed: $e');
@@ -75,18 +65,20 @@ class _LoginSettingsScreenState extends ConsumerState<LoginSettingsScreen> {
     final fp = await LocalStorageService.getBool(_keyFingerprint);
     final face = await LocalStorageService.getBool(_keyFaceId);
     setState(() {
-      fingerprintEnabled = fp ?? false;
-      faceIdEnabled = face ?? false;
-      logInWithFaceId = faceIdEnabled;
+      // If either is enabled, biometric is enabled
+      biometricEnabled = (fp ?? false) || (face ?? false);
     });
   }
 
-  Future<void> _saveFingerprintPref(bool value) async {
-    await LocalStorageService.saveBool(_keyFingerprint, value);
-  }
-
-  Future<void> _saveFaceIdPref(bool value) async {
-    await LocalStorageService.saveBool(_keyFaceId, value);
+  Future<void> _saveBiometricPref(bool value) async {
+    // Save to both keys for backward compatibility
+    if (availableBiometricType == BiometricType.face) {
+      await LocalStorageService.saveBool(_keyFaceId, value);
+      await LocalStorageService.saveBool(_keyFingerprint, false);
+    } else {
+      await LocalStorageService.saveBool(_keyFingerprint, value);
+      await LocalStorageService.saveBool(_keyFaceId, false);
+    }
   }
 
   @override
@@ -233,275 +225,147 @@ class _LoginSettingsScreenState extends ConsumerState<LoginSettingsScreen> {
               ),
               const SizedBox(height: 16),
 
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Log in with fingerprint',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
+              // Show biometric option only if device supports it
+              if (canCheckBiometrics && availableBiometricType != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Log in with $biometricLabel',
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        Switch(
-                          value: fingerprintEnabled,
-                          activeTrackColor: appTheme.primaryColor,
+                      ),
+                      Switch(
+                        value: biometricEnabled,
+                        activeTrackColor: appTheme.primaryColor,
+                        onChanged: (value) async {
+                          // Check if passcode is set first
+                          if (value && !hasPasscodeCodeSet) {
+                            AppMessenger.show(
+                              context,
+                              message:
+                                  'Please create a passcode first before enabling biometric login',
+                              type: MessageType.warning,
+                            );
+                            // Navigate to create passcode
+                            context.push('/create-passcode');
+                            return;
+                          }
 
-                          onChanged: (value) async {
-                            // Check if passcode is set first
-                            if (value && !hasPasscodeCodeSet) {
-                              AppMessenger.show(
-                                context,
-                                message:
-                                    'Please create a passcode first before enabling biometric login',
-                                type: MessageType.warning,
-                              );
-                              // Navigate to create passcode
-                              context.push('/create-passcode');
-                              return;
-                            }
+                          // If enabling, verify with biometric first
+                          if (value) {
+                            final result =
+                                await BiometricAuthService.authenticateWithFallback(
+                                  promptMessage:
+                                      'Verify $biometricLabel to enable',
+                                );
+                            if (result == BiometricAuthResult.success) {
+                              // Save device ID to link biometric to this device
+                              final deviceId = await DeviceUtils.getDeviceId();
+                              await SecureStorageService.saveDeviceId(deviceId);
 
-                            // If device doesn't support fingerprint, don't attempt to enable
-                            if (value && !hasFingerprintAvailable) {
-                              AppMessenger.show(
-                                context,
-                                message:
-                                    'Fingerprint is not available on this device',
-                                type: MessageType.warning,
-                              );
-                              return;
-                            }
-
-                            // If enabling, verify with biometric first
-                            if (value) {
-                              final result =
-                                  await BiometricAuthService.authenticateWithFallback(
-                                    promptMessage:
-                                        'Verify fingerprint to enable',
-                                  );
-                              if (result == BiometricAuthResult.success) {
-                                // Save device ID to link biometric to this device
-                                final deviceId = await DeviceUtils.getDeviceId();
-                                await SecureStorageService.saveDeviceId(deviceId);
-                                
-                                setState(() {
-                                  fingerprintEnabled = value;
-                                });
-                                _saveFingerprintPref(value);
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message: 'Fingerprint login enabled for this device',
-                                    type: MessageType.success,
-                                  );
-                                }
-                              } else if (result ==
-                                  BiometricAuthResult.fallback) {
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message:
-                                        'Biometrics not available on this device',
-                                    type: MessageType.warning,
-                                  );
-                                }
-                              } else {
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message:
-                                        'Authentication cancelled or failed',
-                                    type: MessageType.error,
-                                  );
-                                }
-                              }
-                            } else {
-                              // Disabling doesn't require authentication
-                              // require biometric verification before enabling/disabling
-                              final result =
-                                  await BiometricAuthService.authenticateWithFallback(
-                                    promptMessage:
-                                        'Verify to change biometric setting',
-                                  );
-                              if (result == BiometricAuthResult.success) {
-                                setState(() {
-                                  fingerprintEnabled = value;
-                                });
-                                _saveFingerprintPref(value);
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message: 'Fingerprint login disabled',
-                                    type: MessageType.success,
-                                  );
-                                }
-                              } else if (result ==
-                                  BiometricAuthResult.fallback) {
+                              setState(() {
+                                biometricEnabled = value;
+                              });
+                              _saveBiometricPref(value);
+                              if (context.mounted) {
                                 AppMessenger.show(
                                   context,
                                   message:
-                                      'Biometrics not available. Please use your passcode to change settings',
+                                      '$biometricLabel login enabled for this device',
+                                  type: MessageType.success,
+                                );
+                              }
+                            } else if (result == BiometricAuthResult.fallback) {
+                              if (context.mounted) {
+                                AppMessenger.show(
+                                  context,
+                                  message:
+                                      'Biometrics not available on this device',
                                   type: MessageType.warning,
                                 );
-                              } else {
+                              }
+                            } else {
+                              if (context.mounted) {
                                 AppMessenger.show(
                                   context,
-                                  message:
-                                      'Authentication failed. Biometric setting unchanged',
+                                  message: 'Authentication cancelled or failed',
                                   type: MessageType.error,
                                 );
                               }
                             }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Log in with Face ID',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                        Switch(
-                          value: logInWithFaceId,
-                                                    activeTrackColor: appTheme.primaryColor,
-
-                          onChanged: (value) async {
-                            // Check if passcode is set first
-                            if (value && !hasPasscodeCodeSet) {
-                              AppMessenger.show(
-                                context,
-                                message:
-                                    'Please create a passcode first before enabling biometric login',
-                                type: MessageType.warning,
-                              );
-                              // Navigate to create passcode
-                              context.push('/create-passcode');
-                              return;
-                            }
-
-                            // If enabling, ensure device has Face available
-                            if (value && !hasFaceAvailable) {
-                              AppMessenger.show(
-                                context,
-                                message:
-                                    'Face ID is not available on this device',
-                                type: MessageType.warning,
-                              );
-                              return;
-                            }
-
-                            // If enabling, verify with biometric first
-                            if (value) {
-                              final result =
-                                  await BiometricAuthService.authenticateWithFallback(
-                                    promptMessage: 'Verify Face ID to enable',
-                                  );
-                              if (result == BiometricAuthResult.success) {
-                                // Save device ID to link biometric to this device
-                                final deviceId = await DeviceUtils.getDeviceId();
-                                await SecureStorageService.saveDeviceId(deviceId);
-                                
-                                setState(() {
-                                  logInWithFaceId = value;
-                                  faceIdEnabled = value;
-                                });
-                                _saveFaceIdPref(value);
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message: 'Face ID login enabled for this device',
-                                    type: MessageType.success,
-                                  );
-                                }
-                              } else if (result ==
-                                  BiometricAuthResult.fallback) {
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message:
-                                        'Biometrics not available on this device',
-                                    type: MessageType.warning,
-                                  );
-                                }
-                              } else {
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message:
-                                        'Authentication cancelled or failed',
-                                    type: MessageType.error,
-                                  );
-                                }
+                          } else {
+                            // Disabling requires authentication
+                            final result =
+                                await BiometricAuthService.authenticateWithFallback(
+                                  promptMessage:
+                                      'Verify to change biometric setting',
+                                );
+                            if (result == BiometricAuthResult.success) {
+                              setState(() {
+                                biometricEnabled = value;
+                              });
+                              _saveBiometricPref(value);
+                              if (context.mounted) {
+                                AppMessenger.show(
+                                  context,
+                                  message: '$biometricLabel login disabled',
+                                  type: MessageType.success,
+                                );
                               }
+                            } else if (result == BiometricAuthResult.fallback) {
+                              AppMessenger.show(
+                                context,
+                                message:
+                                    'Biometrics not available. Please use your passcode to change settings',
+                                type: MessageType.warning,
+                              );
                             } else {
-                              // Disabling doesn't require authentication
-                              final result =
-                                  await BiometricAuthService.authenticateWithFallback(
-                                    promptMessage:
-                                        'Verify to change biometric setting',
-                                  );
-                              if (result == BiometricAuthResult.success) {
-                                setState(() {
-                                  logInWithFaceId = value;
-                                  faceIdEnabled = value;
-                                });
-                                _saveFaceIdPref(value);
-                                if (context.mounted) {
-                                  AppMessenger.show(
-                                    context,
-                                    message: 'Face ID login disabled',
-                                    type: MessageType.success,
-                                  );
-                                }
-                              } else if (result ==
-                                  BiometricAuthResult.fallback) {
-                                AppMessenger.show(
-                                  context,
-                                  message:
-                                      'Biometrics not available. Please use your passcode to change settings',
-                                  type: MessageType.warning,
-                                );
-                              } else {
-                                AppMessenger.show(
-                                  context,
-                                  message:
-                                      'Authentication failed. Biometric setting unchanged',
-                                  type: MessageType.error,
-                                );
-                              }
+                              AppMessenger.show(
+                                context,
+                                message:
+                                    'Authentication failed. Biometric setting unchanged',
+                                type: MessageType.error,
+                              );
                             }
-                        
-                          },
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Biometric authentication is not available on this device',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),

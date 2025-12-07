@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../utils/responsive_utils.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
@@ -17,6 +18,7 @@ class ResponsiveTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final int maxLines;
   final FormFieldValidator<String>? validator;
+  final List<TextInputFormatter>? inputFormatters;
 
   const ResponsiveTextField({
     super.key,
@@ -33,15 +35,18 @@ class ResponsiveTextField extends StatelessWidget {
     this.suffixIcon,
     this.maxLines = 1,
     this.validator,
+    this.inputFormatters,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: ResponsiveUtils.bodyMedium.copyWith()),
+        Text(
+          label,
+          style: ResponsiveUtils.bodyMedium.copyWith(color: Colors.black),
+        ),
         SizedBox(height: ResponsiveUtils.spacing8),
         TextFormField(
           controller: controller,
@@ -51,6 +56,7 @@ class ResponsiveTextField extends StatelessWidget {
           onTap: onTap,
           maxLines: maxLines,
           validator: validator,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: ResponsiveUtils.bodyMedium.copyWith(
@@ -119,6 +125,7 @@ class ResponsiveTextField extends StatelessWidget {
 
 // Usage examples:
 /*
+// Basic text field
 ResponsiveTextField(
   controller: _emailController,
   label: 'Email Address',
@@ -130,6 +137,7 @@ ResponsiveTextField(
   },
 )
 
+// Password field with visibility toggle
 ResponsiveTextField(
   controller: _passwordController,
   label: 'Password',
@@ -142,10 +150,47 @@ ResponsiveTextField(
   errorText: 'Password is incorrect',
 )
 
+// Multi-line text field
 ResponsiveTextField(
   controller: _addressController,
   label: 'Address',
   hint: 'Enter your address',
   maxLines: 3,
+)
+
+// Numbers only with max length
+ResponsiveTextField(
+  controller: _phoneController,
+  label: 'Phone Number',
+  hint: 'Enter phone number',
+  keyboardType: TextInputType.number,
+  inputFormatters: [
+    FilteringTextInputFormatter.digitsOnly,
+    LengthLimitingTextInputFormatter(11),
+  ],
+)
+
+// Uppercase text only
+ResponsiveTextField(
+  controller: _codeController,
+  label: 'Promo Code',
+  hint: 'Enter code',
+  inputFormatters: [
+    FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+    TextInputFormatter.withFunction((oldValue, newValue) {
+      return newValue.copyWith(text: newValue.text.toUpperCase());
+    }),
+  ],
+)
+
+// Amount field (numbers and decimal point only)
+ResponsiveTextField(
+  controller: _amountController,
+  label: 'Amount',
+  hint: '0.00',
+  keyboardType: TextInputType.numberWithOptions(decimal: true),
+  inputFormatters: [
+    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+  ],
 )
 */

@@ -110,5 +110,14 @@ class ApiEndpoints {
   static const String generateQRCode = '/api/v1/wallet/generate-qrcode';
   static const String decodeQRCode = '/api/v1/wallet/decode-qrcode';
 
+  // Notification endpoints
+  static const String getNotifications = '/api/v1/notification';
+  static const String getNotificationCount = '/api/v1/notification/count';
+  static const String markNotificationAsRead = '/api/v1/notification';
+  static const String deleteNotification = '/api/v1/notification';
+  static const String registerDevice = '/api/v1/notification/devices';
+  static const String notificationPreferences =
+      '/api/v1/notification/preferences';
+
   // future endpoints can go here
 }

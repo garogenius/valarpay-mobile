@@ -146,9 +146,7 @@ class _BiometricTransactionDialogState
       return Container(); // Empty container while transitioning
     }
 
-    return SizedBox.shrink();
-
-    AlertDialog(
+    return AlertDialog(
       backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: Container(
@@ -190,7 +188,6 @@ class _BiometricTransactionDialogState
             const SizedBox(height: 24),
 
             // Show loading indicator when authenticating
-            const SizedBox(height: 16),
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF76301)),
             ),

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
-import 'package:valarpay/core/services/inactivity_service.dart';
+import 'package:valarpay/core/services/session_timeout_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/biometric_transaction_tracker.dart';
 import '/features/dashboard/widgets/navbar.dart';
@@ -31,7 +31,7 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowModals();
-      InactivityService.startMonitoring(context);
+      SessionTimeoutService.startMonitoring(context);
     });
   }
 
@@ -50,17 +50,18 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     } else if (state == AppLifecycleState.paused) {
       // Save activity time when app goes to background
       _lastPausedTime = DateTime.now();
-      InactivityService.recordActivity();
+      SessionTimeoutService.onAppPaused();
+      SessionTimeoutService.recordActivity();
     } else if (state == AppLifecycleState.resumed) {
       // PRIORITY 1: Check if transaction biometric is in progress
       if (BiometricTransactionTracker.isInProgress()) {
-        InactivityService.recordActivity();
+        SessionTimeoutService.recordActivity();
         return;
       }
 
       // PRIORITY 2: Check if biometric authentication flag is set
       if (_isBiometricInProgress) {
-        InactivityService.recordActivity();
+        SessionTimeoutService.recordActivity();
         _isBiometricInProgress = false; // Reset flag
         return;
       }
@@ -75,12 +76,12 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
 
       if (isQuickResume) {
         // This is likely biometric authentication, don't logout
-        InactivityService.recordActivity();
+        SessionTimeoutService.recordActivity();
         return;
       }
 
       // Check if user should be logged out based on settings
-      final shouldLogout = await InactivityService.shouldLogoutOnResume();
+      final shouldLogout = await SessionTimeoutService.shouldLogoutOnResume();
 
       if (shouldLogout && mounted) {
         // Wait a bit to ensure any ongoing operations complete
@@ -113,7 +114,7 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
         }
       } else {
         // Just record activity if no logout needed
-        InactivityService.recordActivity();
+        SessionTimeoutService.recordActivity();
       }
     }
   }
@@ -133,6 +134,14 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
         await LocalStorageService.getBool('pref_biometric_faceid') ?? false;
     final biometricEnabled = hasBiometric || hasFaceId;
 
+    // Check if user skipped biometric setup and if 1 month has passed
+    final biometricSkippedTime = await LocalStorageService.get(
+      'biometric_skipped_timestamp',
+    );
+    final shouldShowBiometric = _shouldShowBiometricPrompt(
+      biometricSkippedTime,
+    );
+
     _hasShownPasscodePrompt = true;
 
     // Priority 1: Show KYC modal if BVN not verified
@@ -151,13 +160,31 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
         }
       });
     }
-    // Priority 3: Show Biometric modal if passcode set but no biometric
-    else if (!biometricEnabled) {
+    // Priority 3: Show Biometric modal if passcode set but no biometric and not skipped recently
+    else if (!biometricEnabled && shouldShowBiometric) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
           _showBiometricSetupModal();
         }
       });
+    }
+  }
+
+  /// Check if biometric prompt should be shown (1 month since last skip)
+  bool _shouldShowBiometricPrompt(String? skippedTimestamp) {
+    if (skippedTimestamp == null) return true; // Never skipped, show it
+
+    try {
+      final skippedTime = DateTime.fromMillisecondsSinceEpoch(
+        int.parse(skippedTimestamp),
+      );
+      final now = DateTime.now();
+      final difference = now.difference(skippedTime);
+
+      // Show again after 30 days (1 month)
+      return difference.inDays >= 30;
+    } catch (e) {
+      return true; // If error parsing, show the prompt
     }
   }
 
@@ -252,8 +279,8 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => InactivityService.recordActivity(),
-      onPanDown: (_) => InactivityService.recordActivity(),
+      onTap: () => SessionTimeoutService.recordActivity(),
+      onPanDown: (_) => SessionTimeoutService.recordActivity(),
       behavior: HitTestBehavior.translucent,
       child: Scaffold(
         body: widget.child,
@@ -357,9 +384,7 @@ class _KycVerificationModal extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const BVNPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const BVNPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -660,7 +685,19 @@ class _BiometricSetupModal extends StatelessWidget {
 
               // Skip Button
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () async {
+                  // Save timestamp when user skips
+                  final timestamp =
+                      DateTime.now().millisecondsSinceEpoch.toString();
+                  await LocalStorageService.save(
+                    'biometric_skipped_timestamp',
+                    timestamp,
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
                 child: Text(
                   'Skip for now',
                   style: TextStyle(

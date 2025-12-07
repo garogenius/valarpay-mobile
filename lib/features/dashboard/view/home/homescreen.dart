@@ -7,6 +7,7 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/notifiers/notification_notifier.dart';
 import 'package:valarpay/features/providers/idle_provider.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/payment_widget_icons.dart';
@@ -41,7 +42,8 @@ class _HomescreenState extends ConsumerState<Homescreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
       ref.read(userIdleProvider.notifier).startMonitoring();
-
+      // Fetch only notification count (lightweight)
+      ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
     });
   }
 
@@ -268,9 +270,8 @@ class _HomeAppBarState extends ConsumerState<_HomeAppBar> {
                 onTap: () => context.push('/decode-qrcode'),
               ),
               const SizedBox(width: 16),
-              _IconButton(
+              _NotificationIconButton(
                 svgPath: 'assets/images/payment_wid/bell.svg',
-                hasNotification: true,
                 onTap: () => context.push('/notifications'),
               ),
             ],
@@ -283,21 +284,46 @@ class _HomeAppBarState extends ConsumerState<_HomeAppBar> {
 
 class _IconButton extends StatelessWidget {
   final String svgPath;
-  final bool hasNotification;
   final VoidCallback? onTap;
 
-  const _IconButton({
-    Key? key,
-    required this.svgPath,
-    this.hasNotification = false,
-    this.onTap,
-  }) : super(key: key);
+  const _IconButton({Key? key, required this.svgPath, this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      child: SvgPicture.asset(
+        svgPath,
+        width: 24,
+        height: 24,
+        // ignore: deprecated_member_use
+        color: Theme.of(context).iconTheme.color,
+      ),
+    );
+  }
+}
+
+class _NotificationIconButton extends ConsumerWidget {
+  final String svgPath;
+  final VoidCallback? onTap;
+
+  const _NotificationIconButton({Key? key, required this.svgPath, this.onTap})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the unread count from notification notifier
+    final unreadCount = ref.watch(
+      notificationNotifierProvider.select(
+        (state) => ref.read(notificationNotifierProvider.notifier).unreadCount,
+      ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           SvgPicture.asset(
             svgPath,
@@ -306,16 +332,26 @@ class _IconButton extends StatelessWidget {
             // ignore: deprecated_member_use
             color: Theme.of(context).iconTheme.color,
           ),
-          if (hasNotification)
+          if (unreadCount > 0)
             Positioned(
-              right: 0,
-              top: 0,
+              right: -6,
+              top: -6,
               child: Container(
-                width: 8,
-                height: 8,
+                padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                child: Center(
+                  child: Text(
+                    unreadCount > 99 ? '99+' : '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),

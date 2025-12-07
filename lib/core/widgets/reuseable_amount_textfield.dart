@@ -7,13 +7,17 @@ class ReuseableAmountTextfield extends StatelessWidget {
   String hintText;
   Function(String)? onChanged;
   bool? isReadOnly;
-  ReuseableAmountTextfield(
-      {required this.amountController,
-      required this.prefixText,
-      required this.hintText,
-      this.onChanged,
-      this.isReadOnly,
-      super.key});
+  List<TextInputFormatter>? inputFormatters;
+
+  ReuseableAmountTextfield({
+    required this.amountController,
+    required this.prefixText,
+    required this.hintText,
+    this.onChanged,
+    this.isReadOnly,
+    this.inputFormatters,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +32,7 @@ class ReuseableAmountTextfield extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            prefixText,
-            style: const TextStyle(fontSize: 16),
-          ),
+          Text(prefixText, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -39,17 +40,17 @@ class ReuseableAmountTextfield extends StatelessWidget {
               controller: amountController,
               readOnly: isReadOnly ?? false,
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters:
+                  inputFormatters ?? [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: hintText,
                 contentPadding: EdgeInsets.zero,
                 hintStyle: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.grey[400]),
+                  color: isDark ? Colors.white38 : Colors.grey[400],
+                ),
               ),
-              style: const TextStyle(
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ],

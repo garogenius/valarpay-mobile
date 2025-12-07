@@ -534,8 +534,7 @@ class _TransactionHistoryPageState
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount:
-          filteredTransactions.length +
-          (ref.read(transactionNotifierProvider.notifier).hasMore ? 1 : 0),
+          filteredTransactions.length + (transactionState.isPaginating ? 1 : 0),
       itemBuilder: (context, index) {
         // Show loader at bottom if loading more
         if (index == filteredTransactions.length) {

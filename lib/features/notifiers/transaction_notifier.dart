@@ -68,7 +68,12 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
     // Don't fetch if no more data
     if (!_hasMore && !refresh) return;
 
-    state = state.copyWith(isInitialLoading: _currentPage == 1, message: null);
+    // Set loading state based on whether it's initial load or pagination
+    state = state.copyWith(
+      isInitialLoading: _currentPage == 1,
+      isPaginating: _currentPage > 1,
+      message: null,
+    );
 
     final userData = _ref.read(userNotifierProvider).data;
     final user =
@@ -76,6 +81,7 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
     if (user == null) {
       state = state.copyWith(
         isInitialLoading: false,
+        isPaginating: false,
         isDataAvailable: false,
         message: 'User not authenticated.',
       );
@@ -108,6 +114,7 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
 
       state = state.copyWith(
         isInitialLoading: false,
+        isPaginating: false,
         data: _allTransactions,
         isDataAvailable: _allTransactions.isNotEmpty,
         message: response.message,
@@ -116,6 +123,7 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
       log('[TransactionNotifier fetchTransactions] $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
+        isPaginating: false,
         isDataAvailable: false,
         message: 'Failed to load transactions: ${e.toString()}',
       );
@@ -124,7 +132,7 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
 
   /// Load more transactions (pagination)
   Future<void> loadMore() async {
-    if (!_hasMore || state.isInitialLoading) return;
+    if (!_hasMore || state.isInitialLoading || state.isPaginating) return;
 
     _currentPage++;
     await fetchTransactions();

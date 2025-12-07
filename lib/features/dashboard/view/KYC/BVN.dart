@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
-import 'package:valarpay/features/dashboard/view/KYC/camera_Permission.dart';
+import 'package:valarpay/features/dashboard/view/KYC/identity_verification.dart';
 import 'package:valarpay/features/models/bvn_verification_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import '../../widgets/Kyc/kyc_progress_bar.dart';
@@ -199,12 +199,13 @@ class _BVNPageState extends ConsumerState<BVNPage> {
                 isEnabled: isFormValid,
                 isLoading: userState.isInitialLoading,
                 onPressed: () async {
-                  // Pass the address request and BVN forward to the camera permission page
+                  // Navigate directly to identity verification (camera capture)
+                  ref.read(kycStepProvider.notifier).state = 4;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => CameraPermissionPage(
+                          (context) => IdentityVerificationPage(
                             request: BvnVerificationRequest(bvn: bvn),
                           ),
                     ),

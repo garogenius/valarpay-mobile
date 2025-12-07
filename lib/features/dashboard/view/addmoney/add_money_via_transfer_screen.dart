@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:share_plus/share_plus.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +36,40 @@ class _AddMoneyTransferScreenState
       message: '$label copied to clipboard',
       type: MessageType.success,
     );
+  }
+
+  Future<void> _shareToWhatsApp(
+    String bankName,
+    String accountName,
+    String accountNumber,
+  ) async {
+    final message =
+        'Bank Name: $bankName\nAccount Name: $accountName\nAccount Number: $accountNumber';
+    final encodedMessage = Uri.encodeComponent(message);
+    final whatsappUrl = 'whatsapp://send?text=$encodedMessage';
+
+    try {
+      final uri = Uri.parse(whatsappUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          AppMessenger.show(
+            context,
+            message: 'WhatsApp is not installed on this device',
+            type: MessageType.error,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppMessenger.show(
+          context,
+          message: 'Could not open WhatsApp',
+          type: MessageType.error,
+        );
+      }
+    }
   }
 
   @override
@@ -115,35 +150,79 @@ class _AddMoneyTransferScreenState
 
                     SizedBox(height: 20.h),
 
-                    // Share Details Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50.h,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: appTheme.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25.r),
+                    // Share Buttons Row
+                    Row(
+                      children: [
+                        // WhatsApp Share Button
+                        Expanded(
+                          child: SizedBox(
+                            height: 50.h,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(
+                                  0xFF25D366,
+                                ), // WhatsApp green
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25.r),
+                                ),
+                              ),
+                              onPressed: () {
+                                _shareToWhatsApp(
+                                  bankName,
+                                  accountName,
+                                  accountNumber,
+                                );
+                              },
+                              icon: Icon(
+                                Icons.chat,
+                                color: Colors.white,
+                                size: 18.sp,
+                              ),
+                              label: Text(
+                                "WhatsApp",
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        onPressed: () {
-                          // Share.share(
-                          //   'Bank Name: $bankName\nAccount Name: $accountName\nAccount Number: $accountNumber',
-                          // );
-                        },
-                        icon: Icon(
-                          Icons.share,
-                          color: Colors.white,
-                          size: 18.sp,
-                        ),
-                        label: Text(
-                          "Share Details",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            color: Colors.white,
+
+                        SizedBox(width: 12.w),
+
+                        // General Share Button
+                        Expanded(
+                          child: SizedBox(
+                            height: 50.h,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: appTheme.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25.r),
+                                ),
+                              ),
+                              onPressed: () {
+                                Share.share(
+                                  'Bank Name: $bankName\nAccount Name: $accountName\nAccount Number: $accountNumber',
+                                );
+                              },
+                              icon: Icon(
+                                Icons.share,
+                                color: Colors.white,
+                                size: 18.sp,
+                              ),
+                              label: Text(
+                                "Share",
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
 
                     SizedBox(height: 24.h),

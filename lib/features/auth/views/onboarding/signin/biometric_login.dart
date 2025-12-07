@@ -37,16 +37,65 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
   String? _accountNumber;
   String? _profileImageUrl;
   bool _isLoading = false;
+  BiometricType _availableBiometricType = BiometricType.fingerprint; // Default
+  String _biometricLabel = 'Biometric';
 
   @override
   void initState() {
     super.initState();
     _loadUserSession();
+    _detectAvailableBiometrics();
 
     // Automatically trigger biometric authentication when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestBiometricAndCameraPermissions();
     });
+  }
+
+  /// Detect which biometric type is available on this device
+  Future<void> _detectAvailableBiometrics() async {
+    try {
+      final localAuth = LocalAuthentication();
+      final availableBiometrics = await localAuth.getAvailableBiometrics();
+
+      setState(() {
+        if (availableBiometrics.contains(BiometricType.face)) {
+          _availableBiometricType = BiometricType.face;
+          _biometricLabel = 'Face ID';
+        } else if (availableBiometrics.contains(BiometricType.fingerprint)) {
+          _availableBiometricType = BiometricType.fingerprint;
+          _biometricLabel = 'Fingerprint';
+        } else if (availableBiometrics.contains(BiometricType.iris)) {
+          _availableBiometricType = BiometricType.iris;
+          _biometricLabel = 'Iris';
+        } else if (availableBiometrics.contains(BiometricType.strong) ||
+            availableBiometrics.contains(BiometricType.weak)) {
+          // Android biometric types
+          _availableBiometricType = BiometricType.fingerprint;
+          _biometricLabel = 'Biometric';
+        } else {
+          // Fallback based on platform
+          if (Platform.isIOS) {
+            _availableBiometricType = BiometricType.face;
+            _biometricLabel = 'Face ID';
+          } else {
+            _availableBiometricType = BiometricType.fingerprint;
+            _biometricLabel = 'Fingerprint';
+          }
+        }
+      });
+    } catch (e) {
+      // Fallback to platform default
+      setState(() {
+        if (Platform.isIOS) {
+          _availableBiometricType = BiometricType.face;
+          _biometricLabel = 'Face ID';
+        } else {
+          _availableBiometricType = BiometricType.fingerprint;
+          _biometricLabel = 'Fingerprint';
+        }
+      });
+    }
   }
 
   Future<void> _loadUserSession() async {
@@ -481,16 +530,19 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
                                 ],
                               ),
                               child: Icon(
-                                Platform.isIOS ? Icons.face : Icons.fingerprint,
+                                _availableBiometricType == BiometricType.face
+                                    ? Icons.face
+                                    : _availableBiometricType ==
+                                        BiometricType.iris
+                                    ? Icons.remove_red_eye
+                                    : Icons.fingerprint,
                                 size: 50.sp,
                                 color: appTheme.primaryColor,
                               ),
                             ),
                             SizedBox(height: 14.h),
                             Text(
-                              Platform.isIOS
-                                  ? 'Tap to use Face ID'
-                                  : 'Tap fingerprint to login',
+                              'Tap to use $_biometricLabel',
                               style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w500,
