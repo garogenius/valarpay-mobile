@@ -5,8 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:valarpay/core/services/session_service.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://valarpay.nattycore.com';
-  //static const String baseUrl =  'https://valar-pay-api.up.railway.app';
+  //static const String baseUrl = 'https://valarpay.nattycore.com';
+  static const String baseUrl =  'https://valar-pay-backend-staging.up.railway.app';
   static const String apiKey = '5821039487621507';
 
   late final Dio dio;

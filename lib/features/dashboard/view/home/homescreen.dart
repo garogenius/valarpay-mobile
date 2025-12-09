@@ -313,12 +313,12 @@ class _NotificationIconButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the unread count from notification notifier
-    final unreadCount = ref.watch(
-      notificationNotifierProvider.select(
-        (state) => ref.read(notificationNotifierProvider.notifier).unreadCount,
-      ),
-    );
+    // Watch the notification state to trigger rebuilds when count changes
+    ref.watch(notificationNotifierProvider);
+
+    // Get the unread count from the notifier
+    final unreadCount =
+        ref.read(notificationNotifierProvider.notifier).unreadCount;
 
     return GestureDetector(
       onTap: onTap,

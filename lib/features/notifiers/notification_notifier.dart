@@ -24,7 +24,6 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
   int _unreadCount = 0;
 
   // Filters
-  String? _typeFilter;
   String? _categoryFilter;
   String? _statusFilter;
   bool? _isReadFilter;
@@ -52,21 +51,18 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
   /// Fetch notifications with optional filters
   Future<void> fetchNotifications({
     bool refresh = false,
-    String? type,
     String? category,
     String? status,
     bool? isRead,
   }) async {
     // Reset on refresh or filter change
     if (refresh ||
-        type != _typeFilter ||
         category != _categoryFilter ||
         status != _statusFilter ||
         isRead != _isReadFilter) {
       _currentPage = 1;
       _allNotifications = [];
       _hasMore = true;
-      _typeFilter = type;
       _categoryFilter = category;
       _statusFilter = status;
       _isReadFilter = isRead;
@@ -86,7 +82,6 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
       final response = await _repository.getNotifications(
         page: _currentPage,
         limit: 20,
-        type: _typeFilter,
         category: _categoryFilter,
         status: _statusFilter,
         isRead: _isReadFilter,
@@ -94,7 +89,14 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
 
       _totalPages = response.totalPages;
       _hasMore = _currentPage < _totalPages;
-      _unreadCount = response.unreadCount;
+
+      // Only update unread count when fetching ALL notifications (no category filter)
+      // This ensures the counter shows total unread across all categories
+      if (_categoryFilter == null &&
+          _statusFilter == null &&
+          _isReadFilter == null) {
+        _unreadCount = response.unreadCount;
+      }
 
       // Add new notifications to the list
       if (refresh || _currentPage == 1) {
@@ -111,7 +113,7 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
         message: response.message,
       );
     } catch (e, stack) {
-      log('[NotificationNotifier fetchNotifications] $e\n$stack');
+      log('[NotificationNotifier fetchNotifications] $e\\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isPaginating: false,
@@ -134,16 +136,15 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
     await fetchNotifications(refresh: true);
   }
 
-  /// Filter by type
-  Future<void> filterByType(String? type) async {
-    await fetchNotifications(refresh: true, type: type);
+  /// Filter by category (TRANSACTIONS, SERVICES, UPDATES, MESSAGES)
+  Future<void> filterByCategory(String? category) async {
+    await fetchNotifications(refresh: true, category: category);
   }
 
   /// Filter by status (PENDING, SENT, FAILED, DELIVERED, READ)
   Future<void> filterByStatus(String? status) async {
     await fetchNotifications(
       refresh: true,
-      type: _typeFilter,
       category: _categoryFilter,
       status: status,
     );
@@ -163,7 +164,7 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
       final updatedNotifications =
           _allNotifications.map((notification) {
             if (notification.id == notificationId) {
-              return notification.copyWith(isRead: true);
+              return notification.copyWith(readAt: DateTime.now());
             }
             return notification;
           }).toList();
@@ -186,7 +187,7 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
       // Update local state
       final updatedNotifications =
           _allNotifications.map((notification) {
-            return notification.copyWith(isRead: true);
+            return notification.copyWith(readAt: DateTime.now());
           }).toList();
 
       _allNotifications = updatedNotifications;
@@ -199,39 +200,6 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
     }
   }
 
-  /// Delete a notification
-  Future<void> deleteNotification(String notificationId) async {
-    try {
-      await _repository.deleteNotification(notificationId);
-
-      // Remove from local state
-      _allNotifications.removeWhere((n) => n.id == notificationId);
-
-      state = state.copyWith(
-        data: _allNotifications,
-        isDataAvailable: _allNotifications.isNotEmpty,
-      );
-    } catch (e) {
-      log('[NotificationNotifier deleteNotification] $e');
-      throw Exception('Failed to delete notification');
-    }
-  }
-
-  /// Delete all notifications
-  Future<void> deleteAllNotifications() async {
-    try {
-      await _repository.deleteAllNotifications();
-
-      // Clear local state
-      _allNotifications = [];
-      _unreadCount = 0;
-
-      state = state.copyWith(data: [], isDataAvailable: false);
-    } catch (e) {
-      log('[NotificationNotifier deleteAllNotifications] $e');
-      throw Exception('Failed to delete all notifications');
-    }
-  }
 
   /// Reset state
   void reset() {
@@ -240,7 +208,6 @@ class NotificationNotifier extends StateNotifier<DataState<NotificationModel>> {
     _hasMore = true;
     _allNotifications = [];
     _unreadCount = 0;
-    _typeFilter = null;
     _categoryFilter = null;
     _statusFilter = null;
     _isReadFilter = null;

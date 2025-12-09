@@ -25,7 +25,7 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
   final _usernameController = TextEditingController();
   final _dateOfBirthController = TextEditingController();
   final _registrationNumberController = TextEditingController();
-  final _dobController = TextEditingController();
+  // final _dobController = TextEditingController();
   final _referralController = TextEditingController();
   bool _isRegistered = true;
 
@@ -48,8 +48,11 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
           final updatedRequest = widget.request.copyWith(
             fullname: _businessNameController.text.toString().trim(),
             username: _usernameController.text,
-            dateOfBirth: _dobController.text,
+            dateOfBirth: _dateOfBirthController.text,
             referralCode: _referralController.text,
+            businessName: _businessNameController.text,
+            companyRegistrationNumber:
+                _isRegistered ? _registrationNumberController.text : "",
           );
           context.push('/security-details', extra: updatedRequest);
         }

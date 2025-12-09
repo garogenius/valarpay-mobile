@@ -7,6 +7,7 @@ import 'package:valarpay/core/utils/device_utils.dart';
 import 'package:valarpay/features/models/device_registration_request.dart';
 import 'package:valarpay/features/repositories/notification_repository.dart';
 import 'package:valarpay/features/notifiers/notification_notifier.dart';
+import 'package:valarpay/core/services/local_notification_service.dart';
 
 // Global navigator key for navigation from background
 import 'package:flutter/material.dart';
@@ -21,6 +22,9 @@ class FcmService {
   /// Initialize FCM and register device
   Future<void> initialize() async {
     try {
+      // Initialize local notifications first
+      await LocalNotificationService.initialize();
+
       // Check if Firebase is initialized
       try {
         FirebaseMessaging.instance;
@@ -153,7 +157,8 @@ class FcmService {
 
   /// Handle notification received in foreground
   void _handleNotification(RemoteMessage message) {
-    // You can show a local notification or update UI here
+    // Show local notification in foreground
+    LocalNotificationService.showNotification(message);
     log('Notification data: ${message.data}');
   }
 

@@ -1,34 +1,99 @@
+// Notification category enum
+enum NotificationCategory {
+  TRANSACTIONS,
+  SERVICES,
+  UPDATES,
+  MESSAGES;
+
+  String get value => name;
+
+  static NotificationCategory fromString(String value) {
+    return NotificationCategory.values.firstWhere(
+      (e) => e.name == value.toUpperCase(),
+      orElse: () => NotificationCategory.UPDATES,
+    );
+  }
+}
+
+// Notification channel enum
+enum NotificationChannel {
+  IN_APP,
+  EMAIL,
+  SMS,
+  PUSH;
+
+  String get value => name;
+
+  static NotificationChannel fromString(String value) {
+    return NotificationChannel.values.firstWhere(
+      (e) => e.name == value.toUpperCase(),
+      orElse: () => NotificationChannel.IN_APP,
+    );
+  }
+}
+
+// Notification status enum
+enum NotificationStatus {
+  SENT,
+  READ,
+  PENDING,
+  FAILED,
+  DELIVERED;
+
+  String get value => name;
+
+  static NotificationStatus fromString(String value) {
+    return NotificationStatus.values.firstWhere(
+      (e) => e.name == value.toUpperCase(),
+      orElse: () => NotificationStatus.SENT,
+    );
+  }
+}
+
 class NotificationModel {
   final String id;
   final String userId;
+  final String category; // 'TRANSACTIONS', 'SERVICES', 'UPDATES', 'MESSAGES'
+  final String channel; // 'IN_APP', 'EMAIL', 'SMS', 'PUSH'
+  final String status; // 'SENT', 'READ', 'PENDING', 'FAILED', 'DELIVERED'
   final String title;
   final String message;
-  final String type; // 'transaction', 'service', 'update', 'message'
-  final bool isRead;
+  final Map<String, dynamic>? metadata;
+  final String? idempotencyKey;
+  final DateTime? readAt;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final Map<String, dynamic>? metadata;
 
   NotificationModel({
     required this.id,
     required this.userId,
+    required this.category,
+    required this.channel,
+    required this.status,
     required this.title,
     required this.message,
-    required this.type,
-    required this.isRead,
+    this.metadata,
+    this.idempotencyKey,
+    this.readAt,
     required this.createdAt,
     required this.updatedAt,
-    this.metadata,
   });
+
+  // Computed property to check if notification is read
+  bool get isRead => readAt != null;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] ?? json['_id'] ?? '',
       userId: json['userId'] ?? '',
+      category: json['category'] ?? 'UPDATES',
+      channel: json['channel'] ?? 'IN_APP',
+      status: json['status'] ?? 'SENT',
       title: json['title'] ?? '',
       message: json['message'] ?? '',
-      type: json['type'] ?? 'message',
-      isRead: json['isRead'] ?? false,
+      metadata: json['metadata'] as Map<String, dynamic>?,
+      idempotencyKey: json['idempotencyKey'],
+      readAt: json['readAt'] != null ? DateTime.parse(json['readAt']) : null,
       createdAt:
           json['createdAt'] != null
               ? DateTime.parse(json['createdAt'])
@@ -37,7 +102,6 @@ class NotificationModel {
           json['updatedAt'] != null
               ? DateTime.parse(json['updatedAt'])
               : DateTime.now(),
-      metadata: json['metadata'],
     );
   }
 
@@ -45,37 +109,46 @@ class NotificationModel {
     return {
       'id': id,
       'userId': userId,
+      'category': category,
+      'channel': channel,
+      'status': status,
       'title': title,
       'message': message,
-      'type': type,
-      'isRead': isRead,
+      'metadata': metadata,
+      'idempotencyKey': idempotencyKey,
+      'readAt': readAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'metadata': metadata,
     };
   }
 
   NotificationModel copyWith({
     String? id,
     String? userId,
+    String? category,
+    String? channel,
+    String? status,
     String? title,
     String? message,
-    String? type,
-    bool? isRead,
+    Map<String, dynamic>? metadata,
+    String? idempotencyKey,
+    DateTime? readAt,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Map<String, dynamic>? metadata,
   }) {
     return NotificationModel(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      category: category ?? this.category,
+      channel: channel ?? this.channel,
+      status: status ?? this.status,
       title: title ?? this.title,
       message: message ?? this.message,
-      type: type ?? this.type,
-      isRead: isRead ?? this.isRead,
+      metadata: metadata ?? this.metadata,
+      idempotencyKey: idempotencyKey ?? this.idempotencyKey,
+      readAt: readAt ?? this.readAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      metadata: metadata ?? this.metadata,
     );
   }
 
@@ -101,58 +174,101 @@ class NotificationModel {
     }
   }
 
-  // Helper method to get icon based on type
+  // Helper method to get icon based on category
   String getIcon() {
-    switch (type.toLowerCase()) {
-      case 'transaction':
+    switch (category.toUpperCase()) {
+      case 'TRANSACTIONS':
         return 'assets/images/payment_wid/bell.svg';
-      case 'service':
+      case 'SERVICES':
         return 'assets/images/payment_wid/bell.svg';
-      case 'update':
+      case 'UPDATES':
         return 'assets/images/payment_wid/bell.svg';
-      case 'message':
+      case 'MESSAGES':
         return 'assets/images/payment_wid/bell.svg';
       default:
         return 'assets/images/payment_wid/bell.svg';
     }
   }
+
+  // Legacy getter for backward compatibility
+  String get type => category.toLowerCase();
+}
+
+// Pagination metadata model
+class NotificationMeta {
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+
+  NotificationMeta({
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
+
+  factory NotificationMeta.fromJson(Map<String, dynamic> json) {
+    return NotificationMeta(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 20,
+      totalPages: json['totalPages'] ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total': total,
+      'page': page,
+      'limit': limit,
+      'totalPages': totalPages,
+    };
+  }
 }
 
 // Response model for notifications API
 class NotificationsResponse {
-  final bool success;
   final String message;
+  final int statusCode;
   final List<NotificationModel> notifications;
-  final int currentPage;
-  final int totalPages;
-  final int totalNotifications;
-  final int unreadCount;
+  final NotificationMeta meta;
 
   NotificationsResponse({
-    required this.success,
     required this.message,
+    required this.statusCode,
     required this.notifications,
-    required this.currentPage,
-    required this.totalPages,
-    required this.totalNotifications,
-    required this.unreadCount,
+    required this.meta,
   });
 
+  // Computed properties for backward compatibility
+  bool get success => statusCode >= 200 && statusCode < 300;
+  int get currentPage => meta.page;
+  int get totalPages => meta.totalPages;
+  int get totalNotifications => meta.total;
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
+
   factory NotificationsResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? {};
-    final notificationsList = data['notifications'] as List? ?? [];
+    final dataList = json['data'] as List? ?? [];
+    final metaJson = json['meta'] as Map<String, dynamic>? ?? {};
 
     return NotificationsResponse(
-      success: json['success'] ?? false,
       message: json['message'] ?? '',
+      statusCode: json['statusCode'] ?? 200,
       notifications:
-          notificationsList
+          dataList
               .map((n) => NotificationModel.fromJson(n as Map<String, dynamic>))
               .toList(),
-      currentPage: data['currentPage'] ?? 1,
-      totalPages: data['totalPages'] ?? 1,
-      totalNotifications: data['totalNotifications'] ?? 0,
-      unreadCount: data['unreadCount'] ?? 0,
+      meta: NotificationMeta.fromJson(metaJson),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'statusCode': statusCode,
+      'data': notifications.map((n) => n.toJson()).toList(),
+      'meta': meta.toJson(),
+    };
   }
 }

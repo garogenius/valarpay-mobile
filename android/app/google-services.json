@@ -1,36 +1,26 @@
 {
     "project_info": {
-        "project_number": "123456789012",
-        "project_id": "valarpay-dummy",
-        "storage_bucket": "valarpay-dummy.appspot.com"
+        "project_number": "264364831564",
+        "project_id": "valarpay",
+        "storage_bucket": "valarpay.firebasestorage.app"
     },
     "client": [
         {
             "client_info": {
-                "mobilesdk_app_id": "1:123456789012:android:dummy123456789abc",
+                "mobilesdk_app_id": "1:264364831564:android:0d5cb100b90f9f837455e9",
                 "android_client_info": {
-                    "package_name": "com.valarpay.app"
+                    "package_name": "com.business.valarpay"
                 }
             },
-            "oauth_client": [
-                {
-                    "client_id": "dummy-client-id.apps.googleusercontent.com",
-                    "client_type": 3
-                }
-            ],
+            "oauth_client": [],
             "api_key": [
                 {
-                    "current_key": "AIzaDummyApiKey123456789"
+                    "current_key": "AIzaSyCLQ2KOALt4-avAfZGIfvaeF73Wz-Ud-9I"
                 }
             ],
             "services": {
                 "appinvite_service": {
-                    "other_platform_oauth_client": [
-                        {
-                            "client_id": "dummy-client-id.apps.googleusercontent.com",
-                            "client_type": 3
-                        }
-                    ]
+                    "other_platform_oauth_client": []
                 }
             }
         }

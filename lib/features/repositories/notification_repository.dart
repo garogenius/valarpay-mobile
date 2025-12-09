@@ -30,10 +30,9 @@ class NotificationRepository {
   Future<int> getNotificationCount() async {
     try {
       final response = await apiClient.get(ApiEndpoints.getNotificationCount);
-
       // Assuming API returns { "success": true, "data": { "unreadCount": 5 } }
       final data = response.data['data'] ?? {};
-      return data['unreadCount'] ?? 0;
+      return data['count'] ?? 0;
     } catch (_) {
       // Return 0 on error instead of throwing
       return 0;
@@ -44,7 +43,6 @@ class NotificationRepository {
   Future<NotificationsResponse> getNotifications({
     int? page,
     int? limit,
-    String? type,
     String? category,
     String? status,
     bool? isRead,
@@ -54,10 +52,12 @@ class NotificationRepository {
 
       if (page != null) queryParams['page'] = page.toString();
       if (limit != null) queryParams['limit'] = limit.toString();
-      if (type != null && type.isNotEmpty) queryParams['type'] = type;
-      if (category != null && category.isNotEmpty)
+      if (category != null && category.isNotEmpty) {
         queryParams['category'] = category;
-      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      }
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
       if (isRead != null) queryParams['isRead'] = isRead.toString();
 
       final response = await apiClient.get(
@@ -102,31 +102,7 @@ class NotificationRepository {
     }
   }
 
-  /// Delete a notification
-  Future<Map<String, dynamic>> deleteNotification(String notificationId) async {
-    try {
-      final response = await apiClient.delete(
-        '${ApiEndpoints.deleteNotification}/$notificationId',
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to delete notification',
-      );
-    }
-  }
 
-  /// Delete all notifications
-  Future<Map<String, dynamic>> deleteAllNotifications() async {
-    try {
-      final response = await apiClient.delete(ApiEndpoints.deleteNotification);
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to delete all notifications',
-      );
-    }
-  }
 
   /// Get notification preferences
   Future<List<dynamic>> getNotificationPreferences() async {

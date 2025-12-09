@@ -2,22 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CLIENT_ID</key>
-	<string>dummy-client-id.apps.googleusercontent.com</string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.dummy-client-id</string>
 	<key>API_KEY</key>
-	<string>AIzaDummyApiKey123456789</string>
+	<string>AIzaSyCC6PR1V_QT58fTQP_x-JSZ3zyc32kvP1M</string>
 	<key>GCM_SENDER_ID</key>
-	<string>123456789012</string>
+	<string>264364831564</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.valarpay.app</string>
+	<string>com.business.valarpay</string>
 	<key>PROJECT_ID</key>
-	<string>valarpay-dummy</string>
+	<string>valarpay</string>
 	<key>STORAGE_BUCKET</key>
-	<string>valarpay-dummy.appspot.com</string>
+	<string>valarpay.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:123456789012:ios:dummy123456789abc</string>
+	<string>1:264364831564:ios:5c7bad2f50aba6877455e9</string>
 </dict>
 </plist>

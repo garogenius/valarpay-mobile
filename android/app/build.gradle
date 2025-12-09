@@ -28,6 +28,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.example.valarpay"
     compileSdkVersion 36
+    buildToolsVersion "36.1.0"
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -44,7 +45,7 @@ sourceSets {
     }
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.valarpay"
+        applicationId = "com.business.valarpay"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdkVersion flutter.minSdkVersion

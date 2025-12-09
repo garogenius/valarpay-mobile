@@ -17,13 +17,16 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
+  late AnimationController _headerAnimationController;
+  late Animation<double> _headerAnimation;
 
   @override
   void initState() {
     super.initState();
+
     // Initialize tab controller with initial tab if provided
     _tabController = TabController(
       length: 4,
@@ -31,9 +34,33 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       initialIndex: widget.initialTab ?? 0,
     );
 
+    // Initialize header animation
+    _headerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _headerAnimation = CurvedAnimation(
+      parent: _headerAnimationController,
+      curve: Curves.easeOutCubic,
+    );
+
     // Fetch notifications on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationNotifierProvider.notifier).fetchNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // First fetch all notifications to get total unread count
+      await ref
+          .read(notificationNotifierProvider.notifier)
+          .fetchNotifications();
+
+      // Then apply initial tab filter if not on first tab
+      if (widget.initialTab != null && widget.initialTab! > 0) {
+        final category = _getCategoryForTab(widget.initialTab!);
+        ref
+            .read(notificationNotifierProvider.notifier)
+            .filterByCategory(category);
+      }
+
+      _headerAnimationController.forward();
     });
 
     // Setup scroll listener for pagination
@@ -47,6 +74,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
+    _headerAnimationController.dispose();
     super.dispose();
   }
 
@@ -62,21 +90,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
   void _onTabChanged() {
     if (!_tabController.indexIsChanging) {
-      final type = _getTypeForTab(_tabController.index);
-      ref.read(notificationNotifierProvider.notifier).filterByType(type);
+      final category = _getCategoryForTab(_tabController.index);
+      ref
+          .read(notificationNotifierProvider.notifier)
+          .filterByCategory(category);
     }
   }
 
-  String? _getTypeForTab(int index) {
+  String? _getCategoryForTab(int index) {
     switch (index) {
       case 0:
-        return 'transaction';
+        return 'TRANSACTIONS';
       case 1:
-        return 'service';
+        return 'SERVICES';
       case 2:
-        return 'update';
+        return 'UPDATES';
       case 3:
-        return 'message';
+        return 'MESSAGES';
       default:
         return null;
     }
@@ -88,6 +118,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
   Future<void> _markAllAsRead() async {
     await ref.read(notificationNotifierProvider.notifier).markAllAsRead();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('All notifications marked as read'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _showStatusFilterBottomSheet() {
@@ -96,50 +138,71 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Filter by Status',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  if (currentFilter != null)
-                    TextButton(
-                      onPressed: () {
-                        ref
-                            .read(notificationNotifierProvider.notifier)
-                            .filterByStatus(null);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Clear'),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Filter by Status',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildStatusFilterOption('All', null, currentFilter),
-              _buildStatusFilterOption('Pending', 'PENDING', currentFilter),
-              _buildStatusFilterOption('Sent', 'SENT', currentFilter),
-              _buildStatusFilterOption('Failed', 'FAILED', currentFilter),
-              _buildStatusFilterOption('Delivered', 'DELIVERED', currentFilter),
-              _buildStatusFilterOption('Read', 'READ', currentFilter),
-              const SizedBox(height: 16),
-            ],
+                    if (currentFilter != null)
+                      TextButton(
+                        onPressed: () {
+                          ref
+                              .read(notificationNotifierProvider.notifier)
+                              .filterByStatus(null);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Clear'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildStatusFilterOption('All', null, currentFilter),
+                _buildStatusFilterOption('Pending', 'PENDING', currentFilter),
+                _buildStatusFilterOption('Sent', 'SENT', currentFilter),
+                _buildStatusFilterOption('Failed', 'FAILED', currentFilter),
+                _buildStatusFilterOption(
+                  'Delivered',
+                  'DELIVERED',
+                  currentFilter,
+                ),
+                _buildStatusFilterOption('Read', 'READ', currentFilter),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+              ],
+            ),
           ),
         );
       },
@@ -153,48 +216,71 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   ) {
     final isSelected = currentFilter == value;
 
-    return InkWell(
-      onTap: () {
-        ref.read(notificationNotifierProvider.notifier).filterByStatus(value);
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? Theme.of(context).primaryColor.withOpacity(0.1)
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color:
-                isSelected
-                    ? Theme.of(context).primaryColor
-                    : Colors.grey.withOpacity(0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? Theme.of(context).primaryColor : null,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      builder: (context, animation, child) {
+        return Transform.scale(
+          scale: 0.95 + (0.05 * animation),
+          child: Opacity(
+            opacity: animation,
+            child: InkWell(
+              onTap: () {
+                ref
+                    .read(notificationNotifierProvider.notifier)
+                    .filterByStatus(value);
+                Navigator.pop(context);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? Theme.of(context).primaryColor.withOpacity(0.1)
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey.withOpacity(0.2),
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color:
+                              isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : null,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).primaryColor,
+                        size: 24,
+                      ),
+                  ],
                 ),
               ),
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -215,97 +301,160 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Notifications'),
-            if (unreadCount > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$unreadCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+                title: FadeTransition(
+                  opacity: _headerAnimation,
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Notifications',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      if (unreadCount > 0) ...[
+                        const SizedBox(width: 8),
+                        ScaleTransition(
+                          scale: _headerAnimation,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-            ],
-          ],
-        ),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          // Filter button
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showStatusFilterBottomSheet,
-              ),
-              if (currentStatusFilter != null)
-                Positioned(
-                  right: 8,
-                  top: 8,
+              actions: [
+                // Animated Filter button
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(_headerAnimation),
+                  child: Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.filter_list_rounded),
+                        onPressed: _showStatusFilterBottomSheet,
+                      ),
+                      if (currentStatusFilter != null)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (unreadCount > 0)
+                  SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(1, 0),
+                      end: Offset.zero,
+                    ).animate(_headerAnimation),
+                    child: TextButton(
+                      onPressed: _markAllAsRead,
+                      child: const Text(
+                        'Mark all read',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ),
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(_headerAnimation),
+                  child: IconButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () {
+                      context.push('/notification-settings');
+                    },
+                  ),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(50),
+                child: FadeTransition(
+                  opacity: _headerAnimation,
                   child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      labelColor: Theme.of(context).primaryColor,
+                      dividerColor: Colors.transparent,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: Theme.of(context).primaryColor,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 15,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Transactions'),
+                        Tab(text: 'Services'),
+                        Tab(text: 'Updates'),
+                        Tab(text: 'Messages'),
+                      ],
                     ),
                   ),
                 ),
-            ],
-          ),
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: const Text(
-                'Mark all read',
-                style: TextStyle(fontSize: 13),
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              context.push('/notification-settings');
-            },
-          ),
-        ],
-        bottom: TabBar(
+          ];
+        },
+        body: TabBarView(
           controller: _tabController,
-          isScrollable: true,
-          labelColor: Theme.of(context).primaryColor,
-          dividerColor: Colors.transparent,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Theme.of(context).primaryColor,
-          tabs: const [
-            Tab(text: 'Transactions'),
-            Tab(text: 'Services'),
-            Tab(text: 'Updates'),
-            Tab(text: 'Messages'),
+          children: [
+            _buildNotificationList(context, notificationState, 'TRANSACTIONS'),
+            _buildNotificationList(context, notificationState, 'SERVICES'),
+            _buildNotificationList(context, notificationState, 'UPDATES'),
+            _buildNotificationList(context, notificationState, 'MESSAGES'),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildNotificationList(context, notificationState, 'transaction'),
-          _buildNotificationList(context, notificationState, 'service'),
-          _buildNotificationList(context, notificationState, 'update'),
-          _buildNotificationList(context, notificationState, 'message'),
-        ],
       ),
     );
   }
@@ -320,50 +469,28 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       return const TransactionShimmerLoader();
     }
 
-    // Error state
-    if (!notificationState.isDataAvailable &&
-        notificationState.message != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 60, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              notificationState.message ?? 'Failed to load notifications',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(notificationNotifierProvider.notifier)
-                    .fetchNotifications();
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
     final notifications =
         (notificationState.data as List<NotificationModel>?) ?? [];
 
-    // Empty state
+    // Empty state - show custom message even if API returned a success message
     if (notifications.isEmpty) {
-      return widgets.NotificationEmptyState(
-        tab: type == 'transaction' ? 'Transaction' : 'Other',
-        message: _getEmptyMessage(type),
-      );
+      return _buildAnimatedEmptyState(type);
+    }
+
+    // Error state - only show if there's actually an error AND no data
+    if (!notificationState.isDataAvailable &&
+        notificationState.message != null &&
+        notifications.isEmpty) {
+      return _buildErrorState(notificationState.message);
     }
 
     // Success state with data
     return RefreshIndicator(
       onRefresh: _handleRefresh,
+      color: Theme.of(context).primaryColor,
       child: ListView.builder(
         controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount:
             notifications.length + (notificationState.isPaginating ? 1 : 0),
@@ -377,50 +504,158 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           }
 
           final notification = notifications[index];
-          return InkWell(
-            onTap: () {
-              // Mark as read when tapped
-              if (!notification.isRead) {
-                ref
-                    .read(notificationNotifierProvider.notifier)
-                    .markAsRead(notification.id);
-              }
 
-              context.push(
-                '/notification-view',
-                extra: {
-                  'title': notification.title,
-                  'content': notification.message,
-                },
+          // Staggered animation for list items
+          return TweenAnimationBuilder<double>(
+            key: ValueKey(notification.id),
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 300 + (index * 50)),
+            curve: Curves.easeOutCubic,
+            builder: (context, animation, child) {
+              return Transform.translate(
+                offset: Offset(0, 20 * (1 - animation)),
+                child: Opacity(opacity: animation, child: child),
               );
             },
-            child: widgets.NotificationTile(
-              notification: widgets.NotificationItem(
-                icon: notification.getIcon(),
-                title: notification.title,
-                subtitle: notification.message,
-                time: notification.getTimeAgo(),
-                isRead: notification.isRead,
-              ),
-            ),
+            child: _buildAnimatedNotificationTile(notification, index),
           );
         },
       ),
     );
   }
 
-  String _getEmptyMessage(String type) {
-    switch (type) {
-      case 'transaction':
-        return 'No new transactions yet. Start making payments to see your transaction notifications here.';
-      case 'service':
-        return 'No service notifications yet. Service updates and service notifications will appear here.';
-      case 'update':
-        return 'No updates yet. Stay tuned for the latest news and updates.';
-      case 'message':
-        return 'No new messages from ValarPay right now.';
+  Widget _buildAnimatedNotificationTile(
+    NotificationModel notification,
+    int index,
+  ) {
+    return Hero(
+      tag: 'notification_${notification.id}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // Mark as read when tapped
+            if (!notification.isRead) {
+              ref
+                  .read(notificationNotifierProvider.notifier)
+                  .markAsRead(notification.id);
+            }
+
+            context.push(
+              '/notification-view',
+              extra: {
+                'title': notification.title,
+                'content': notification.message,
+              },
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: widgets.NotificationTile(
+            notification: widgets.NotificationItem(
+              icon: notification.getIcon(),
+              title: notification.title,
+              subtitle: notification.message,
+              time: notification.getTimeAgo(),
+              isRead: notification.isRead,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedEmptyState(String category) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, animation, child) {
+        return Transform.scale(
+          scale: 0.8 + (0.2 * animation),
+          child: Opacity(opacity: animation, child: child),
+        );
+      },
+      child: widgets.NotificationEmptyState(
+        tab: _getCategoryDisplayName(category),
+        message: _getEmptyMessage(category),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      builder: (context, animation, child) {
+        return Opacity(opacity: animation, child: child);
+      },
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref
+                    .read(notificationNotifierProvider.notifier)
+                    .fetchNotifications();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCategoryDisplayName(String category) {
+    switch (category) {
+      case 'TRANSACTIONS':
+        return 'Transaction';
+      case 'SERVICES':
+        return 'Service';
+      case 'UPDATES':
+        return 'Update';
+      case 'MESSAGES':
+        return 'Message';
       default:
-        return 'No notifications yet.';
+        return 'Notification';
+    }
+  }
+
+  String _getEmptyMessage(String category) {
+    switch (category) {
+      case 'TRANSACTIONS':
+        return 'You\'re all caught up! No transaction notifications at the moment.';
+      case 'SERVICES':
+        return 'All clear here! No service notifications right now.';
+      case 'UPDATES':
+        return 'You\'re up to date! Check back later for new updates.';
+      case 'MESSAGES':
+        return 'Inbox zero! No new messages from ValarPay.';
+      default:
+        return 'All clear! No notifications at the moment.';
     }
   }
 }
