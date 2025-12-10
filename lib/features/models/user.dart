@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:valarpay/features/models/wallet.dart';
 
 class UserModel {
@@ -85,24 +84,11 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    log('🔍 [UserModel.fromJson] Parsing user data...');
-    log('🔍 [UserModel.fromJson] isBvnVerified: ${json['isBvnVerified']}');
-    log(
-      '🔍 [UserModel.fromJson] wallet field type: ${json['wallet']?.runtimeType}',
-    );
-    log('🔍 [UserModel.fromJson] wallet content: ${json['wallet']}');
-
     final walletList =
         (json['wallet'] as List?)
             ?.map((wallet) => WalletModel.fromJson(wallet))
             .toList() ??
         [];
-
-    log('🔍 [UserModel.fromJson] Parsed ${walletList.length} wallet(s)');
-    if (walletList.isNotEmpty) {
-      log('💰 [UserModel.fromJson] Balance: ${walletList.first.balance}');
-      log('🔢 [UserModel.fromJson] Account: ${walletList.first.accountNumber}');
-    }
 
     return UserModel(
       id: json['id'],

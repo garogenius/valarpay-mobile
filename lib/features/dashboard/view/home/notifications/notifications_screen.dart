@@ -29,7 +29,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
     // Initialize tab controller with initial tab if provided
     _tabController = TabController(
-      length: 4,
+      length: 5, // Updated to 5 tabs (All + 4 categories)
       vsync: this,
       initialIndex: widget.initialTab ?? 0,
     );
@@ -100,12 +100,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   String? _getCategoryForTab(int index) {
     switch (index) {
       case 0:
-        return 'TRANSACTIONS';
+        return null; // All notifications
       case 1:
-        return 'SERVICES';
+        return 'TRANSACTIONS';
       case 2:
-        return 'UPDATES';
+        return 'SERVICES';
       case 3:
+        return 'UPDATES';
+      case 4:
         return 'MESSAGES';
       default:
         return null;
@@ -434,6 +436,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                         fontSize: 15,
                       ),
                       tabs: const [
+                        Tab(text: 'All'),
                         Tab(text: 'Transactions'),
                         Tab(text: 'Services'),
                         Tab(text: 'Updates'),
@@ -449,6 +452,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
+            _buildNotificationList(context, notificationState, 'ALL'),
             _buildNotificationList(context, notificationState, 'TRANSACTIONS'),
             _buildNotificationList(context, notificationState, 'SERVICES'),
             _buildNotificationList(context, notificationState, 'UPDATES'),
@@ -490,7 +494,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       color: Theme.of(context).primaryColor,
       child: ListView.builder(
         controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const ClampingScrollPhysics(), // Better for NestedScrollView
+        addAutomaticKeepAlives: true, // Reduce rebuilds
+        addRepaintBoundaries: true, // Improve performance
         padding: const EdgeInsets.all(16),
         itemCount:
             notifications.length + (notificationState.isPaginating ? 1 : 0),
@@ -505,18 +511,28 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
           final notification = notifications[index];
 
-          // Staggered animation for list items
-          return TweenAnimationBuilder<double>(
+          // Only animate first 10 items for better performance
+          if (index < 10) {
+            return TweenAnimationBuilder<double>(
+              key: ValueKey(notification.id),
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 300 + (index * 50)),
+              curve: Curves.easeOutCubic,
+              builder: (context, animation, child) {
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - animation)),
+                  child: Opacity(opacity: animation, child: child),
+                );
+              },
+              child: RepaintBoundary(
+                child: _buildAnimatedNotificationTile(notification, index),
+              ),
+            );
+          }
+
+          // No animation for items beyond 10 for smooth scrolling
+          return RepaintBoundary(
             key: ValueKey(notification.id),
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 300 + (index * 50)),
-            curve: Curves.easeOutCubic,
-            builder: (context, animation, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - animation)),
-                child: Opacity(opacity: animation, child: child),
-              );
-            },
             child: _buildAnimatedNotificationTile(notification, index),
           );
         },

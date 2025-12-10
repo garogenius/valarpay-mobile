@@ -6,11 +6,15 @@ import 'package:valarpay/features/models/username_request.dart';
 import 'package:valarpay/features/models/verify_otp_request.dart';
 import 'package:valarpay/features/repositories/auth_repository.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/services/fcm_token_service.dart';
+import 'package:valarpay/features/notifiers/notification_notifier.dart';
 
 class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
   final AuthRepository _repository;
+  final FcmTokenService? _fcmTokenService;
 
-  AuthNotifier(this._repository) : super(DataState<LoginResponse>.initial());
+  AuthNotifier(this._repository, this._fcmTokenService)
+    : super(DataState<LoginResponse>.initial());
 
   /// 🔹 Normal Email/Password Login
   Future<void> login(LoginRequest request) async {
@@ -23,8 +27,11 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
         isDataAvailable: true,
         message: res.message,
       );
+
+      // Register FCM token after successful login (non-blocking)
+      _registerFcmToken();
     } catch (e, stack) {
-      log('[AuthNotifier Login Error] $e\n$stack');
+      log('[AuthNotifier Login Error] $e\\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
@@ -45,8 +52,11 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
         isDataAvailable: true,
         message: res.message,
       );
+
+      // Register FCM token after successful login (non-blocking)
+      _registerFcmToken();
     } catch (e, stack) {
-      log('[AuthNotifier Passcode Error] $e\n$stack');
+      log('[AuthNotifier Passcode Error] $e\\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
@@ -54,6 +64,20 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
       );
     } finally {
       state = state.copyWith(isInitialLoading: false);
+    }
+  }
+
+  /// Register FCM token in background (non-blocking)
+  void _registerFcmToken() {
+    log('🔔 _registerFcmToken called');
+    if (_fcmTokenService != null) {
+      log('🔔 FCM Token Service available, registering device...');
+      // Run in background, don't await
+      _fcmTokenService.registerDeviceToken().catchError((e) {
+        log('FCM token registration failed (non-critical): $e');
+      });
+    } else {
+      log('⚠️ FCM Token Service is null - cannot register device');
     }
   }
 
@@ -109,7 +133,14 @@ final authRepositoryProvider = Provider(
   (ref) => AuthRepository(ref.read(apiClientProvider)),
 );
 
+final fcmTokenServiceProvider = Provider((ref) {
+  return FcmTokenService(ref.read(notificationRepositoryProvider));
+});
+
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, DataState<LoginResponse>>(
-      (ref) => AuthNotifier(ref.read(authRepositoryProvider)),
+      (ref) => AuthNotifier(
+        ref.read(authRepositoryProvider),
+        ref.read(fcmTokenServiceProvider),
+      ),
     );

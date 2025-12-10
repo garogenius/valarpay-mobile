@@ -42,25 +42,42 @@ class SessionTimeoutService {
     '/verify-otp',
     '/onboarding',
     '/welcome',
+    '/create-passcode',
+    '/change-passcode',
+    '/confirm-passcode',
+    // Registration flow routes
+    '/sign-up-one',
+    '/sign-up-two',
+    '/sign-up-three',
+    '/verify-email',
+    '/verify-phone',
+    '/create-account',
+    '/account-created',
   ];
 
   /// Start monitoring user inactivity
   static void startMonitoring(BuildContext context) async {
     if (_isActive) return;
+
     _isActive = true;
     _lastActivityTime = DateTime.now();
+    _backgroundTime = null; // Reset background time for new session
     await _saveLastActivityTime();
     _scheduleInactivityCheck(context);
   }
 
-  /// Stop monitoring (when user logs out)
-  static void stopMonitoring() {
+  /// Stop monitoring (when user logs out or on auth screens)
+  static void stopMonitoring() async {
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
     _lastActivityTime = null;
     _backgroundTime = null;
     _isActive = false;
     _isInBackground = false;
+
+    // Clear stored timestamps to prevent false timeouts
+    await LocalStorageService.remove(_lastActivityKey);
+    await LocalStorageService.remove(_backgroundTimeKey);
   }
 
   /// Record user activity (call this on ANY user interaction)
@@ -158,14 +175,10 @@ class SessionTimeoutService {
     // Check every 10 seconds
     _inactivityTimer = Timer.periodic(_checkInterval, (timer) async {
       // Don't check if app is in background
-      if (_isInBackground) {
-        return;
-      }
+      if (_isInBackground) return;
 
       // Don't check if on login/auth pages
-      if (_isOnAuthRoute(context)) {
-        return;
-      }
+      if (_isOnAuthRoute(context)) return;
 
       final now = DateTime.now();
       final lastActivity = _lastActivityTime ?? now;
@@ -218,26 +231,32 @@ class SessionTimeoutService {
 
   /// Check if user should be logged out on app resume (from terminated state)
   static Future<bool> shouldLogoutOnResume() async {
+    // If monitoring isn't active, don't check timeouts (user just logged in)
+    if (!_isActive) return false;
+
+    // Grace period: If last activity was very recent (< 10 seconds), skip timeout check
+    // This handles the case where user just logged in and app lifecycle triggers
+    final lastActivity = _lastActivityTime ?? await _getLastActivityTime();
+    if (lastActivity != null) {
+      final timeSinceActivity = DateTime.now().difference(lastActivity);
+      if (timeSinceActivity.inSeconds < 10) return false;
+    }
+
     // Check background timeout
     final backgroundTime = await _getBackgroundTime();
     if (backgroundTime != null) {
       final now = DateTime.now();
       final duration = now.difference(backgroundTime);
 
-      if (duration >= _backgroundTimeout) {
-        return true;
-      }
+      if (duration >= _backgroundTimeout) return true;
     }
 
     // Check inactivity timeout
-    final lastActivity = await _getLastActivityTime();
     if (lastActivity != null) {
       final now = DateTime.now();
       final duration = now.difference(lastActivity);
 
-      if (duration >= _inactivityTimeout) {
-        return true;
-      }
+      if (duration >= _inactivityTimeout) return true;
     }
 
     return false;

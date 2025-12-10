@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
@@ -84,6 +85,9 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
       final shouldLogout = await SessionTimeoutService.shouldLogoutOnResume();
 
       if (shouldLogout && mounted) {
+        // Stop monitoring BEFORE navigating to login
+        SessionTimeoutService.stopMonitoring();
+
         // Wait a bit to ensure any ongoing operations complete
         await Future.delayed(const Duration(milliseconds: 300));
 
@@ -142,6 +146,26 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
       biometricSkippedTime,
     );
 
+    // Check if device actually supports biometrics
+    bool deviceSupportsBiometrics = false;
+    try {
+      final localAuth = LocalAuthentication();
+      final canCheck = await localAuth.canCheckBiometrics;
+      final availableBiometrics = await localAuth.getAvailableBiometrics();
+
+      debugPrint('🔐 Biometric Check:');
+      debugPrint('   canCheckBiometrics: $canCheck');
+      debugPrint('   availableBiometrics: $availableBiometrics');
+      debugPrint('   isEmpty: ${availableBiometrics.isEmpty}');
+
+      deviceSupportsBiometrics = canCheck && availableBiometrics.isNotEmpty;
+      debugPrint('   deviceSupportsBiometrics: $deviceSupportsBiometrics');
+    } catch (e) {
+      debugPrint('⚠️ Biometric check failed: $e');
+      // If check fails, assume no biometric support
+      deviceSupportsBiometrics = false;
+    }
+
     _hasShownPasscodePrompt = true;
 
     // Priority 1: Show KYC modal if BVN not verified
@@ -160,8 +184,10 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
         }
       });
     }
-    // Priority 3: Show Biometric modal if passcode set but no biometric and not skipped recently
-    else if (!biometricEnabled && shouldShowBiometric) {
+    // Priority 3: Show Biometric modal ONLY if device supports it
+    else if (!biometricEnabled &&
+        shouldShowBiometric &&
+        deviceSupportsBiometrics) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
           _showBiometricSetupModal();

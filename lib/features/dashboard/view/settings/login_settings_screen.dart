@@ -43,21 +43,46 @@ class _LoginSettingsScreenState extends ConsumerState<LoginSettingsScreen> {
     try {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
       final canCheck = await _localAuth.canCheckBiometrics;
+      final availableBiometrics = await _localAuth.getAvailableBiometrics();
 
-      // Use platform-based labeling
+      debugPrint('🔐 Login Settings - Biometric Check:');
+      debugPrint('   isDeviceSupported: $isDeviceSupported');
+      debugPrint('   canCheckBiometrics: $canCheck');
+      debugPrint('   availableBiometrics: $availableBiometrics');
+
+      // Determine biometric type and label
+      BiometricType? bioType;
       String label = 'Biometric';
-      if (Theme.of(context).platform == TargetPlatform.iOS) {
-        label = 'Face ID';
-      } else if (Theme.of(context).platform == TargetPlatform.android) {
-        label = 'Fingerprint';
+
+      if (availableBiometrics.isNotEmpty) {
+        // Prefer face over fingerprint for labeling
+        if (availableBiometrics.contains(BiometricType.face)) {
+          bioType = BiometricType.face;
+          label = 'Face ID';
+        } else if (availableBiometrics.contains(BiometricType.fingerprint)) {
+          bioType = BiometricType.fingerprint;
+          label = 'Fingerprint';
+        } else if (availableBiometrics.contains(BiometricType.strong) ||
+            availableBiometrics.contains(BiometricType.weak)) {
+          bioType =
+              BiometricType.fingerprint; // Default to fingerprint for Android
+          label = 'Fingerprint';
+        }
       }
+
+      debugPrint('   Detected bioType: $bioType');
+      debugPrint('   Label: $label');
 
       setState(() {
         canCheckBiometrics = canCheck && isDeviceSupported;
+        availableBiometricType = bioType;
         biometricLabel = label;
       });
+
+      debugPrint('   Final canCheckBiometrics: $canCheckBiometrics');
+      debugPrint('   Final availableBiometricType: $availableBiometricType');
     } catch (e) {
-      debugPrint('Biometric check failed: $e');
+      debugPrint('⚠️ Biometric check failed: $e');
     }
   }
 

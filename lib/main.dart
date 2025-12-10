@@ -8,13 +8,18 @@ import '../app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (with error handling for dummy config)
+  // Initialize Firebase (with error handling)
   try {
+    // Try to initialize with default platform configuration
+    // This uses GoogleService-Info.plist on iOS and google-services.json on Android
     await Firebase.initializeApp();
-    debugPrint('Firebase initialized successfully');
+    debugPrint('✅ Firebase initialized successfully');
   } catch (e) {
-    debugPrint('Firebase initialization failed (using dummy config): $e');
-    // Continue anyway - FCM features won't work but app will run
+    // Firebase initialization failed - app will continue without FCM
+    debugPrint('ℹ️ Firebase initialization failed');
+    debugPrint('ℹ️ Error: ${e.toString().split('\n').first}');
+    debugPrint('ℹ️ Continuing without FCM push notifications');
+    debugPrint('ℹ️ In-app notifications will still work via API');
   }
 
   await SystemChrome.setPreferredOrientations([
