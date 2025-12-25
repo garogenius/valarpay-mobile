@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img;
@@ -15,7 +16,7 @@ import 'package:valarpay/features/notifiers/user_notifier.dart';
 class NinIdentityVerificationPage extends ConsumerStatefulWidget {
   final String nin;
   const NinIdentityVerificationPage({required this.nin, Key? key})
-      : super(key: key);
+    : super(key: key);
 
   @override
   ConsumerState<NinIdentityVerificationPage> createState() =>
@@ -42,6 +43,24 @@ class _NinIdentityVerificationPageState
 
   Future<void> _initializeCamera() async {
     try {
+      PermissionStatus status = await Permission.camera.status;
+
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          _showPermissionDialog();
+        }
+        return;
+      }
+
+      status = await Permission.camera.request();
+
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          if (mounted) _showPermissionDialog();
+        }
+        return;
+      }
+
       _cameras = await availableCameras();
       final frontCamera = _cameras!.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
@@ -64,6 +83,33 @@ class _NinIdentityVerificationPageState
     } catch (e) {
       debugPrint('Camera initialization error: $e');
     }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Camera Permission Required'),
+            content: const Text(
+              'Camera access is required for identity verification. Please enable it in your app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('Settings'),
+              ),
+            ],
+          ),
+    );
   }
 
   void _startCountdown() {
@@ -122,15 +168,17 @@ class _NinIdentityVerificationPageState
     try {
       // Read image bytes
       final bytes = await file.readAsBytes();
-      log('📏 Original image size: ${bytes.length} bytes (${(bytes.length / 1024).toStringAsFixed(2)} KB)');
-      
+      log(
+        '📏 Original image size: ${bytes.length} bytes (${(bytes.length / 1024).toStringAsFixed(2)} KB)',
+      );
+
       // Decode image
       final image = img.decodeImage(bytes);
       if (image == null) {
         log('❌ Failed to decode image');
         return file;
       }
-      
+
       // Resize if too large (max width/height 800px)
       img.Image resized = image;
       if (image.width > 800 || image.height > 800) {
@@ -139,19 +187,24 @@ class _NinIdentityVerificationPageState
           width: image.width > image.height ? 800 : null,
           height: image.height > image.width ? 800 : null,
         );
-        log('📐 Resized from ${image.width}x${image.height} to ${resized.width}x${resized.height}');
+        log(
+          '📐 Resized from ${image.width}x${image.height} to ${resized.width}x${resized.height}',
+        );
       }
-      
+
       // Compress as JPEG with quality 70
       final compressed = img.encodeJpg(resized, quality: 70);
-      log('📏 Compressed image size: ${compressed.length} bytes (${(compressed.length / 1024).toStringAsFixed(2)} KB)');
-      
+      log(
+        '📏 Compressed image size: ${compressed.length} bytes (${(compressed.length / 1024).toStringAsFixed(2)} KB)',
+      );
+
       // Save compressed image
       final directory = await getApplicationDocumentsDirectory();
-      final compressedPath = '${directory.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final compressedPath =
+          '${directory.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final compressedFile = File(compressedPath);
       await compressedFile.writeAsBytes(compressed);
-      
+
       log('✅ Image compressed successfully');
       return compressedFile;
     } catch (e) {
@@ -187,10 +240,9 @@ class _NinIdentityVerificationPageState
       log("📤 Sending request with NIN: ${widget.nin}");
 
       // Call backend API
-      final response =
-          await ref.read(userNotifierProvider.notifier).verifyNinTier2(
-                requestBody,
-              );
+      final response = await ref
+          .read(userNotifierProvider.notifier)
+          .verifyNinTier2(requestBody);
 
       log("📥 Response received:");
       log("   - Status Code: ${response?.statusCode}");
@@ -213,18 +265,15 @@ class _NinIdentityVerificationPageState
 
         _showSuccessDialog();
       } else {
-        final errorMsg = response?.message ??
+        final errorMsg =
+            response?.message ??
             response?.error ??
             'NIN verification failed. Please try again.';
         log("❌ NIN verification failed: $errorMsg");
 
         if (!mounted) return;
 
-        AppMessenger.show(
-          context,
-          type: MessageType.error,
-          message: errorMsg,
-        );
+        AppMessenger.show(context, type: MessageType.error, message: errorMsg);
       }
     } catch (e, stackTrace) {
       log("❌ Exception during NIN verification: $e");
@@ -272,19 +321,13 @@ class _NinIdentityVerificationPageState
               const Text(
                 'Tier 2 Upgrade Successful!',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               const Text(
                 'Your account has been upgraded to Tier 2. You now have access to higher transaction limits.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
               ),
               const SizedBox(height: 24),
               SizedBox(

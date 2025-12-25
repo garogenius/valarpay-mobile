@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
@@ -92,6 +93,24 @@ class _IdentityVerificationPageState
 
   Future<void> _initializeCamera() async {
     try {
+      PermissionStatus status = await Permission.camera.status;
+
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          _showPermissionDialog();
+        }
+        return;
+      }
+
+      status = await Permission.camera.request();
+
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          if (mounted) _showPermissionDialog();
+        }
+        return;
+      }
+
       _cameras = await availableCameras();
       final frontCamera = _cameras!.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
@@ -114,6 +133,33 @@ class _IdentityVerificationPageState
     } catch (e) {
       debugPrint('Camera initialization error: $e');
     }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Camera Permission Required'),
+            content: const Text(
+              'Camera access is required for identity verification. Please enable it in your app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('Settings'),
+              ),
+            ],
+          ),
+    );
   }
 
   void _startCountdown() {

@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
@@ -21,8 +22,9 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   CameraController? _controller;
   bool _isDetecting = false;
   String? detectedNumber;
-  final TextRecognizer _textRecognizer =
-      TextRecognizer(script: TextRecognitionScript.latin);
+  final TextRecognizer _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
   List<TextBlock> _blocks = [];
   Timer? _frameTimer;
 
@@ -33,6 +35,24 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   }
 
   Future<void> _initializeCamera() async {
+    PermissionStatus status = await Permission.camera.status;
+
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        _showPermissionDialog();
+      }
+      return;
+    }
+
+    status = await Permission.camera.request();
+
+    if (!status.isGranted) {
+      if (status.isPermanentlyDenied) {
+        if (mounted) _showPermissionDialog();
+      }
+      return;
+    }
+
     final cameras = await availableCameras();
     if (cameras.isEmpty) return;
     final camera = cameras.firstWhere(
@@ -55,6 +75,33 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     });
 
     if (mounted) setState(() {});
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Camera Permission Required'),
+            content: const Text(
+              'Camera access is required to scan account numbers. Please enable it in your app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('Settings'),
+              ),
+            ],
+          ),
+    );
   }
 
   Future<void> _captureAndProcess() async {
@@ -100,9 +147,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   @override
   Widget build(BuildContext context) {
     if (_controller == null || !_controller!.value.isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     _onButtonPressed() async {
@@ -124,8 +169,11 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             }
           }
         }
-        AppMessenger.show(context,
-            message: 'No 10-digit number found', type: MessageType.error);
+        AppMessenger.show(
+          context,
+          message: 'No 10-digit number found',
+          type: MessageType.error,
+        );
         Navigator.of(context).pop();
       } catch (e) {
         // ignore
@@ -133,10 +181,12 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan Account Number', style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),)),
+      appBar: AppBar(
+        title: const Text(
+          'Scan Account Number',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -146,8 +196,10 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
-                  painter:
-                      _OverlayPainter(blocks: _blocks, controller: _controller),
+                  painter: _OverlayPainter(
+                    blocks: _blocks,
+                    controller: _controller,
+                  ),
                 ),
               ),
             ),
@@ -155,15 +207,17 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             Container(
               margin: EdgeInsets.only(bottom: 20),
               child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    child: FullWidthButton(
-                        text: 'Capture & Scan',
-                        onPressed: () async {
-                          _onButtonPressed();
-                        }),
-                  )),
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: FullWidthButton(
+                    text: 'Capture & Scan',
+                    onPressed: () async {
+                      _onButtonPressed();
+                    },
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -180,16 +234,18 @@ class _OverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = appTheme.primaryColor;
+    final paint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = appTheme.primaryColor;
 
     // draw a central rectangle
     final rect = Rect.fromCenter(
-        center: size.center(Offset.zero),
-        width: size.width * 0.8,
-        height: size.height * 0.4);
+      center: size.center(Offset.zero),
+      width: size.width * 0.8,
+      height: size.height * 0.4,
+    );
     canvas.drawRect(rect, paint);
 
     // (Optional) Could draw block bounding boxes here if coordinate mapping is available.
