@@ -12,7 +12,7 @@ class CableRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getCablePlan,
-        query: {'currency': currency},
+        queryParameters: {'currency': currency},
       );
       return CablePlanResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -25,8 +25,8 @@ class CableRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getCableBillInfo,
-        query: {'billerCode': billerCode},
+        ApiEndpoints.getCableVariation,
+        queryParameters: {'billerCode': billerCode},
       );
       return CableVariationResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -83,8 +83,8 @@ class CableRepository {
   Future<CableBeneficiariesResponse> getCableBeneficiaries() async {
     try {
       final response = await apiClient.get(
-        '/api/v1/user/get-beneficiaries',
-        query: {'transferType': 'TRANSFER', 'billType': 'cable'},
+        ApiEndpoints.getBeneficiaries,
+        queryParameters: {'category': 'BILL', 'billType': 'CABLE'},
       );
       return CableBeneficiariesResponse.fromJson(response.data);
     } on DioException catch (e) {

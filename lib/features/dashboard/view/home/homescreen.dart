@@ -13,6 +13,11 @@ import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/payment_widget_icons.dart';
 import '../../widgets/home_widgets/kyc_widget.dart';
 import '../../widgets/home_widgets/ourservice.dart';
+import '../../../../core/providers/dashboard_provider.dart';
+import '../../../../core/services/dashboard_service.dart';
+import '../../widgets/home_widgets/dashboard_customize_widgets.dart';
+import '../../../notifiers/transaction_notifier.dart';
+import '../../../../core/services/local_storage_service.dart';
 
 class Homescreen extends ConsumerStatefulWidget {
   const Homescreen({Key? key}) : super(key: key);
@@ -23,6 +28,7 @@ class Homescreen extends ConsumerStatefulWidget {
 
 class _HomescreenState extends ConsumerState<Homescreen> {
   bool _isBalanceVisible = true;
+  static const String _balanceVisibilityKey = 'is_balance_visible';
   int _currentImageIndex = 0;
   Timer? _timer;
 
@@ -37,6 +43,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
   void initState() {
     super.initState();
     _startBannerRotation();
+    _loadBalanceVisibility();
 
     // Fetch user data immediately on first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -44,7 +51,25 @@ class _HomescreenState extends ConsumerState<Homescreen> {
       ref.read(userIdleProvider.notifier).startMonitoring();
       // Fetch only notification count (lightweight)
       ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
+      // Fetch transactions for recent transactions widget
+      ref.read(transactionNotifierProvider.notifier).fetchTransactions(refresh: true, limit: 2);
     });
+  }
+
+  Future<void> _loadBalanceVisibility() async {
+    final isVisible = await LocalStorageService.getBool(_balanceVisibilityKey);
+    if (isVisible != null && mounted) {
+      setState(() {
+        _isBalanceVisible = isVisible;
+      });
+    }
+  }
+
+  Future<void> _toggleBalanceVisibility() async {
+    setState(() {
+      _isBalanceVisible = !_isBalanceVisible;
+    });
+    await LocalStorageService.saveBool(_balanceVisibilityKey, _isBalanceVisible);
   }
 
   void _startBannerRotation() {
@@ -77,6 +102,10 @@ class _HomescreenState extends ConsumerState<Homescreen> {
       if (updatedUser != null) {
         ref.read(userProvider.notifier).setUser(updatedUser);
       }
+      // Refresh only notification count (lightweight)
+      ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
+      // Refresh transactions for the customized widget
+      await ref.read(transactionNotifierProvider.notifier).fetchTransactions(refresh: true, limit: 2);
     } catch (e) {
       if (mounted) {
         AppMessenger.show(
@@ -106,19 +135,22 @@ class _HomescreenState extends ConsumerState<Homescreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _HomeAppBar(
-                firstName: capitalizedUserName,
-                greeting: greeting,
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          color: Theme.of(context).primaryColor,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _HomeAppBar(
+                  firstName: capitalizedUserName,
+                  greeting: greeting,
+                ),
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshData,
+              Expanded(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     children: [
@@ -126,10 +158,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                         balance: balance,
                         accountNumber: accountNumber,
                         isBalanceVisible: _isBalanceVisible,
-                        onToggleVisibility:
-                            () => setState(
-                              () => _isBalanceVisible = !_isBalanceVisible,
-                            ),
+                        onToggleVisibility: _toggleBalanceVisibility,
                       ),
                       const SizedBox(height: 16),
                       const PaymentWidget(),
@@ -137,9 +166,9 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                         builder: (context, ref, child) {
                           final user = ref.watch(userProvider);
                           if (user != null) {
-                            final isBvnVerified = user?.isBvnVerified ?? false;
+                            final isBvnVerified = user.isBvnVerified;
                             final isWalletPinSet =
-                                user?.isWalletPinSet ?? false;
+                                user.isWalletPinSet;
 
                             // Show KYC widget if BVN is not verified OR wallet PIN is not set
                             final shouldShowKyc =
@@ -156,20 +185,34 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                               ],
                             );
                           }
-                          return SizedBox();
+                          return const SizedBox();
                         },
                       ),
                       const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 60,
-                          child: Image.asset(
-                            _bannerImages[_currentImageIndex],
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final dashboardWidget = ref.watch(dashboardProvider);
+                          
+                          switch (dashboardWidget) {
+                            case DashboardWidgetType.banner:
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: 60,
+                                  child: Image.asset(
+                                    _bannerImages[_currentImageIndex],
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            case DashboardWidgetType.transactions:
+                              return const DashboardRecentTransactionsWidget();
+                            case DashboardWidgetType.kyc:
+                            case DashboardWidgetType.none:
+                              return const SizedBox.shrink();
+                          }
+                        },
                       ),
                       const SizedBox(height: 12),
                       const OurServicesWidget(),
@@ -178,8 +221,8 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

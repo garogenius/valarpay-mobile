@@ -13,7 +13,7 @@ class GenerateQrRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.generateQRCode,
-        query: {'amount': amount.toString()},
+        queryParameters: {'amount': amount.toString()},
       );
 
       return GenerateQrResponse.fromJson(response.data);

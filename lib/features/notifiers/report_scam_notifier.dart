@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/api_response.dart';
 import 'package:valarpay/features/repositories/report_scam_repository.dart';
-import 'package:valarpay/features/notifiers/user_notifier.dart' show apiClientProvider;
+import 'package:valarpay/core/network/api_client.dart';
 
 class ReportScamNotifier extends StateNotifier<DataState<ApiResponse>> {
   final ReportScamRepository _repository;

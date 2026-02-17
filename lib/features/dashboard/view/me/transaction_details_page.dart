@@ -61,7 +61,53 @@ class TransactionDetailsPage extends StatelessWidget {
         ),
       ];
     } else if (isBill && transaction.billDetails != null) {
-      topTitle = 'Bill Payment';
+      // Use network if available (e.g. Airtel), otherwise provider (e.g. PalmPay)
+      final rawProvider = transaction.billDetails!.network ??
+          transaction.billDetails!.provider ??
+          '';
+
+      final provider = rawProvider.isNotEmpty
+          ? rawProvider[0].toUpperCase() +
+              (rawProvider.length > 1
+                  ? rawProvider.substring(1).toLowerCase()
+                  : '')
+          : '';
+
+      final rawType = (transaction.billDetails!.billType ?? '').trim().toUpperCase();
+
+      String displayType;
+      if (rawType == 'AIRTIME') {
+        displayType = 'Airtime';
+      } else if (rawType == 'DATA' || rawType == 'MOBILE_DATA') {
+        displayType = 'Mobile Data';
+      } else if (rawType.contains('CABLE') ||
+          rawType.contains('TV') ||
+          rawType.contains('CABLE_TV')) {
+        displayType = 'Cable TV';
+      } else if (rawType == 'ELECTRICITY') {
+        displayType = 'Electricity';
+      } else if (rawType == 'GIFTCARD' || rawType == 'GIFT_CARD') {
+        displayType = 'Gift Card';
+      } else if (rawType == 'INTERNATIONAL_AIRTIME') {
+        displayType = 'Intl. Airtime';
+      } else {
+        // Fallback: Check description for keywords if billType is generic
+        final desc = transaction.description.toUpperCase();
+        if (desc.contains('AIRTIME')) {
+          displayType = 'Airtime';
+        } else if (desc.contains('DATA') || desc.contains('BUNDLE')) {
+          displayType = 'Mobile Data';
+        } else if (desc.contains('CABLE') || desc.contains('TV')) {
+          displayType = 'Cable TV';
+        } else if (desc.contains('ELECTRICITY') || desc.contains('POWER')) {
+          displayType = 'Electricity';
+        } else {
+          displayType = transaction.billDetails!.billType ?? 'Bill Payment';
+        }
+      }
+
+      topTitle = provider.isEmpty ? displayType : '$provider $displayType';
+
       topDetails = [
         buildDetailRow('Amount', '₦${transaction.billDetails!.amount}', false),
         buildDetailRow(
@@ -69,7 +115,7 @@ class TransactionDetailsPage extends StatelessWidget {
           transaction.billDetails!.provider ?? '',
           false,
         ),
-        buildDetailRow('Type', transaction.billDetails!.billType ?? '', false),
+        buildDetailRow('Type', displayType, false),
         buildDetailRow('Status', transaction.status, false),
         buildDetailRow('Date', transaction.createdAt.toString(), false),
       ];

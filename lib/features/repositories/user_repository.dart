@@ -216,18 +216,65 @@ class UserRepository {
     }
   }
 
-  /// Upload profile image using multipart PUT
-  Future<ApiResponse> editProfileImage(String filePath, String fullName) async {
+  /// Update user profile using multipart PUT
+  Future<UserModel> editProfile({
+    String? fullName,
+    String? phoneNumber,
+    String? dateOfBirth,
+    String? address,
+    String? city,
+    String? state,
+    String? postalCode,
+    String? employmentStatus,
+    String? occupation,
+    String? primaryPurpose,
+    String? sourceOfFunds,
+    num? expectedMonthlyInflow,
+    String? passportNumber,
+    String? passportCountry,
+    String? profileImagePath,
+    String? documentPath,
+    String? documentType,
+  }) async {
     try {
-      final file = File(filePath);
-      final fileName = file.path.split(Platform.pathSeparator).last;
-      final formData = FormData.fromMap({
-        'profile-image': await MultipartFile.fromFile(
+      final Map<String, dynamic> data = {
+        if (fullName != null) 'fullName': fullName,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
+        if (address != null) 'address': address,
+        if (city != null) 'city': city,
+        if (state != null) 'state': state,
+        if (postalCode != null) 'postalCode': postalCode,
+        if (employmentStatus != null) 'employmentStatus': employmentStatus,
+        if (occupation != null) 'occupation': occupation,
+        if (primaryPurpose != null) 'primaryPurpose': primaryPurpose,
+        if (sourceOfFunds != null) 'sourceOfFunds': sourceOfFunds,
+        if (expectedMonthlyInflow != null)
+          'expectedMonthlyInflow': expectedMonthlyInflow,
+        if (passportNumber != null) 'passportNumber': passportNumber,
+        if (passportCountry != null) 'passportCountry': passportCountry,
+        if (documentType != null) 'documentType': documentType,
+      };
+
+      if (profileImagePath != null) {
+        final file = File(profileImagePath);
+        final fileName = file.path.split(Platform.pathSeparator).last;
+        data['profile-image'] = await MultipartFile.fromFile(
           file.path,
           filename: fileName,
-        ),
-        'fullName': fullName,
-      });
+        );
+      }
+
+      if (documentPath != null) {
+        final file = File(documentPath);
+        final fileName = file.path.split(Platform.pathSeparator).last;
+        data['document'] = await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        );
+      }
+
+      final formData = FormData.fromMap(data);
 
       final response = await apiClient.putFormData(
         ApiEndpoints.editProfile,
@@ -236,17 +283,48 @@ class UserRepository {
 
       if (response.statusCode != 200) {
         throw Exception(
-          response.data?['message'] ?? 'Failed to upload profile image',
+          response.data?['message'] ?? 'Failed to update profile',
         );
       }
-      // Success - backend returns message. Caller may refresh profile afterwards.
-      return ApiResponse.fromJson(response.data);
+      
+      // The API returns the updated user details in the 'data' or 'user' field, or at the root
+      final dynamic rawData = response.data;
+      Map<String, dynamic>? userData;
+
+      if (rawData is Map<String, dynamic>) {
+        if (rawData['data'] is Map<String, dynamic>) {
+          userData = rawData['data'];
+        } else if (rawData['user'] is Map<String, dynamic>) {
+          userData = rawData['user'];
+        } else if (rawData.containsKey('id') || rawData.containsKey('email')) {
+          userData = rawData;
+        }
+      }
+
+      if (userData == null) {
+        // Fallback: fetch profile again if the update response doesn't contain the user object
+        return await getUserProfile();
+      }
+
+      return UserModel.fromJson(userData);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ?? 'Failed to upload profile image',
-      );
+       final message = e.response?.data?['message'];
+       if (message is List) {
+         throw Exception(message.join(', '));
+       }
+      throw Exception(message ?? 'Failed to update profile');
     } catch (e) {
-      throw Exception('Failed to upload profile image: $e');
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+
+  /// Upload profile image using multipart PUT (Legacy, kept for compatibility if needed)
+  Future<ApiResponse> editProfileImage(String filePath, String fullName) async {
+    try {
+      await editProfile(profileImagePath: filePath, fullName: fullName);
+      return ApiResponse(message: 'Profile updated successfully', statusCode: 200);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 

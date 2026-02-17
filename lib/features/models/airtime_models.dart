@@ -217,9 +217,9 @@ class InternationalFxRate {
   factory InternationalFxRate.fromJson(Map<String, dynamic> json) =>
       InternationalFxRate(
         id: json['id'] ?? 0,
-        name: json['name'] ?? '',
-        fxRate: (json['fxRate'] ?? 0).toDouble(),
-        currencyCode: json['currencyCode'] ?? '',
+        name: json['name'] ?? json['fromCurrency'] ?? '',
+        fxRate: (json['exchangeRate'] ?? json['fxRate'] ?? json['rate'] ?? 0).toDouble(),
+        currencyCode: json['currencyCode'] ?? json['fromCurrency'] ?? '',
       );
 }
 
@@ -246,7 +246,9 @@ class InternationalFxRateResponse {
 class AirtimePurchaseRequest {
   final String walletPin;
   final double amount;
-  final int operatorId;
+  final int? operatorId;
+  final String? billerId;
+  final String? itemId;
   final String phone;
   final String currency;
   final bool? addBeneficiary;
@@ -254,7 +256,9 @@ class AirtimePurchaseRequest {
   AirtimePurchaseRequest({
     required this.walletPin,
     required this.amount,
-    required this.operatorId,
+    this.operatorId,
+    this.billerId,
+    this.itemId,
     required this.phone,
     required this.currency,
     this.addBeneficiary,
@@ -263,7 +267,7 @@ class AirtimePurchaseRequest {
   Map<String, dynamic> toJson() => {
     'walletPin': walletPin,
     'amount': amount,
-    'operatorId': operatorId,
+    if (operatorId != null) 'operatorId': operatorId,
     'phone': phone,
     'currency': currency,
     if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,

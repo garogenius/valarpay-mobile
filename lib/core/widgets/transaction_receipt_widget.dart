@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/receipt_share_screen.dart';
 import 'package:valarpay/core/widgets/shareable_transaction_receipt.dart';
+import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 
@@ -254,30 +255,11 @@ class _TransactionReceiptWidgetState
   }
 
   Widget _buildDoneButton() {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFC),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: TextButton(
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: FullWidthButton(
+        text: 'Done',
         onPressed: _isLoading ? null : _handleDoneButton,
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-        child: const Text(
-          'Done',
-          style: TextStyle(
-            color: Color(0xFF111827),
-            fontFamily: 'SF Pro',
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
       ),
     );
   }

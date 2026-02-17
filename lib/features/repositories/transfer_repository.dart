@@ -39,7 +39,7 @@ class TransferRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getTransferFee,
-        query: {'currency': currency, 'amount': amount},
+        queryParameters: {'currency': currency, 'amount': amount},
       );
       return TransferFeeResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -100,7 +100,7 @@ class TransferRepository {
 
       final response = await apiClient.get(
         ApiEndpoints.getTransactions,
-        query: query,
+        queryParameters: query,
       );
       return TransactionsResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -114,7 +114,7 @@ class TransferRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.generateQRCode,
-        query: {'amount': amount},
+        queryParameters: {'amount': amount},
       );
       return QRCodeResponse.fromJson(response.data);
     } on DioException catch (e) {

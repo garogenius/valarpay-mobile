@@ -36,8 +36,7 @@ class _FlightSelectionScreenState extends ConsumerState<FlightSelectionScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         actions:
-            !isBvnVerified
-                // isBvnVerified
+            isBvnVerified
                 ? [
                   TextButton(
                     onPressed: () {
@@ -72,8 +71,7 @@ class _FlightSelectionScreenState extends ConsumerState<FlightSelectionScreen> {
                 : null,
       ),
       body:
-          // !isBvnVerified
-          isBvnVerified
+          !isBvnVerified
               ? const KycNotSetWidget(
                 title: 'KYC Not Completed',
                 subtitle:

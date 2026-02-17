@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 // Notification category enum
 enum NotificationCategory {
   TRANSACTIONS,
@@ -192,6 +194,110 @@ class NotificationModel {
 
   // Legacy getter for backward compatibility
   String get type => category.toLowerCase();
+
+  String get formattedTitle {
+    if (category == 'TRANSACTIONS') {
+      final lowerTitle = title.toLowerCase();
+      if (lowerTitle.contains('credit') || lowerTitle.contains('deposit')) {
+        return 'Credit Alert';
+      } else if (lowerTitle.contains('debit') ||
+          lowerTitle.contains('withdrawal') ||
+          lowerTitle.contains('transfer') ||
+          lowerTitle.contains('sent') ||
+          lowerTitle.contains('payment') ||
+          lowerTitle.contains('purchase')) {
+        return 'Debit Alert';
+      }
+    }
+    return title;
+  }
+
+  String get formattedMessage {
+    if (category == 'TRANSACTIONS' && metadata != null) {
+      final lowerTitle = title.toLowerCase();
+      final isCredit =
+          lowerTitle.contains('credit') || lowerTitle.contains('deposit');
+      final isDebit =
+          lowerTitle.contains('debit') ||
+          lowerTitle.contains('withdrawal') ||
+          lowerTitle.contains('transfer') ||
+          lowerTitle.contains('sent') ||
+          lowerTitle.contains('payment') ||
+          lowerTitle.contains('purchase');
+
+      if (isCredit || isDebit) {
+        try {
+          final amountVal = metadata?['amount'];
+          final amount =
+              (amountVal is num)
+                  ? amountVal.toDouble()
+                  : (double.tryParse(amountVal.toString()) ?? 0.0);
+
+          final balanceVal =
+              metadata?['balance'] ??
+              metadata?['currentBalance'] ??
+              metadata?['bal'];
+          final balance =
+              (balanceVal is num)
+                  ? balanceVal.toDouble()
+                  : (balanceVal != null
+                      ? double.tryParse(balanceVal.toString())
+                      : null);
+
+          final reference =
+              metadata?['reference'] ??
+              metadata?['transactionRef'] ??
+              metadata?['ref'] ??
+              '';
+
+          final date = createdAt;
+          final formattedDate = DateFormat("dd/MM/yyyy HH:mm").format(date);
+
+          final currency = metadata?['currency'] ?? 'NGN';
+
+          final formatter = NumberFormat('#,##0.00', 'en_US');
+          final formattedAmountStr = formatter.format(amount);
+          final formattedAmount = '$currency $formattedAmountStr';
+
+          String formattedBalance = '';
+          if (balance != null) {
+            final formattedBalanceStr = formatter.format(balance);
+            formattedBalance = ' Bal: $currency $formattedBalanceStr.';
+          }
+
+          if (isCredit) {
+            final senderName =
+                metadata?['senderName'] ??
+                metadata?['source'] ??
+                metadata?['sender'] ??
+                'Unknown';
+
+            // "Credit: NGN 5,000.00 from John Doe. Ref: 12345678. 17/02/2026 12:30. Bal: NGN 50,000.00."
+            if (amount > 0) {
+              return 'Credit: $formattedAmount from $senderName. Ref: $reference. $formattedDate.$formattedBalance';
+            }
+          } else if (isDebit) {
+            final recipientName =
+                metadata?['beneficiaryName'] ??
+                metadata?['recipient'] ??
+                metadata?['receiver'] ??
+                metadata?['destination'] ??
+                metadata?['merchant'] ??
+                'Service Provider';
+
+            // "Debit: NGN 5,000.00 to John Doe. Ref: 12345678. 17/02/2026 12:30. Bal: NGN 50,000.00."
+            if (amount > 0) {
+              return 'Debit: $formattedAmount to $recipientName. Ref: $reference. $formattedDate.$formattedBalance';
+            }
+          }
+        } catch (e) {
+          // Fallback to original message if parsing fails
+          return message;
+        }
+      }
+    }
+    return message;
+  }
 }
 
 // Pagination metadata model

@@ -26,7 +26,7 @@ class GiftCardRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardProducts,
-        query: {'currency': currency},
+        queryParameters: {'currency': currency},
       );
       return GiftCardProductResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -48,7 +48,7 @@ class GiftCardRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardRedeemCode,
-        query: {'transactionId': transactionId},
+        queryParameters: {'transactionId': transactionId},
       );
       return GiftCardRedeemCodeResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -62,22 +62,71 @@ class GiftCardRepository {
     required String currency,
     required double amount,
   }) async {
+    // 1. If NGN, no conversion needed
+    if (currency.toUpperCase() == 'NGN') {
+      return GiftCardFxRateResponse(
+        message: 'Success',
+        statusCode: 200,
+        data: GiftCardFxRateData(
+          senderCurrency: 'NGN',
+          senderAmount: amount,
+          recipientCurrency: 'NGN',
+          recipientAmount: amount,
+        ),
+      );
+    }
+
+    // 2. Only USD, GBP, and EUR use the convert-currency endpoint
+    const convertSupported = ['USD', 'GBP', 'EUR'];
+    if (convertSupported.contains(currency.toUpperCase())) {
+      try {
+        final response = await apiClient.post(
+          ApiEndpoints.convertCurrency,
+          data: {
+            'amount': amount,
+            'fromCurrency': currency,
+            'toCurrency': 'NGN',
+          },
+          useAuth: false,
+        );
+        
+        // New v1 API returns flat response
+        final rawData = response.data;
+        if (rawData != null) {
+          // The UI expects the Naira amount in senderAmount
+          return GiftCardFxRateResponse(
+            message: 'Success',
+            statusCode: 200,
+            data: GiftCardFxRateData(
+              senderCurrency: 'NGN',
+              senderAmount: (rawData['convertedAmount'] ?? 0).toDouble(),
+              recipientCurrency: rawData['fromCurrency'] ?? currency,
+              recipientAmount: (rawData['amount'] ?? amount).toDouble(),
+            ),
+          );
+        }
+      } catch (e) {
+        // Fallthrough to original endpoint if convert-currency fails
+      }
+    }
+
+    // 3. Others use the "fix rate logic" (the original giftcard FX rate endpoint)
     try {
       final response = await apiClient.get(
         ApiEndpoints.getGiftCardFxRate,
-        query: {'currency': currency, 'amount': amount},
+        queryParameters: {'currency': currency, 'amount': amount},
       );
       return GiftCardFxRateResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Failed to get FX rate');
+      throw Exception(e.response?.data?['message'] ?? 'Failed to fetch FX rate');
     }
   }
 
   Future<GiftcardBeneficiariesResponse> getGiftcardBeneficiaries() async {
     try {
       final response = await apiClient.get(
-        '/api/v1/user/get-beneficiaries',
-        query: {'transferType': 'TRANSFER', 'billType': 'giftcard'},
+        ApiEndpoints.getBeneficiaries,
+        queryParameters: {'category': 'BILL', 'billType': 'GIFTCARD'},
       );
       return GiftcardBeneficiariesResponse.fromJson(response.data);
     } on DioException catch (e) {

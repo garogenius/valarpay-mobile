@@ -38,7 +38,6 @@ class PasscodeNotifier
 }
 
 // 🔹 Providers
-final apiClientProvider = Provider((ref) => ApiClient());
 
 final authRepositoryProvider = Provider(
   (ref) => AuthRepository(ref.read(apiClientProvider)),

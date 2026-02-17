@@ -16,6 +16,13 @@ import 'package:valarpay/features/notifiers/reset_pin_notifier.dart';
 import 'package:valarpay/features/notifiers/transfer_notifier.dart';
 import 'package:valarpay/features/notifiers/update_details_notifier.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/notifiers/betting_notifier.dart';
+import 'package:valarpay/features/notifiers/education_notifier.dart';
+import 'package:valarpay/features/notifiers/international_airtime_notifier.dart';
+import 'package:valarpay/features/notifiers/savings_notifier.dart';
+import 'package:valarpay/features/notifiers/easylife_notifier.dart';
+import 'package:valarpay/features/notifiers/fixed_deposit_notifier.dart';
+import 'package:valarpay/features/notifiers/investment_notifier.dart';
 
 class GlobalLoadingOverlay extends ConsumerStatefulWidget {
   final Widget child;
@@ -70,6 +77,42 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
     final updateDetailsState = ref.watch(updateDetailsNotifierProvider);
     final reportScamState = ref.watch(reportScamNotifierProvider);
 
+    // New additions
+    final educationPurchaseState = ref.watch(educationPurchaseProvider);
+    final internationalPurchaseState = ref.watch(internationalAirtimePurchaseProvider);
+    final bettingPayState = ref.watch(bettingPayNotifierProvider);
+    final savingsPlanState = ref.watch(savingsPlanNotifierProvider);
+    final easyLifePlanState = ref.watch(easyLifePlanNotifierProvider);
+    final fixedDepositState = ref.watch(fixedDepositNotifierProvider);
+    final investmentActionState = ref.watch(investmentActionNotifierProvider);
+    final investmentProductState = ref.watch(investmentProductNotifierProvider);
+    final investmentListState = ref.watch(investmentListNotifierProvider);
+    final investmentDetailsState = ref.watch(investmentDetailsNotifierProvider);
+
+    // Verification and Plan Notifiers
+    final educationVerifyState = ref.watch(educationVerificationProvider);
+    final internationalPlanState = ref.watch(internationalAirtimePlanProvider);
+    final internationalFxState = ref.watch(internationalFxRateProvider);
+
+    // Initial Fetch Notifiers
+    final internetPlansState = ref.watch(internetPlansNotifierProvider);
+    final cablePlansState = ref.watch(cablePlansNotifierProvider);
+    final cableVariationState = ref.watch(cableVariationNotifierProvider);
+    final electricityState = ref.watch(electricityNotifierProvider);
+    final electricityBillInfoState = ref.watch(electricityBillInfoNotifierProvider);
+    final bettingPlatformsState = ref.watch(bettingPlatformsNotifierProvider);
+    final schoolBillersState = ref.watch(schoolBillersProvider);
+    final vendingProvidersState = ref.watch(vendingProvidersProvider);
+    final internationalCountriesState = ref.watch(internationalCountriesProvider);
+
+    final internetVariationState = ref.watch(internetVariationNotifierProvider);
+    final internetBeneficiaryState = ref.watch(internetBeneficiaryNotifierProvider);
+    final airtimeBeneficiaryState = ref.watch(airtimeBeneficiaryNotifierProvider);
+    final dataBeneficiaryState = ref.watch(dataBeneficiaryNotifierProvider);
+    final electricityBeneficiaryState = ref.watch(electricityBeneficiaryNotifierProvider);
+    final cableBeneficiaryState = ref.watch(cableBeneficiaryNotifierProvider);
+    final bettingBeneficiaryState = ref.watch(bettingBeneficiaryNotifierProvider);
+
     // Check if any of the critical notifiers are in initial loading state AND overlay is NOT hidden
     final isLoading =
         (authState.isInitialLoading && !authState.isOverlayHidden) ||
@@ -93,7 +136,37 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
         (resetPinState.isInitialLoading && !resetPinState.isOverlayHidden) ||
         (updateDetailsState.isInitialLoading &&
             !updateDetailsState.isOverlayHidden) ||
-        (reportScamState.isInitialLoading && !reportScamState.isOverlayHidden);
+        (reportScamState.isInitialLoading && !reportScamState.isOverlayHidden) ||
+        (educationPurchaseState.isInitialLoading && !educationPurchaseState.isOverlayHidden) ||
+        (internationalPurchaseState.isInitialLoading && !internationalPurchaseState.isOverlayHidden) ||
+        (bettingPayState.isInitialLoading && !bettingPayState.isOverlayHidden) ||
+        (savingsPlanState.isInitialLoading && !savingsPlanState.isOverlayHidden) ||
+        (easyLifePlanState.isInitialLoading && !easyLifePlanState.isOverlayHidden) ||
+        (fixedDepositState.isInitialLoading && !fixedDepositState.isOverlayHidden) ||
+        (investmentActionState.isInitialLoading && !investmentActionState.isOverlayHidden) ||
+        (investmentProductState.isInitialLoading && !investmentProductState.isOverlayHidden) ||
+        (investmentListState.isInitialLoading && !investmentListState.isOverlayHidden) ||
+        (investmentDetailsState.isInitialLoading && !investmentDetailsState.isOverlayHidden) ||
+        (educationVerifyState.isInitialLoading && !educationVerifyState.isOverlayHidden) ||
+        (internationalPlanState.isInitialLoading && !internationalPlanState.isOverlayHidden) ||
+        (internationalFxState.isInitialLoading && !internationalFxState.isOverlayHidden) ||
+        (internetPlansState.isInitialLoading && !internetPlansState.isOverlayHidden) ||
+        (cablePlansState.isInitialLoading && !cablePlansState.isOverlayHidden) ||
+        (cableVariationState.isInitialLoading && !cableVariationState.isOverlayHidden) ||
+        (electricityState.isInitialLoading && !electricityState.isOverlayHidden) ||
+        (electricityBillInfoState.isInitialLoading && !electricityBillInfoState.isOverlayHidden) ||
+        (bettingPlatformsState.isInitialLoading && !bettingPlatformsState.isOverlayHidden) ||
+        (schoolBillersState.isInitialLoading && !schoolBillersState.isOverlayHidden) ||
+        (vendingProvidersState.isInitialLoading && !vendingProvidersState.isOverlayHidden) ||
+        (internationalCountriesState.isInitialLoading && !internationalCountriesState.isOverlayHidden) ||
+
+        (internetVariationState.isInitialLoading && !internetVariationState.isOverlayHidden) ||
+        (internetBeneficiaryState.isInitialLoading && !internetBeneficiaryState.isOverlayHidden) ||
+        (airtimeBeneficiaryState.isInitialLoading && !airtimeBeneficiaryState.isOverlayHidden) ||
+        (dataBeneficiaryState.isInitialLoading && !dataBeneficiaryState.isOverlayHidden) ||
+        (electricityBeneficiaryState.isInitialLoading && !electricityBeneficiaryState.isOverlayHidden) ||
+        (cableBeneficiaryState.isInitialLoading && !cableBeneficiaryState.isOverlayHidden) ||
+        (bettingBeneficiaryState.isInitialLoading && !bettingBeneficiaryState.isOverlayHidden);
 
     return Stack(
       children: [

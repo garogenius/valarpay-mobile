@@ -35,26 +35,35 @@ class ProfileRowItem extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(width: 16),
+
             // Value and arrow
-            Row(
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                if (isClickable) ...[
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: isDark ? Colors.white70 : Colors.grey[600],
-                    size: 16,
-                  ),
+                  if (isClickable) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: isDark ? Colors.white70 : Colors.grey[600],
+                      size: 16,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),

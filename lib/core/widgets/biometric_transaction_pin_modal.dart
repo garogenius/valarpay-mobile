@@ -15,7 +15,11 @@ class BiometricTransactionPinModal {
         false;
     final faceIdEnabled =
         await LocalStorageService.getBool('pref_transaction_faceid') ?? false;
-    final biometricEnabled = fingerprintEnabled || faceIdEnabled;
+    final genericBiometricEnabled =
+        await LocalStorageService.getBool('pref_transaction_biometric') ??
+        false;
+    final biometricEnabled =
+        genericBiometricEnabled || fingerprintEnabled || faceIdEnabled;
 
     if (!biometricEnabled) {
       // Biometrics not enabled → show PIN modal normally

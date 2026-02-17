@@ -46,29 +46,32 @@ class _AddMoneyTransferScreenState
     final message =
         'Bank Name: $bankName\nAccount Name: $accountName\nAccount Number: $accountNumber';
     final encodedMessage = Uri.encodeComponent(message);
-    final whatsappUrl = 'whatsapp://send?text=$encodedMessage';
 
-    try {
-      final uri = Uri.parse(whatsappUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        if (mounted) {
-          AppMessenger.show(
-            context,
-            message: 'WhatsApp is not installed on this device',
-            type: MessageType.error,
-          );
+    // Try multiple ways to open WhatsApp
+    final urls = [
+      'whatsapp://send?text=$encodedMessage', // Standard WhatsApp scheme
+      'https://wa.me/?text=$encodedMessage', // Universal link (works for Business too)
+      'https://api.whatsapp.com/send?text=$encodedMessage', // Fallback API link
+    ];
+
+    bool launched = false;
+
+    for (var url in urls) {
+      try {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          launched = true;
+          break;
         }
+      } catch (e) {
+        // Continue to next URL if this one fails
       }
-    } catch (e) {
-      if (mounted) {
-        AppMessenger.show(
-          context,
-          message: 'Could not open WhatsApp',
-          type: MessageType.error,
-        );
-      }
+    }
+
+    if (!launched && mounted) {
+      // If none of the WhatsApp specific links work, fallback to generic sharing
+      await Share.share(message);
     }
   }
 

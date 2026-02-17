@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/beneficiary_models.dart';
 import 'package:valarpay/features/repositories/beneficiary_repository.dart';
+import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart'
-    show apiClientProvider, userNotifierProvider;
+    show userNotifierProvider;
 
 class BeneficiaryNotifier extends StateNotifier<DataState<Beneficiary>> {
   final BeneficiaryRepository _repository;
@@ -16,18 +17,15 @@ class BeneficiaryNotifier extends StateNotifier<DataState<Beneficiary>> {
 
   Future<void> getBeneficiaries({
     required String category,
-    required String transferType,
+    String? transferType,
+    String? billType,
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final user = _ref.read(userNotifierProvider).data?.first;
-      final userId = user?.id;
-      log('Fetching beneficiaries for userId: $userId');
-
       final response = await _repository.getBeneficiaries(
         category: category,
         transferType: transferType,
-        userId: userId,
+        billType: billType,
       );
 
       state = state.copyWith(

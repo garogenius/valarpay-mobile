@@ -144,128 +144,132 @@ class _PasscodeLoginScreenState extends ConsumerState<PasscodeLoginScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            const Text(
-              'Enter Passcode',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Enter your 6-digit passcode to login',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 40),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: [
+              const SizedBox(height: 10),
+              const Text(
+                'Enter Passcode',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Enter your 6-digit passcode to login',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
 
-            // Passcode dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_passcodeLength, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color:
-                        index < _passcode.length
-                            ? appTheme.primaryColor
-                            : Colors.grey.shade300,
-                    shape: BoxShape.circle,
+              // Passcode dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_passcodeLength, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color:
+                          index < _passcode.length
+                              ? appTheme.primaryColor
+                              : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
+              ),
+
+              const SizedBox(height: 30),
+
+              _buildNumberPad(),
+
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.go('/forgot-password'),
+                child: const Text(
+                  'Forgot Passcode?',
+                  style: TextStyle(
+                    color: appTheme.primaryColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
-                );
-              }),
-            ),
-
-            const Spacer(),
-
-            _buildNumberPad(),
-
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => context.go('/forgot-password'),
-              child: const Text(
-                'Forgot Passcode?',
-                style: TextStyle(
-                  color: appTheme.primaryColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
-            // Alternative Login Options
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                children: [
-                  const Text(
-                    'Or login with',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Biometric Login Button
-                  FutureBuilder<bool>(
-                    future: _checkBiometricAvailable(),
-                    builder: (context, snapshot) {
-                      if (snapshot.data == true) {
-                        return OutlinedButton.icon(
-                          onPressed: () => context.go('/biometric-login'),
-                          icon: const Icon(Icons.fingerprint, size: 20),
-                          label: const Text(
-                            'Use Biometric',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 40),
-                            side: BorderSide(color: appTheme.primaryColor),
-                            foregroundColor: appTheme.primaryColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Full Signin Button
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/signin'),
-                    icon: const Icon(Icons.login, size: 20),
-                    label: const Text(
-                      'Login with Password',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 40),
-                      side: BorderSide(color: Colors.grey.shade400),
-                      foregroundColor: Colors.grey.shade700,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              // Alternative Login Options
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Or login with',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 16),
-          ],
+                    // Biometric or Password Login Button
+                    FutureBuilder<bool>(
+                      future: _checkBiometricAvailable(),
+                      builder: (context, snapshot) {
+                        final bool isBiometricAvailable = snapshot.data == true;
+                        
+                        return Column(
+                          children: [
+                            if (isBiometricAvailable) ...[
+                              Center(
+                                child: TextButton.icon(
+                                  onPressed: () => context.go('/biometric-login'),
+                                  icon: const Icon(
+                                    Icons.fingerprint,
+                                    size: 20,
+                                    color: appTheme.primaryColor,
+                                  ),
+                                  label: const Text(
+                                    'Login with Biometric',
+                                    style: TextStyle(
+                                      color: appTheme.primaryColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                               Center(
+                                child: TextButton(
+                                  onPressed: () => context.go('/signin'),
+                                  child: const Text(
+                                    'Login with Password',
+                                    style: TextStyle(
+                                      color: appTheme.primaryColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
+    ),
     );
   }
 
@@ -292,7 +296,7 @@ class _PasscodeLoginScreenState extends ConsumerState<PasscodeLoginScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          mainAxisSpacing: 20,
+          mainAxisSpacing: 10,
           crossAxisSpacing: 20,
         ),
         itemCount: numbers.length,

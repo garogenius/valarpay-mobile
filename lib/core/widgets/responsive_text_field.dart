@@ -6,8 +6,8 @@ import 'package:valarpay/core/utils/color_utils.dart';
 
 class ResponsiveTextField extends StatelessWidget {
   final TextEditingController controller;
-  final String label;
-  final String hint;
+  final String? label;
+  final String? hintText;
   final bool obscureText;
   final TextInputType keyboardType;
   final VoidCallback? onToggleVisibility;
@@ -16,15 +16,18 @@ class ResponsiveTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? suffixIcon;
+  final Widget? prefixIcon;
   final int maxLines;
+  final int? maxLength;
   final FormFieldValidator<String>? validator;
   final List<TextInputFormatter>? inputFormatters;
 
   const ResponsiveTextField({
     super.key,
     required this.controller,
-    required this.label,
-    required this.hint,
+    this.label,
+    String? hintText,
+    String? hint, // Legacy support
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.onToggleVisibility,
@@ -33,21 +36,25 @@ class ResponsiveTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.suffixIcon,
+    this.prefixIcon,
     this.maxLines = 1,
+    this.maxLength,
     this.validator,
     this.inputFormatters,
-  });
+  }) : hintText = hintText ?? hint;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: ResponsiveUtils.bodyMedium.copyWith(color: Colors.black),
-        ),
-        SizedBox(height: ResponsiveUtils.spacing8),
+        if (label != null) ...[
+          Text(
+            label!,
+            style: ResponsiveUtils.bodyMedium.copyWith(color: Colors.black),
+          ),
+          SizedBox(height: ResponsiveUtils.spacing8),
+        ],
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -55,13 +62,15 @@ class ResponsiveTextField extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           maxLines: maxLines,
+          maxLength: maxLength,
           validator: validator,
           inputFormatters: inputFormatters,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: hintText,
             hintStyle: ResponsiveUtils.bodyMedium.copyWith(
               color: Colors.grey.shade400,
             ),
+            prefixIcon: prefixIcon,
             suffixIcon: _buildSuffixIcon(),
             border: OutlineInputBorder(
               borderRadius: ResponsiveUtils.borderRadius8,

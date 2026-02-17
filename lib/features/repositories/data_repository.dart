@@ -26,13 +26,18 @@ class DataRepository {
 
   /// Get data plan for a phone number
   Future<DataPlanResponse> getDataPlan({
-    required String phone,
-    required String currency,
+    String? phone,
+    String? currency,
+    String? category,
   }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getDataPlan,
-        query: {'phone': phone, 'currency': currency},
+        query: {
+          if (phone != null) 'phone': phone, 
+          if (currency != null) 'currency': currency,
+          if (category != null) 'category': category,
+        },
       );
       return DataPlanResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -42,19 +47,29 @@ class DataRepository {
     }
   }
 
-  /// Get data variation by operator ID
-  Future<DataVariationResponse> getDataVariation({
-    required int operatorId,
+  /// Get data plans for a specific network
+  /// Note: PalmPay API doesn't support category filtering - filter client-side by validityDate
+  Future<DataVariationResponse> getDataPlansByNetwork({
+    String? network,
+    int? operatorId,
+    String? billerId,
   }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getDataVariation,
-        query: {'operatorId': operatorId.toString()},
+        query: {
+          if (billerId != null) 'billerId': billerId,
+          // PalmPay doesn't use these but keeping for potential fallback
+          if (network != null) 'network': network.toLowerCase(),
+          if (operatorId != null && operatorId > 0)
+            'operatorId': operatorId.toString(),
+        },
       );
       return DataVariationResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data['message'] ?? 'Failed to fetch data variation',
+        e.response?.data['message'] ??
+            'Failed to fetch data plans for $network',
       );
     }
   }
@@ -79,7 +94,7 @@ class DataRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getUserBeneficiaries,
-        query: {'transferType': 'TRANSFER', 'billType': 'data'},
+        query: {'category': 'BILL', 'billType': 'DATA'},
       );
 
       return DataBeneficiariesResponse.fromJson(response.data);

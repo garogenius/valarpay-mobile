@@ -8,6 +8,7 @@ import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/notifiers/profile_notifier.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/dashboard/view/KYC/upgrade_kyc.dart';
+import 'package:valarpay/features/dashboard/view/profile/edit_profile_screen.dart';
 
 class ProfileHeader extends ConsumerStatefulWidget {
   final VoidCallback? onEditTap;
@@ -93,202 +94,12 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () async {
-                      // show dialog with options (camera / gallery)
-                      showDialog(
-                        context: context,
-                        builder: (dialogContext) {
-                          return AlertDialog(
-                            title: const Text(
-                              'Update profile image',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            content: SingleChildScrollView(
-                              child: ListBody(
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(Icons.camera_alt),
-                                    title: const Text('Take photo'),
-                                    onTap: () async {
-                                      Navigator.of(dialogContext).pop();
-                                      final XFile? picked = await ImagePicker()
-                                          .pickImage(
-                                            source: ImageSource.camera,
-                                            imageQuality: 80,
-                                          );
-                                      if (picked != null) {
-                                        // show loading
-                                        _loadingShown = true;
-                                        showDialog(
-                                          context: widget.context,
-                                          barrierDismissible: false,
-                                          builder:
-                                              (_) => WillPopScope(
-                                                onWillPop: () async => false,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ),
-                                              ),
-                                        );
-                                        try {
-                                          final ok = await ref
-                                              .read(
-                                                profileNotifierProvider
-                                                    .notifier,
-                                              )
-                                              .uploadProfileImage(
-                                                picked.path,
-                                                user?.fullname ?? '',
-                                              );
-                                          _hideLoading();
-
-                                          if (!mounted) return;
-
-                                          if (ok) {
-                                            final updated =
-                                                await ref
-                                                    .read(
-                                                      userNotifierProvider
-                                                          .notifier,
-                                                    )
-                                                    .refreshUserProfile();
-                                            if (updated != null) {
-                                              ref
-                                                  .read(userProvider.notifier)
-                                                  .setUser(updated);
-                                            }
-                                            AppMessenger.show(
-                                              widget.context,
-                                              message: 'Profile image updated',
-                                              type: MessageType.success,
-                                            );
-
-                                            if (widget.onEditTap != null)
-                                              widget.onEditTap!();
-                                          } else {
-                                            AppMessenger.show(
-                                              widget.context,
-                                              message:
-                                                  ref
-                                                      .read(
-                                                        profileNotifierProvider,
-                                                      )
-                                                      .message ??
-                                                  'Failed to update profile',
-                                              type: MessageType.error,
-                                            );
-                                          }
-                                        } catch (e) {
-                                          _hideLoading();
-
-                                          if (!mounted) return;
-
-                                          AppMessenger.show(
-                                            widget.context,
-                                            message:
-                                                'Error updating profile: $e',
-                                            type: MessageType.error,
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(Icons.photo_library),
-                                    title: const Text('Choose from gallery'),
-                                    onTap: () async {
-                                      Navigator.of(dialogContext).pop();
-                                      final XFile? picked = await ImagePicker()
-                                          .pickImage(
-                                            source: ImageSource.gallery,
-                                            imageQuality: 80,
-                                          );
-                                      if (picked != null) {
-                                        _loadingShown = true;
-                                        showDialog(
-                                          context: widget.context,
-                                          barrierDismissible: false,
-                                          builder:
-                                              (_) => WillPopScope(
-                                                onWillPop: () async => false,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ),
-                                              ),
-                                        );
-                                        try {
-                                          final ok = await ref
-                                              .read(
-                                                profileNotifierProvider
-                                                    .notifier,
-                                              )
-                                              .uploadProfileImage(
-                                                picked.path,
-                                                user?.fullname ?? '',
-                                              );
-                                          _hideLoading();
-
-                                          if (!mounted) return;
-
-                                          if (ok) {
-                                            final updated =
-                                                await ref
-                                                    .read(
-                                                      userNotifierProvider
-                                                          .notifier,
-                                                    )
-                                                    .refreshUserProfile();
-                                            if (updated != null) {
-                                              ref
-                                                  .read(userProvider.notifier)
-                                                  .setUser(updated);
-                                            }
-                                            AppMessenger.show(
-                                              widget.context,
-                                              message: 'Profile image updated',
-                                              type: MessageType.success,
-                                            );
-
-                                            if (widget.onEditTap != null)
-                                              widget.onEditTap!();
-                                          } else {
-                                            AppMessenger.show(
-                                              widget.context,
-                                              message:
-                                                  ref
-                                                      .read(
-                                                        profileNotifierProvider,
-                                                      )
-                                                      .message ??
-                                                  'Failed to update profile',
-                                              type: MessageType.error,
-                                            );
-                                          }
-                                        } catch (e) {
-                                          _hideLoading();
-
-                                          if (!mounted) return;
-
-                                          AppMessenger.show(
-                                            widget.context,
-                                            message:
-                                                'Error updating profile: $e',
-                                            type: MessageType.error,
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfileScreen(),
+                        ),
                       );
                     },
                     child: Container(
@@ -315,9 +126,13 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                fullName,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  fullName,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
               SizedBox(width: 10),
               InkWell(

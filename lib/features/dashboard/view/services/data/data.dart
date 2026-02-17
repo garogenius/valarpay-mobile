@@ -8,6 +8,7 @@ import 'package:valarpay/core/themes/color_utils.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/check_balance.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:valarpay/core/utils/helpers.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
@@ -40,12 +41,66 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
   DataBeneficiary? _selectedBeneficiary;
+  bool _showRecentBeneficiaries = false;
+  int _selectedTabIndex = 0; // 0: HOT, 1: Daily, 2: Weekly, 3: Monthly
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(dataBeneficiaryNotifierProvider.notifier)
+          .getDataBeneficiaries();
+      
+      // Fetch PalmPay billers (networks)
+      ref.read(dataPlansNotifierProvider.notifier).getPlans().then((_) {
+        final state = ref.read(dataPlansNotifierProvider);
+        if (state.isDataAvailable && state.data!.isNotEmpty) {
+           final providers = state.data!;
+           final selectedNetwork = ref.read(dataSelectedNetworkProvider);
+           
+           DataPlanInfo? currentPlan;
+           try {
+             currentPlan = providers.firstWhere((p) => p.network.toLowerCase() == selectedNetwork.toLowerCase());
+           } catch (_) {
+             currentPlan = providers.first;
+           }
+
+           if (currentPlan != null) {
+              ref.read(dataSelectedNetworkProvider.notifier).state = currentPlan.network;
+              ref.read(dataSelectedBillerIdProvider.notifier).state = currentPlan.billerId;
+              if (currentPlan.id is int) {
+                ref.read(dataSelectedOperatorIdProvider.notifier).state = currentPlan.id;
+              }
+                            final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+               ref.read(dataVariationNotifierProvider.notifier).getVariation(
+                 network: currentPlan.network,
+                 operatorId: currentPlan.id is int ? currentPlan.id : null,
+                 billerId: currentPlan.billerId,
+                 filterCategory: currentCategory,
+               );
+            }
+        }
+      });
+    });
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+
+  String _assetForProvider(String network) {
+    final n = network.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (n.contains('mtn')) return 'assets/images/mtn.png';
+    if (n.contains('airtel')) return 'assets/images/airtel.png';
+    if (n.contains('9mobile') || n.contains('etisalat') || n.contains('ethysalat') || n.contains('9'))
+      return 'assets/images/9mobile.png';
+    if (n.contains('glo')) return 'assets/images/glo.png';
+    // fallback
+    return 'assets/images/default.png';
   }
 
   void _showLoading() {
@@ -73,6 +128,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   bool _isFormValid() {
     final selectedNetwork = ref.read(dataSelectedNetworkProvider);
     final selectedOperatorId = ref.read(dataSelectedOperatorIdProvider);
+    final selectedBillerId = ref.read(dataSelectedBillerIdProvider);
     final selectedPlan = ref.read(dataSelectedPlanProvider);
 
     return _phoneController.text.isNotEmpty &&
@@ -80,213 +136,749 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         _amountController.text != '0' &&
         selectedNetwork.isNotEmpty &&
         selectedPlan.isNotEmpty &&
-        selectedOperatorId > 0;
+        (selectedOperatorId > 0 || selectedBillerId != null);
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
-    final plansState = ref.watch(dataPlansNotifierProvider);
-    final availablePlans = plansState.data ?? <DataPlanInfo>[];
     final selectedNetwork = ref.watch(dataSelectedNetworkProvider);
-
-    final uniqueNetworks =
-        availablePlans.map((plan) => plan.network).toSet().toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: const Text(
           'Data',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        actions:
-            isBvnVerified
-                ? [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => DataSavedBeneficiaryScreen(
-                                onSelectBeneficiary: (beneficiary) {
-                                  setState(() {
-                                    _selectedBeneficiary = beneficiary;
-                                    _phoneController.text =
-                                        beneficiary.phoneNumber;
-                                  });
-                                  // Auto-detect network and operator
-                                  if (beneficiary.network != null &&
-                                      beneficiary.operatorId != null) {
-                                    ref
-                                        .read(
-                                          dataSelectedNetworkProvider.notifier,
-                                        )
-                                        .state = beneficiary.network!;
-                                    ref
-                                        .read(
-                                          dataSelectedOperatorIdProvider
-                                              .notifier,
-                                        )
-                                        .state = beneficiary.operatorId!;
-                                    // Reset selected plan for new operator
-                                    ref
-                                        .read(dataSelectedPlanProvider.notifier)
-                                        .state = '';
-                                    // Fetch plans to populate network selector
-                                    ref
-                                        .read(
-                                          dataPlansNotifierProvider.notifier,
-                                        )
-                                        .getPlans(
-                                          phone: beneficiary.phoneNumber,
-                                          currency: 'NGN',
-                                        );
-                                    // Fetch variations for this operator
-                                    ref
-                                        .read(
-                                          dataVariationNotifierProvider
-                                              .notifier,
-                                        )
-                                        .getVariation(
-                                          operatorId: beneficiary.operatorId!,
-                                        );
-                                  }
-                                },
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: !isBvnVerified
+          ? const KycNotSetWidget(
+              title: 'KYC Not Completed',
+              subtitle: 'Complete your KYC verification to purchase data',
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Bar: Provider | Phone | Contact
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                // Provider Selector
+                                GestureDetector(
+                                  onTap: () => _showProviderModal(context),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.transparent,
+                                        ),
+                                        child: ClipOval(
+                                          child: Builder(
+                                            builder: (context) {
+                                              final plans = ref.watch(dataPlansNotifierProvider).data ?? [];
+                                              final selectedBillerId = ref.watch(dataSelectedBillerIdProvider);
+                                              
+                                              String? iconUrl;
+                                              try {
+                                                iconUrl = plans.firstWhere((p) => p.billerId == selectedBillerId || p.network == selectedNetwork).billerIcon;
+                                              } catch (_) {}
+
+                                              if (iconUrl != null && iconUrl.isNotEmpty) {
+                                                return Image.network(
+                                                  iconUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, o, s) => Image.asset(_assetForProvider(selectedNetwork)),
+                                                );
+                                              }
+                                              return Image.asset(
+                                                _assetForProvider(selectedNetwork),
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (c, o, s) => Container(
+                                                  color: Colors.grey,
+                                                  child: const Icon(Icons.cell_wifi, size: 20, color: Colors.white),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        color: isDark ? Colors.grey : Colors.black54,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  height: 24,
+                                  width: 1,
+                                  color: Colors.grey.withOpacity(0.5),
+                                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                // Phone Input
+                                Expanded(
+                                  child: TextField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    textAlignVertical: TextAlignVertical.center,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: '0000 0000 000',
+                                      hintStyle: TextStyle(
+                                        color: isDark ? Colors.white38 : Colors.grey,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                      suffixIcon: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _showRecentBeneficiaries = !_showRecentBeneficiaries;
+                                          });
+                                        },
+                                        child: Icon(
+                                          _showRecentBeneficiaries
+                                              ? Icons.keyboard_arrow_up
+                                              : Icons.keyboard_arrow_down,
+                                          color: isDark ? Colors.grey : Colors.black54,
+                                        ),
+                                      ),
+                                    ),
+                                    onChanged: (v) => _detectNetworkProvider(v),
+                                  ),
+                                ),
+                                // Contact Picker
+                                GestureDetector(
+                                  onTap: _showContactAccessDialog,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.primaryColor, // Brand Primary Color
+                                    ),
+                                    child: const Icon(Icons.person, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                           if (_showRecentBeneficiaries)
+                             _buildRecentBeneficiariesDropdown(),
+
+                          const SizedBox(height: 24),
+
+                          // Data Plans Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Data Plans',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
                               ),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Saved Beneficiary',
-                      style: TextStyle(
-                        color: appTheme.primaryColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                              // Row(
+                              //   children: [
+                              //     Icon(Icons.grid_view, color: AppColors.primaryColor, size: 20),
+                              //     const SizedBox(width: 8),
+                              //     Icon(Icons.grid_view_rounded, color: Colors.grey, size: 20),
+                              //   ],
+                              // ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Tabs
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'].asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final title = entry.value;
+                                final isSelected = _selectedTabIndex == index;
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedTabIndex = index;
+                                    });
+                                    // Fetch plans for the selected category if network is selected
+                                    final network = ref.read(dataSelectedNetworkProvider);
+                                    if (network.isNotEmpty) {
+                                      final operatorId = ref.read(dataSelectedOperatorIdProvider);
+                                      final billerId = ref.read(dataSelectedBillerIdProvider);
+                                      final category = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][index];
+                                      ref.read(dataVariationNotifierProvider.notifier)
+                                          .getVariation(
+                                            network: network,
+                                            operatorId: operatorId > 0 ? operatorId : null,
+                                            billerId: billerId,
+                                            filterCategory: category,
+                                          );
+                                    }
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 24),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          title,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                            color: isSelected ? AppColors.primaryColor : Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        if (isSelected)
+                                          Container(
+                                            height: 3,
+                                            width: 20,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryColor,
+                                              borderRadius: BorderRadius.circular(2),
+                                            ),
+                                          )
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Plans Grid
+                          _buildPlansGrid(isDark),
+                          const SizedBox(height: 24),
+                          const DataServicesSection(),
+                        ],
                       ),
                     ),
                   ),
-                ]
-                : null,
-      ),
-      body:
-          !isBvnVerified
-              ? const KycNotSetWidget(
-                title: 'KYC Not Completed',
-                subtitle: 'Complete your KYC verification to purchase data',
-              )
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Phone Number',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ReuseableTextFieldWithCountry(
-                      controller: _phoneController,
-                      hintText: "123 567 890",
-                      countryCode: '+234',
-                      flagImagePath: 'assets/images/ngflag.png',
-                      isReadOnly: false,
-                      textInputType: TextInputType.phone,
-                      showCountryLabel: true,
-                      onChanged: (value) {
-                        if (value.replaceAll(RegExp(r'\D'), '').length >= 10) {
-                          ref
-                              .read(dataPlansNotifierProvider.notifier)
-                              .getPlans(phone: value, currency: 'NGN')
-                              .then((_) {
-                                final state = ref.read(
-                                  dataPlansNotifierProvider,
-                                );
-                                if (state.isDataAvailable &&
-                                    state.data!.isNotEmpty) {
-                                  final plan = state.data!.first;
-                                  ref
-                                      .read(
-                                        dataSelectedNetworkProvider.notifier,
-                                      )
-                                      .state = plan.network;
-                                  ref
-                                      .read(
-                                        dataSelectedOperatorIdProvider.notifier,
-                                      )
-                                      .state = plan.operatorId;
 
-                                  // ✅ Auto-fetch variations immediately
-                                  ref
-                                      .read(
-                                        dataVariationNotifierProvider.notifier,
-                                      )
-                                      .getVariation(
-                                        operatorId: plan.operatorId,
-                                      );
-                                }
-                              });
-                        }
-                        setState(() {});
-                      },
-                      suffixWidget: IconButton(
-                        onPressed: _showContactAccessDialog,
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: appTheme.primaryColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 16,
+                  // Bottom Payment Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      boxShadow: [
+                         BoxShadow(
+                           color: Colors.black.withOpacity(0.1),
+                           blurRadius: 10,
+                           offset: const Offset(0, -2),
+                         )
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                         Expanded(
+                           child: Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Text(
+                                 'Total Amount',
+                                 style: TextStyle(
+                                   color: Colors.grey,
+                                   fontSize: 12,
+                                 ),
+                               ),
+                               const SizedBox(height: 4),
+                               Text(
+                                 currencyFormatter(_amountController.text),
+                                 style: TextStyle(
+                                   color: isDark ? Colors.white : Colors.black,
+                                   fontSize: 24,
+                                   fontWeight: FontWeight.w600,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                        SizedBox(
+                          height: 50,
+                          width: 120,
+                          child: ElevatedButton(
+                            onPressed: _isFormValid() ? _handleContinue : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor, // Brand Primary Color
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Pay',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-
-                    // Network Provider Selection
-                    _buildNetworkProviderSelector(
-                      plansState,
-                      uniqueNetworks,
-                      availablePlans,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Data Amount Selection (from fixed amounts)
-                    if (selectedNetwork.isNotEmpty) ...[
-                      _buildDataAmountSection(),
-                      const SizedBox(height: 24),
-                    ],
-
-                    const SizedBox(height: 32),
-
-                    // Continue Button
-                    FullWidthButton(
-                      text: 'Continue',
-                      onPressed: _handleContinue,
-                      isEnabled: _isFormValid(),
-                    ),
-                    const SizedBox(height: 24),
-                    const DataServicesSection(),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
     );
   }
 
+  Widget _buildPlansGrid(bool isDark) {
+    final variationState = ref.watch(dataVariationNotifierProvider);
+    final bundles = variationState.data ?? <DataPlanBundle>[];
+    
+    if (variationState.isInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (bundles.isEmpty) {
+       return Container(
+         width: double.infinity,
+         padding: const EdgeInsets.all(32),
+         child: Column(
+            children: [
+                Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text('Select a network provider above to see plans', style: TextStyle(color: Colors.grey)),
+            ]
+         )
+       );
+    }
+
+    // Use bundles directly as they are now filtered by category at the API level
+    List<DataPlanBundle> filteredBundles = bundles;
+    
+    if (filteredBundles.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: Text('No plans in this category')),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.75, 
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: filteredBundles.length,
+      itemBuilder: (context, index) {
+        final bundle = filteredBundles[index];
+        final isSelected = ref.watch(dataSelectedPlanProvider) == bundle.id;
+
+        return GestureDetector(
+          onTap: () {
+             ref.read(dataSelectedPlanProvider.notifier).state = bundle.id;
+             
+             if (bundle.operatorId != null && bundle.operatorId! > 0) {
+                ref.read(dataSelectedOperatorIdProvider.notifier).state = bundle.operatorId!;
+             } else {
+                final numericId = int.tryParse(bundle.id);
+                if (numericId != null && numericId > 0) {
+                   ref.read(dataSelectedOperatorIdProvider.notifier).state = numericId;
+                }
+             }
+
+             setState(() {
+                _amountController.text = bundle.amount.toStringAsFixed(0);
+             });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected 
+                  ? Border.all(color: AppColors.primaryColor, width: 1.5)
+                  : Border.all(color: Colors.transparent),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(
+                    bundle.name,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  bundle.validity,
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  currencyFormatter(bundle.amount.toStringAsFixed(0)),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                   decoration: BoxDecoration(
+                     color: AppColors.primaryColor.withOpacity(0.1),
+                     borderRadius: BorderRadius.circular(4),
+                   ),
+                   child: Text(
+                     '₦${(bundle.amount * 0.01).toStringAsFixed(1)} Cashback',
+                     style: const TextStyle(
+                       color: AppColors.primaryColor,
+                       fontSize: 10,
+                       fontWeight: FontWeight.bold,
+                     ),
+                     textAlign: TextAlign.center,
+                   ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showProviderModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final providersState = ref.watch(dataPlansNotifierProvider);
+        final providers = providersState.data ?? [];
+        final selectedNetwork = ref.watch(dataSelectedNetworkProvider);
+
+        // Filter out invalid/empty providers
+        final filteredProviders = providers.where((p) => p.network.trim().isNotEmpty).toList(); 
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Select Provider',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (providersState.isInitialLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                 Flexible(
+                   child: ListView.builder(
+                     shrinkWrap: true,
+                     itemCount: filteredProviders.length,
+                     itemBuilder: (context, index) {
+                       final p = filteredProviders[index];
+                       final isSelected = selectedNetwork.toLowerCase() == p.network.toLowerCase();
+                       return InkWell(
+                         onTap: () async {
+                           ref.read(dataSelectedNetworkProvider.notifier).state = p.network;
+                           ref.read(dataSelectedBillerIdProvider.notifier).state = p.billerId;
+                           if (p.id is int) {
+                             ref.read(dataSelectedOperatorIdProvider.notifier).state = p.id;
+                           } else {
+                             ref.read(dataSelectedOperatorIdProvider.notifier).state = 0;
+                           }
+                           ref.read(dataSelectedPlanProvider.notifier).state = '';
+                           
+                           // Close modal immediately to avoid context issues and show immediate response
+                           Navigator.pop(context);
+                           
+                           // Trigger variation fetch with network name and current category
+                           final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+                           ref.read(dataVariationNotifierProvider.notifier)
+                                .getVariation(
+                                  network: p.network,
+                                  operatorId: p.id is int ? p.id : null,
+                                  billerId: p.billerId,
+                                  filterCategory: currentCategory,
+                                );
+                         },
+                         child: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : Colors.transparent,
+                            ),
+                             child: Row(
+                               children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: ClipOval(
+                                      child: p.billerIcon != null && p.billerIcon!.isNotEmpty
+                                          ? Image.network(
+                                              p.billerIcon!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (c, e, s) => Image.asset(_assetForProvider(p.network)),
+                                            )
+                                          : Image.asset(_assetForProvider(p.network)),
+                                    ),
+                                  ),
+                                 const SizedBox(width: 16),
+                                 Text(
+                                   p.name, 
+                                   style: TextStyle(
+                                     color: isDark ? Colors.white : Colors.black,
+                                     fontSize: 18,
+                                     fontWeight: FontWeight.w500,
+                                   ),
+                                 ),
+                                 const Spacer(),
+                                 Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.primaryColor : Colors.grey,
+                                        width: 2,
+                                      ),
+                                      color: isSelected ? AppColors.primaryColor : Colors.transparent,
+                                    ),
+                                    child: isSelected 
+                                        ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                        : null,
+                                  ),
+                              ],
+                            ),
+                         ),
+                       );
+                     },
+                   ),
+                 ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentBeneficiariesDropdown() {
+    final state = ref.watch(dataBeneficiaryNotifierProvider);
+    final beneficiaries = state.data ?? [];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.read(userProvider);
+    final userPhone = user?.phoneNumber != null ? _formatTo11(user!.phoneNumber!) : null;
+
+     return Container(
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2B2725) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (state.isInitialLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (beneficiaries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('No recent beneficiaries')),
+            )
+          else ...[
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: beneficiaries.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final b = beneficiaries[index];
+                  final isMe = userPhone != null && _formatTo11(b.phoneNumber) == userPhone;
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          Helpers.formatPhoneNumber(b.phoneNumber),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (isMe) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'me',
+                              style: TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (b.network != null)
+                          Text(
+                            b.network!.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.close, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                    onTap: () async {
+                      setState(() {
+                        _phoneController.text = b.phoneNumber;
+                        _showRecentBeneficiaries = false;
+                      });
+                      
+                      if (b.network != null) {
+                        final providers = ref.read(dataPlansNotifierProvider).data ?? [];
+                        String? billerId;
+                        try {
+                           billerId = providers.firstWhere((p) => p.network.toLowerCase() == b.network!.toLowerCase()).billerId;
+                        } catch (_) {}
+
+                        ref.read(dataSelectedNetworkProvider.notifier).state = b.network!;
+                        ref.read(dataSelectedBillerIdProvider.notifier).state = billerId;
+                        if (b.operatorId != null) {
+                          ref.read(dataSelectedOperatorIdProvider.notifier).state = b.operatorId!;
+                        }
+                        ref.read(dataSelectedPlanProvider.notifier).state = '';
+                        
+                        final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
+                        await ref.read(dataVariationNotifierProvider.notifier).getVariation(
+                          network: b.network!,
+                          operatorId: b.operatorId,
+                          billerId: billerId,
+                          filterCategory: currentCategory,
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            TextButton.icon(
+              onPressed: () {
+                // TODO: Implement clearAll for data beneficiaries
+              },
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Delete All'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
   void _showContactAccessDialog() {
     showDialog(
       context: context,
@@ -302,6 +894,58 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             },
           ),
     );
+  }
+
+  void _detectNetworkProvider(String phoneNumber) {
+    final formatted = _formatTo11(phoneNumber);
+    if (formatted.length >= 10) {
+      ref
+          .read(dataPlansNotifierProvider.notifier)
+          .getPlans() // PalmPay get-plan takes no params
+          .then((_) {
+            final state = ref.read(dataPlansNotifierProvider);
+            if (state.isDataAvailable && state.data!.isNotEmpty) {
+              // Try to detect network from phone prefix
+              final prefix = formatted.substring(0, 4);
+              final providers = state.data!;
+              
+              // Simple detection logic (can be improved)
+              String detectedBillerId = 'MTN';
+              if (prefix.contains('0803') || prefix.contains('0703') || prefix.contains('0806') || prefix.contains('0813') || prefix.contains('0810') || prefix.contains('0816') || prefix.contains('0903') || prefix.contains('0906')) {
+                detectedBillerId = 'MTN';
+              } else if (prefix.contains('0802') || prefix.contains('0808') || prefix.contains('0812') || prefix.contains('0701') || prefix.contains('0708') || prefix.contains('0902') || prefix.contains('0907') || prefix.contains('0901')) {
+                detectedBillerId = 'AIRTEL';
+              } else if (prefix.contains('0805') || prefix.contains('0807') || prefix.contains('0811') || prefix.contains('0815') || prefix.contains('0705') || prefix.contains('0905')) {
+                detectedBillerId = 'GLO';
+              } else if (prefix.contains('0809') || prefix.contains('0817') || prefix.contains('0818') || prefix.contains('0909') || prefix.contains('0908')) {
+                detectedBillerId = '9MOBILE';
+              }
+
+              final plan = providers.firstWhere(
+                (p) => p.billerId == detectedBillerId || p.network.toUpperCase().contains(detectedBillerId),
+                orElse: () => providers.first,
+              );
+
+              ref.read(dataSelectedNetworkProvider.notifier).state = plan.network;
+              ref.read(dataSelectedBillerIdProvider.notifier).state = plan.billerId;
+              
+              if (plan.id is int) {
+                 ref.read(dataSelectedOperatorIdProvider.notifier).state = plan.id;
+              }
+
+              // Auto-fetch variations with billerId and current category
+              final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
+              ref.read(dataVariationNotifierProvider.notifier)
+                  .getVariation(
+                    network: plan.network,
+                    operatorId: plan.id is int ? plan.id : null,
+                    billerId: plan.billerId,
+                    filterCategory: currentCategory,
+                  );
+            }
+          });
+    }
+    setState(() {});
   }
 
   Future<void> _pickContact() async {
@@ -523,237 +1167,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     return digits;
   }
 
-  Widget _buildNetworkProviderSelector(
-    DataState<DataPlanInfo>? plansState,
-    List<String> uniqueNetworks,
-    List<DataPlanInfo> availablePlans,
-  ) {
-    if ((plansState?.isInitialLoading ?? false) && availablePlans.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
 
-    // Show message if no plans/networks
-    if (uniqueNetworks.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Network Provider',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'Enter phone number to automatically detect network provider',
-              style: TextStyle(color: Colors.orange),
-            ),
-          ),
-        ],
-      );
-    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Network Provider',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child:
-              (plansState?.isInitialLoading ?? false) && availablePlans.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : Builder(
-                    builder: (context) {
-                      // ✅ Deduplicate by network - get unique networks only
-                      final uniqueNetworkPlans = <String, DataPlanInfo>{};
-                      for (final plan in availablePlans) {
-                        if (!uniqueNetworkPlans.containsKey(plan.network)) {
-                          uniqueNetworkPlans[plan.network] = plan;
-                        }
-                      }
 
-                      // Map unique networks to NetworkProvider models
-                      final providerModels =
-                          uniqueNetworkPlans.values
-                              .map(
-                                (p) => NetworkProvider(
-                                  id: p.id,
-                                  planName: p.planName,
-                                  network: p.network,
-                                  countryISOCode: p.countryISOCode,
-                                  operatorId: p.operatorId,
-                                  createdAt: p.createdAt,
-                                  updatedAt: p.updatedAt,
-                                ),
-                              )
-                              .toList();
-
-                      final selectedNetwork = ref.watch(
-                        dataSelectedNetworkProvider,
-                      );
-
-                      return NetworkProviderSelector(
-                        selectedNetwork: selectedNetwork,
-                        providers: providerModels,
-                        onNetworkSelected: (value) async {
-                          if (value.isEmpty) return;
-                          try {
-                            final plan = availablePlans.firstWhere(
-                              (p) => p.network == value,
-                            );
-                            ref
-                                .read(dataSelectedNetworkProvider.notifier)
-                                .state = value;
-                            ref.read(dataSelectedPlanProvider.notifier).state =
-                                '';
-                            ref
-                                .read(dataSelectedOperatorIdProvider.notifier)
-                                .state = plan.operatorId;
-
-                            await ref
-                                .read(dataVariationNotifierProvider.notifier)
-                                .getVariation(operatorId: plan.operatorId);
-                          } catch (e) {
-                            // Provider not found
-                          }
-                        },
-                      );
-                    },
-                  ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDataAmountSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final variationState = ref.watch(dataVariationNotifierProvider);
-    final dataVariations = variationState.data ?? <DataPlan>[];
-
-    // Get fixed amounts from the first variation (there's usually only one)
-    final fixedAmounts =
-        dataVariations.isNotEmpty
-            ? dataVariations.first.fixedAmounts
-            : <double>[];
-
-    // Deduplicate amounts to avoid dropdown issues
-    final uniqueAmounts = <double>{...fixedAmounts}.toList();
-
-    // Get descriptions if available
-    final descriptions =
-        dataVariations.isNotEmpty
-            ? dataVariations.first.fixedAmountsDescriptions
-            : <String, dynamic>{};
-
-    if (variationState.isInitialLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (uniqueAmounts.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Text(
-          'No data plans available for this network',
-          style: TextStyle(color: Colors.orange),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Data Plan',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value:
-                  ref.watch(dataSelectedPlanProvider).isEmpty
-                      ? null
-                      : ref.watch(dataSelectedPlanProvider),
-              hint: Text(
-                'Select Data Plan',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.grey[600],
-                ),
-              ),
-              isExpanded: true,
-              dropdownColor: Theme.of(context).cardColor,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              items:
-                  uniqueAmounts.map((amount) {
-                    final amountKey = amount.toStringAsFixed(2);
-                    final description = descriptions[amountKey] ?? '';
-                    final displayText =
-                        description.isNotEmpty
-                            ? '$description - ₦${amount.toStringAsFixed(0)}'
-                            : '₦${amount.toStringAsFixed(0)}';
-
-                    return DropdownMenuItem<String>(
-                      value: amount.toString(),
-                      child: Text(
-                        displayText,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(dataSelectedPlanProvider.notifier).state = value;
-                  setState(() {
-                    _amountController.text = double.parse(
-                      value,
-                    ).toStringAsFixed(0);
-                  });
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   // Handle continue button press
   void _handleContinue() {
@@ -770,21 +1186,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedNetwork = ref.read(dataSelectedNetworkProvider);
     final selectedPlan = ref.read(dataSelectedPlanProvider);
-    final dataVariations = ref.read(dataVariationNotifierProvider).data ?? [];
-    final descriptions =
-        dataVariations.isNotEmpty
-            ? dataVariations.first.fixedAmountsDescriptions
-            : <String, dynamic>{};
-
-    // Get description for selected amount - try both formats (0 and 0.00)
-    final amountKey = double.parse(selectedPlan).toStringAsFixed(0);
-    final amountKeyWithDecimals = double.parse(selectedPlan).toStringAsFixed(2);
-    final description =
-        descriptions[amountKey] ?? descriptions[amountKeyWithDecimals] ?? '';
-    final planDescription =
-        description.isNotEmpty
-            ? description
-            : '₦${_amountController.text} Data';
+    final bundles = ref.read(dataVariationNotifierProvider).data ?? [];
+    
+    // Find selected bundle to get its name/description
+    final selectedBundle = bundles.firstWhere(
+      (b) => b.id == selectedPlan,
+      orElse: () => DataPlanBundle(id: '0', name: '₦${_amountController.text} Data', amount: double.tryParse(_amountController.text) ?? 0, validity: ''),
+    );
+    
+    final planDescription = selectedBundle.name;
 
     Navigator.push(
       context,
@@ -837,6 +1247,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     Navigator.pop(context);
 
     final selectedOperatorId = ref.read(dataSelectedOperatorIdProvider);
+    final selectedBillerId = ref.read(dataSelectedBillerIdProvider);
+    final selectedPlanId = ref.read(dataSelectedPlanProvider);
+    
     _showLoading();
 
     try {
@@ -845,7 +1258,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       final request = DataPurchaseRequest(
         walletPin: pin,
         amount: amount,
-        operatorId: selectedOperatorId,
+        operatorId: selectedOperatorId > 0 ? selectedOperatorId : null,
+        billerId: selectedBillerId,
+        itemId: selectedPlanId,
         phone: _phoneController.text,
         currency: 'NGN',
         addBeneficiary: _saveBeneficiary,
@@ -908,21 +1323,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   void _navigateToReceipt() {
     final selectedNetwork = ref.read(dataSelectedNetworkProvider);
     final selectedPlan = ref.read(dataSelectedPlanProvider);
-    final dataVariations = ref.read(dataVariationNotifierProvider).data ?? [];
-    final descriptions =
-        dataVariations.isNotEmpty
-            ? dataVariations.first.fixedAmountsDescriptions
-            : <String, dynamic>{};
-
-    // Get description for selected amount - try both formats (0 and 0.00)
-    final amountKey = double.parse(selectedPlan).toStringAsFixed(0);
-    final amountKeyWithDecimals = double.parse(selectedPlan).toStringAsFixed(2);
-    final description =
-        descriptions[amountKey] ?? descriptions[amountKeyWithDecimals] ?? '';
-    final planDescription =
-        description.isNotEmpty
-            ? description
-            : '₦${_amountController.text} Data';
+    final bundles = ref.read(dataVariationNotifierProvider).data ?? [];
+    
+    // Find selected bundle to get its name
+    final selectedBundle = bundles.firstWhere(
+      (b) => b.id.toString() == selectedPlan,
+      orElse: () => DataPlanBundle(id: '0', name: '₦${_amountController.text} Data', amount: double.tryParse(_amountController.text) ?? 0, validity: ''),
+    );
+    
+    final planDescription = selectedBundle.name;
 
     // Create receipt data while State is mounted
     final receiptData = [
@@ -993,4 +1402,5 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       ),
     );
   }
+
 }

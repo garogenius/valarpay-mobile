@@ -63,7 +63,7 @@ class BeneficiaryAccountDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // _showPaymentMethodModal(context);
+                      _showPaymentMethodModal(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF76301),

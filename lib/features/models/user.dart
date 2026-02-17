@@ -24,6 +24,14 @@ class UserModel {
   final String? dateOfBirth;
   final String? currency;
   final String? tierLevel;
+  final String? employmentStatus;
+  final String? occupation;
+  final String? passportNumber;
+  final String? passportCountry;
+  final String? primaryPurpose;
+  final String? sourceOfFunds;
+  final String? postalCode;
+  final num? expectedMonthlyInflow;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final bool isEmailVerified;
@@ -40,6 +48,8 @@ class UserModel {
   final num dailyCummulativeTransactionLimit;
   final num cummulativeBalanceLimit;
   final List<WalletModel> wallets;
+  
+  String get fullName => fullname;
 
   UserModel({
     required this.id,
@@ -67,6 +77,14 @@ class UserModel {
     this.dateOfBirth,
     this.currency,
     this.tierLevel,
+    this.employmentStatus,
+    this.occupation,
+    this.passportNumber,
+    this.passportCountry,
+    this.primaryPurpose,
+    this.sourceOfFunds,
+    this.postalCode,
+    this.expectedMonthlyInflow,
     this.createdAt,
     this.updatedAt,
     this.isBvnVerified = false,
@@ -116,6 +134,14 @@ class UserModel {
       dateOfBirth: json['dateOfBirth'],
       currency: json['currency'],
       tierLevel: json['tierLevel'],
+      employmentStatus: json['employmentStatus'] ?? json['employment_status'],
+      occupation: json['occupation'],
+      passportNumber: json['passportNumber'] ?? json['passport_number'],
+      passportCountry: json['passportCountry'] ?? json['passport_country'],
+      primaryPurpose: json['primaryPurpose'] ?? json['primary_purpose'],
+      sourceOfFunds: json['sourceOfFunds'] ?? json['source_of_funds'],
+      postalCode: json['postalCode'] ?? json['postal_code'],
+      expectedMonthlyInflow: json['expectedMonthlyInflow'] ?? json['expected_monthly_inflow'],
       createdAt:
           json['createdAt'] != null
               ? DateTime.tryParse(json['createdAt'])
@@ -166,6 +192,14 @@ class UserModel {
     'dateOfBirth': dateOfBirth,
     'currency': currency,
     'tierLevel': tierLevel,
+    'employmentStatus': employmentStatus,
+    'occupation': occupation,
+    'passportNumber': passportNumber,
+    'passportCountry': passportCountry,
+    'primaryPurpose': primaryPurpose,
+    'sourceOfFunds': sourceOfFunds,
+    'postalCode': postalCode,
+    'expectedMonthlyInflow': expectedMonthlyInflow,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
     'isBvnVerified': isBvnVerified,

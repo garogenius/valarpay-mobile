@@ -62,7 +62,7 @@ class NotificationRepository {
 
       final response = await apiClient.get(
         ApiEndpoints.getNotifications,
-        query: queryParams.isNotEmpty ? queryParams : null,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       return NotificationsResponse.fromJson(response.data);

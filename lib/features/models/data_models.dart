@@ -175,32 +175,81 @@ class Fees {
   );
 }
 
-// Data Plan Response with network and plans array
+// Data Plan Info (Now matching the new simplified response)
+class DataPlanInfo {
+  final dynamic id;
+  final String network;
+  final String name;
+  final double amount;
+  final String validity;
+  final String? billerId;
+  final String? billerName;
+  final String? billerIcon;
+
+  DataPlanInfo({
+    required this.id,
+    required this.network,
+    required this.name,
+    required this.amount,
+    required this.validity,
+    this.billerId,
+    this.billerName,
+    this.billerIcon,
+  });
+
+  factory DataPlanInfo.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic v) {
+      if (v == null) return 0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0;
+    }
+
+    final dynamic rawId = json['id'] ?? json['billerId'] ?? json['variation_code'] ?? json['variationCode'] ?? '';
+
+    return DataPlanInfo(
+      id: rawId,
+      network: json['network'] ?? json['operatorName'] ?? json['billerName'] ?? '',
+      name: json['name'] ?? json['variationName'] ?? json['planName'] ?? json['billerName'] ?? '',
+      amount: parseDouble(json['amount'] ?? json['variationAmount'] ?? json['price'] ?? json['minAmount']),
+      validity: json['validity'] ?? json['variationValidity'] ?? '',
+      billerId: json['billerId']?.toString(),
+      billerName: json['billerName']?.toString(),
+      billerIcon: json['billerIcon']?.toString(),
+    );
+  }
+}
+
+// Data Plan Response with plans array
 class DataPlanResponse {
-  final String? network;
   final List<DataPlanInfo> plans;
   final String message;
   final int statusCode;
 
   DataPlanResponse({
-    this.network,
     required this.plans,
     required this.message,
     required this.statusCode,
   });
 
   factory DataPlanResponse.fromJson(Map<String, dynamic> json) {
+    var dataJson = json['data'] ?? json['billers']; // Support 'billers' for PalmPay
     List<DataPlanInfo> plansList = [];
 
-    if (json['data']?['plan'] != null && json['data']['plan'] is List) {
-      plansList =
-          (json['data']['plan'] as List)
-              .map((plan) => DataPlanInfo.fromJson(plan))
-              .toList();
+    if (dataJson is List) {
+      plansList = dataJson.map((p) => DataPlanInfo.fromJson(p)).toList();
+    } else if (dataJson is Map) {
+      final dynamic nestedData = dataJson['plans'] ?? dataJson['variations'] ?? dataJson['data'] ?? dataJson['billers'];
+      if (nestedData is List) {
+        plansList = nestedData.map((p) => DataPlanInfo.fromJson(p)).toList();
+      } else if (dataJson.containsKey('id') || dataJson.containsKey('operatorId') || dataJson.containsKey('network') || dataJson.containsKey('billerId')) {
+        // The data object itself is the operator info
+        plansList = [DataPlanInfo.fromJson(Map<String, dynamic>.from(dataJson))];
+      }
+    } else if (json['billers'] is List) {
+      plansList = (json['billers'] as List).map((p) => DataPlanInfo.fromJson(p)).toList();
     }
 
     return DataPlanResponse(
-      network: json['data']?['network'],
       plans: plansList,
       message: json['message'] ?? 'Success',
       statusCode: json['statusCode'] ?? 200,
@@ -208,46 +257,120 @@ class DataPlanResponse {
   }
 }
 
-// Data Plan Info (simplified version from the plan array)
-class DataPlanInfo {
-  final String id;
-  final String network;
-  final String planName;
-  final String countryISOCode;
-  final int operatorId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+// Simplified Data Plan Bundle model for the new endpoints
+class DataExtInfo {
+  final int? validityDate;
+  final String? itemSize;
+  final String? itemDescription;
+  final String? validityAttachNote;
+  final String? validity;
 
-  DataPlanInfo({
-    required this.id,
-    required this.network,
-    required this.planName,
-    required this.countryISOCode,
-    required this.operatorId,
-    required this.createdAt,
-    required this.updatedAt,
+  DataExtInfo({
+    this.validityDate,
+    this.itemSize,
+    this.itemDescription,
+    this.validityAttachNote,
+    this.validity,
   });
 
-  factory DataPlanInfo.fromJson(Map<String, dynamic> json) => DataPlanInfo(
-    id: json['id']?.toString() ?? '',
-    network: json['network'] ?? '',
-    planName: json['planName'] ?? '',
-    countryISOCode: json['countryISOCode'] ?? '',
-    operatorId: json['operatorId'] ?? 0,
-    createdAt:
-        json['createdAt'] != null
-            ? DateTime.parse(json['createdAt'])
-            : DateTime.now(),
-    updatedAt:
-        json['updatedAt'] != null
-            ? DateTime.parse(json['updatedAt'])
-            : DateTime.now(),
-  );
+  factory DataExtInfo.fromJson(Map<String, dynamic> json) {
+    return DataExtInfo(
+      validityDate: json['validityDate'] is int 
+          ? json['validityDate'] 
+          : int.tryParse(json['validityDate']?.toString() ?? ''),
+      itemSize: json['itemSize'],
+      itemDescription: json['itemDescription'],
+      validityAttachNote: json['validityAttachNote'],
+      validity: json['validity'],
+    );
+  }
 }
 
-// Data Variation Response
+class DataPlanBundle {
+  final String id;
+  final int? operatorId;
+  final String name;
+  final double amount;
+  final String validity;
+  final String? network;
+  final String? billerId;
+  final DataExtInfo? extInfo;
+
+  DataPlanBundle({
+    required this.id,
+    this.operatorId,
+    required this.name,
+    required this.amount,
+    required this.validity,
+    this.network,
+    this.billerId,
+    this.extInfo,
+  });
+
+  factory DataPlanBundle.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic v) {
+      if (v == null) return 0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0;
+    }
+
+    // Handle various possible keys for each field
+    final dynamic rawId = json['id'] ?? json['itemId'] ?? json['variation_code'] ?? json['variationCode'] ?? '';
+    final String id = rawId.toString();
+    
+    String name = json['name'] ?? 
+                       json['itemName'] ??
+                       json['variation_name'] ?? 
+                       json['variationName'] ?? 
+                       json['planName'] ?? 
+                       json['billerName'] ?? 
+                       '';
+    
+    DataExtInfo? extInfo;
+    if (json['extInfo'] != null && json['extInfo'] is Map) {
+      extInfo = DataExtInfo.fromJson(json['extInfo']);
+      final String? itemSize = json['extInfo']['itemSize'];
+      if (itemSize != null && itemSize.isNotEmpty) {
+        name = itemSize;
+      }
+    }
+                       
+    final double rawAmount = parseDouble(
+      json['amount'] ?? 
+      json['variation_amount'] ?? 
+      json['variationAmount'] ?? 
+      json['price'] ?? 
+      json['fixedAmount']
+    );
+
+    // PalmPay items return amount in common units * 100 (e.g. 150000 for 1500)
+    final double amount = (json.containsKey('itemId')) ? rawAmount / 100 : rawAmount;
+    
+    String validity = json['validity'] ?? 
+                          json['variation_validity'] ?? 
+                          json['plan_validity'] ?? 
+                          '';
+    
+    if (validity.isEmpty && json['extInfo'] != null && json['extInfo'] is Map) {
+      validity = json['extInfo']['validity'] ?? '';
+    }
+
+    return DataPlanBundle(
+      id: id,
+      operatorId: json['operatorId'],
+      name: name,
+      amount: amount,
+      validity: validity,
+      network: json['network']?.toString(),
+      billerId: json['billerId']?.toString(),
+      extInfo: extInfo,
+    );
+  }
+}
+
+// Data Variation Response (Now used for bundles)
 class DataVariationResponse {
-  final DataPlan data;
+  final List<DataPlanBundle> data;
   final String message;
   final int statusCode;
 
@@ -257,19 +380,79 @@ class DataVariationResponse {
     required this.statusCode,
   });
 
-  factory DataVariationResponse.fromJson(Map<String, dynamic> json) =>
-      DataVariationResponse(
-        data: DataPlan.fromJson(json['data'] ?? {}),
-        message: json['message'] ?? 'Success',
-        statusCode: json['statusCode'] ?? 200,
-      );
+  factory DataVariationResponse.fromJson(Map<String, dynamic> json) {
+    var dataJson = json['data'] ?? json['items'];
+    List<DataPlanBundle> plans = [];
+    
+    if (dataJson is List) {
+      plans = dataJson.map((p) => DataPlanBundle.fromJson(p)).toList();
+    } else if (dataJson is Map) {
+       // CASE 1: Response has a nested list
+       final List<dynamic>? list = (dataJson['plans'] ?? dataJson['variations'] ?? dataJson['data'] ?? dataJson['items']) as List<dynamic>?;
+       if (list != null) {
+         plans = list.map((p) => DataPlanBundle.fromJson(p)).toList();
+       } 
+       // CASE 2: Response is the operator object itself with fixedAmountsDescriptions (Log 1)
+       else if (dataJson.containsKey('fixedAmounts') || dataJson.containsKey('localFixedAmounts')) {
+         final List<dynamic> amounts = (dataJson['localFixedAmounts'] ?? dataJson['fixedAmounts']) as List<dynamic>;
+         final Map<String, dynamic> descriptions = Map<String, dynamic>.from(
+           dataJson['localFixedAmountsDescriptions'] ?? dataJson['fixedAmountsDescriptions'] ?? {}
+         );
+         final String? network = dataJson['network']?.toString() ?? dataJson['name']?.toString();
+         final int opId = dataJson['id'] ?? dataJson['operatorId'] ?? 0;
+         
+         for (var amt in amounts) {
+           final double value = (amt is num) ? amt.toDouble() : double.tryParse(amt.toString()) ?? 0;
+           
+           // Try to find the matching description
+           String? desc;
+           if (amt is String && descriptions.containsKey(amt)) {
+             desc = descriptions[amt];
+           } else {
+              for (var entry in descriptions.entries) {
+                if ((double.tryParse(entry.key) ?? -1) == value) {
+                  desc = entry.value;
+                  break;
+                }
+              }
+           }
+
+           String validity = '';
+           if (desc != null && desc.contains('(') && desc.contains(')')) {
+             final start = desc.lastIndexOf('(') + 1;
+             final end = desc.lastIndexOf(')');
+             if (end > start) {
+               validity = desc.substring(start, end);
+             }
+           }
+
+           plans.add(DataPlanBundle(
+             id: '$opId-$value', // Unique selection ID
+             operatorId: opId,
+             name: desc ?? 'Data Plan',
+             amount: value,
+             validity: validity,
+             network: network,
+           ));
+         }
+       }
+    }
+
+    return DataVariationResponse(
+      data: plans,
+      message: json['message'] ?? 'Success',
+      statusCode: json['statusCode'] ?? 200,
+    );
+  }
 }
 
 // Data Purchase Request
 class DataPurchaseRequest {
   final String walletPin;
   final double amount;
-  final int operatorId;
+  final int? operatorId;
+  final String? billerId;
+  final String? itemId;
   final String phone;
   final String currency;
   final bool? addBeneficiary;
@@ -277,7 +460,9 @@ class DataPurchaseRequest {
   DataPurchaseRequest({
     required this.walletPin,
     required this.amount,
-    required this.operatorId,
+    this.operatorId,
+    this.billerId,
+    this.itemId,
     required this.phone,
     required this.currency,
     this.addBeneficiary,
@@ -286,7 +471,7 @@ class DataPurchaseRequest {
   Map<String, dynamic> toJson() => {
     'walletPin': walletPin,
     'amount': amount,
-    'operatorId': operatorId,
+    if (operatorId != null) 'operatorId': operatorId,
     'phone': phone,
     'currency': currency,
     if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,

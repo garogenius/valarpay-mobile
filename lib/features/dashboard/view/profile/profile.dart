@@ -5,6 +5,7 @@ import '../../widgets/services_widgets/profile_widgets/profile_menu_item.dart';
 import 'personal_details_screen.dart';
 import 'contact_details_screen.dart';
 import 'address_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -38,6 +39,18 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Profile Menu Items
+            ProfileMenuItem(
+              icon: Icons.edit_note_outlined,
+              title: 'Edit Profile',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfileScreen(),
+                  ),
+                );
+              },
+            ),
             ProfileMenuItem(
               icon: Icons.person_outline,
               title: 'Personal Details',

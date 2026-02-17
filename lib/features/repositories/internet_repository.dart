@@ -14,7 +14,7 @@ class InternetRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getInternetPlan,
-        query: {'currency': currency},
+        queryParameters: {'currency': currency},
       );
       return InternetPlanResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -30,7 +30,7 @@ class InternetRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getInternetBillInfo,
-        query: {'billerCode': billerCode},
+        queryParameters: {'billerCode': billerCode},
       );
       return InternetVariationResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -64,7 +64,7 @@ class InternetRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getBeneficiaries,
-        query: {'transferType': 'TRANSFER', 'billType': 'internet'},
+        queryParameters: {'category': 'BILL', 'billType': 'INTERNET'},
       );
 
       return InternetBeneficiariesResponse.fromJson(response.data);

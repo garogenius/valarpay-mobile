@@ -31,6 +31,7 @@ import 'package:valarpay/features/dashboard/view/settings/forgot_pin_screen.dart
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/models/user.dart';
 import 'package:valarpay/features/models/username_request.dart';
+import 'package:valarpay/features/models/transaction_model.dart';
 import '../../features/dashboard/view/services/airtime/airtime_screen.dart';
 import '../../features/dashboard/view/services/data/data.dart';
 import '../../features/dashboard/view/services/airtime/schedule_topup.dart';
@@ -46,6 +47,12 @@ import '../../features/dashboard/view/me/portfolio.dart';
 import 'package:valarpay/features/dashboard/view/addmoney/add_money_screen.dart';
 import 'package:valarpay/features/dashboard/view/addmoney/add_money_via_qrcode_screen.dart';
 import 'package:valarpay/features/dashboard/view/addmoney/add_money_via_transfer_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/create_vcard_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/vcard_details_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/vcard_management_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/vcard_transactions_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/fund_vcard_screen.dart';
+import 'package:valarpay/features/dashboard/view/cards/withdraw_vcard_screen.dart';
 import 'package:valarpay/features/dashboard/view/comming_soon.dart';
 import 'package:valarpay/features/dashboard/view/home/notifications/notifications_screen.dart';
 import 'package:valarpay/features/dashboard/view/home/support/customer_service_screen.dart';
@@ -95,9 +102,33 @@ import '../../features/dashboard/view/profile/personal_details_screen.dart'
     as profile;
 import '../../features/dashboard/view/profile/contact_details_screen.dart';
 import '../../features/dashboard/view/profile/address_screen.dart';
+import '../../features/dashboard/view/profile/edit_profile_screen.dart';
+import '../../features/dashboard/view/finance/savings/create_savings_plan_screen.dart';
+import '../../features/dashboard/view/finance/easylife/create_easylife_plan_screen.dart';
+import '../../features/dashboard/view/finance/fixed_deposit/create_fixed_deposit_screen.dart';
+import '../../features/dashboard/view/finance/savings/savings_details_screen.dart';
+import '../../features/dashboard/view/finance/easylife/easylife_details_screen.dart';
+import '../../features/dashboard/view/finance/fixed_deposit/fixed_deposit_details_screen.dart';
+import '../../features/dashboard/view/finance/savings/target_savings_screen.dart';
+import '../../features/dashboard/view/finance/easylife/easylife_list_screen.dart';
+import '../../features/dashboard/view/finance/fixed_deposit/fixed_deposit_list_screen.dart';
+import '../../features/dashboard/view/finance/finance_transaction_history_screen.dart';
+import '../../features/dashboard/view/finance/finance_transaction_details_screen.dart';
 import '../../features/dashboard/view/profile/change_phone_number.dart';
+import '../../features/dashboard/view/finance/finance_main_screen.dart';
+import '../../features/dashboard/view/finance/investment/investment_intro_screen.dart';
+import '../../features/dashboard/view/finance/investment/create_investment_screen.dart';
+import '../../features/dashboard/view/finance/investment/my_investments_screen.dart';
+import '../../features/dashboard/view/finance/investment/investment_details_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:valarpay/features/dashboard/view/services/all_services_screen.dart';
+import '../../features/dashboard/view/finance/finance_intro_screen.dart';
+import 'package:valarpay/features/dashboard/view/finance/widgets/finance_product_intro_screen.dart';
+
+import 'package:valarpay/core/services/connectivity_service.dart';
 
 final router = GoRouter(
+  navigatorKey: ConnectivityService.navigatorKey,
   initialLocation: '/splash', // Always show splash screen
 
   routes: [
@@ -199,12 +230,9 @@ final router = GoRouter(
         GoRoute(path: '/', builder: (context, state) => const Homescreen()),
         GoRoute(
           path: '/finance',
-          builder: (context, state) => const SavingsComingSoonScreen(),
+          builder: (context, state) => const FinanceMainScreen(),
         ),
-        GoRoute(
-          path: '/invest',
-          builder: (context, state) => const InvestmentsComingSoonScreen(),
-        ),
+
         GoRoute(
           path: '/cards',
           builder: (context, state) => const CardsScreen(),
@@ -212,6 +240,45 @@ final router = GoRouter(
         GoRoute(
           path: '/get-phisical-card',
           builder: (context, state) => const GetPhysicalCardScreen(),
+        ),
+        GoRoute(
+          path: '/vcard/create',
+          builder: (context, state) => const CreateVCardScreen(),
+        ),
+        GoRoute(
+          path: '/vcard/details/:cardId',
+          builder: (context, state) {
+            final cardId = state.pathParameters['cardId']!;
+            return VCardDetailsScreen(cardId: cardId);
+          },
+        ),
+        GoRoute(
+          path: '/vcard/manage/:cardId',
+          builder: (context, state) {
+            final cardId = state.pathParameters['cardId']!;
+            return VCardManagementScreen(cardId: cardId);
+          },
+        ),
+        GoRoute(
+          path: '/vcard/transactions/:cardId',
+          builder: (context, state) {
+            final cardId = state.pathParameters['cardId']!;
+            return VCardTransactionsScreen(cardId: cardId);
+          },
+        ),
+        GoRoute(
+          path: '/vcard/fund/:cardId',
+          builder: (context, state) {
+            final cardId = state.pathParameters['cardId']!;
+            return FundVCardScreen(cardId: cardId);
+          },
+        ),
+        GoRoute(
+          path: '/vcard/withdraw/:cardId',
+          builder: (context, state) {
+            final cardId = state.pathParameters['cardId']!;
+            return WithdrawVCardScreen(cardId: cardId);
+          },
         ),
         GoRoute(path: '/me', builder: (context, state) => const MeScreen()),
       ],
@@ -336,6 +403,10 @@ final router = GoRouter(
       path: '/change-phone-number',
       builder: (context, state) => const ChangeMobileNumberScreen(),
     ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
+    ),
     // Services routes
     GoRoute(
       path: '/airtime',
@@ -355,6 +426,82 @@ final router = GoRouter(
       builder: (context, state) => const USSDEnquiryScreen(),
     ),
     GoRoute(
+      path: '/all-services',
+      builder: (context, state) => const AllServicesScreen(),
+    ),
+    GoRoute(
+      path: '/finance/savings/fixed/plans',
+      builder: (context, state) => const FixedDepositListScreen(),
+    ),
+    GoRoute(
+      path: '/finance/savings/target/plans',
+      builder: (context, state) => const TargetSavingsScreen(),
+    ),
+    GoRoute(
+      path: '/finance/easylife/intro',
+      builder: (context, state) => const EasyLifeListScreen(),
+    ),
+    GoRoute(
+      path: '/finance/easylife/create',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return CreateEasyLifePlanScreen(
+          initialName: extra?['name'],
+          initialAmount: extra?['amount'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/finance/fixed-deposit/plans',
+      builder: (context, state) => const FixedDepositListScreen(),
+    ),
+    GoRoute(
+      path: '/finance/fixed-deposit/create',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return CreateFixedDepositScreen(
+          initialAmount: extra?['amount'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/finance/savings/create/:type',
+      builder: (context, state) {
+        final type = state.pathParameters['type']!;
+        final extra = state.extra as Map<String, dynamic>?;
+        return CreateSavingsPlanScreen(
+          type: type,
+          initialTargetType: extra?['targetType'],
+          initialAmount: extra?['amount'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/finance/savings/details/:planId',
+      builder: (context, state) {
+        final planId = state.pathParameters['planId']!;
+        return SavingsDetailsScreen(planId: planId);
+      },
+    ),
+    GoRoute(
+      path: '/finance/easylife/details/:planId',
+      builder: (context, state) {
+        final planId = state.pathParameters['planId']!;
+        return EasyLifeDetailsScreen(planId: planId);
+      },
+    ),
+    GoRoute(
+      path: '/finance/fixed-deposit/details/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return FixedDepositDetailsScreen(depositId: id);
+      },
+    ),
+    GoRoute(
+      path: '/finance/investment/list',
+      builder: (context, state) => const MyInvestmentsScreen(),
+    ),
+    GoRoute(
       path: '/decode-qrcode',
       builder: (context, state) => const DecodeQrCodeScreen(),
     ),
@@ -363,6 +510,13 @@ final router = GoRouter(
     GoRoute(
       path: '/transaction-history',
       builder: (context, state) => const TransactionHistoryPage(),
+    ),
+    GoRoute(
+      path: '/transaction-details',
+      builder: (context, state) {
+        final transaction = state.extra as TransactionModel;
+        return FinanceTransactionDetailsScreen(transaction: transaction);
+      },
     ),
     GoRoute(
       path: '/account-settings',
@@ -493,10 +647,10 @@ final router = GoRouter(
       builder: (context, state) => const CableTvScreen(),
     ),
 
-    // GoRoute(
-    //   path: '/betting',
-    //   builder: (context, state) => const BettingScreen(),
-    // ),
+    GoRoute(
+      path: '/betting',
+      builder: (context, state) => const BettingScreen(),
+    ),
     // GoRoute(
     //   path: '/shopping',
     //   builder: (context, state) => const ShoppingScreen(),
@@ -513,5 +667,29 @@ final router = GoRouter(
       path: '/privacy-policy',
       builder: (context, state) => const PrivacyPolicyScreen(),
     ),
+    GoRoute(
+      path: '/finance-intro',
+      builder: (context, state) => const FinanceIntroScreen(),
+    ),
+    GoRoute(
+      path: '/invest',
+      builder: (context, state) => const InvestmentIntroScreen(),
+    ),
+    GoRoute(
+      path: '/finance/investment/intro',
+      builder: (context, state) => const InvestmentIntroScreen(),
+    ),
+    GoRoute(
+      path: '/finance/investment/create',
+      builder: (context, state) => const CreateInvestmentScreen(),
+    ),
+    GoRoute(
+      path: '/finance/investment/details/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return InvestmentDetailsScreen(investmentId: id);
+      },
+    ),
   ],
 );
+

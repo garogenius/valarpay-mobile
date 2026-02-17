@@ -83,9 +83,26 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
       final banksState = ref.read(bankMatchNotifierProvider);
 
       if (banksState.isDataAvailable && mounted) {
+        final allBanks =
+            ref.read(banksNotifierProvider).singleData?.data ?? [];
+
         setState(() {
-          matchedBanks = banksState.singleData!.banks;
-          selectedBank = banksState.singleData!.banks[0];
+          matchedBanks =
+              banksState.singleData!.banks.map((mb) {
+                // If bank name is unknown or empty, try to find it in the full banks list
+                if (mb.name.toLowerCase().contains('unknown') ||
+                    mb.name.isEmpty) {
+                  return allBanks.firstWhere(
+                    (b) => b.bankCode == mb.bankCode,
+                    orElse: () => mb,
+                  );
+                }
+                return mb;
+              }).toList();
+
+          if (matchedBanks.isNotEmpty) {
+            selectedBank = matchedBanks[0];
+          }
           verifiedAccount = banksState.singleData!.account;
           isSearchingBanks = false;
         });

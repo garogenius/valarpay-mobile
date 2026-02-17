@@ -1,53 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/network/data_state.dart';
+import 'package:valarpay/features/models/beneficiary_models.dart';
+import 'package:valarpay/features/notifiers/beneficiary_notifier.dart';
 
-class EducationSavedBeneficiaryScreen extends StatelessWidget {
+class EducationSavedBeneficiaryScreen extends ConsumerStatefulWidget {
   const EducationSavedBeneficiaryScreen({super.key});
+
+  @override
+  ConsumerState<EducationSavedBeneficiaryScreen> createState() => _EducationSavedBeneficiaryScreenState();
+}
+
+class _EducationSavedBeneficiaryScreenState extends ConsumerState<EducationSavedBeneficiaryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(beneficiaryNotifierProvider.notifier).getBeneficiaries(
+        category: 'BILL',
+        billType: 'SCHOOLFEE',
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Sample beneficiaries data
-    final beneficiaries = [
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-      {
-        'studentId': '0000000000',
-        'institution': 'University of Benin',
-        'serviceType': 'School Fee',
-      },
-    ];
+    final beneficiaryState = ref.watch(beneficiaryNotifierProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: isDark ? Colors.white : Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -59,20 +45,18 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: beneficiaries.isEmpty
-          ? _buildEmptyState(isDark)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: beneficiaries.length,
-              itemBuilder: (context, index) {
-                final beneficiary = beneficiaries[index];
-                return _buildBeneficiaryTile(
-                  context,
-                  beneficiary,
-                  isDark,
-                );
-              },
-            ),
+      body: beneficiaryState.isInitialLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : beneficiaryState.data == null || beneficiaryState.data!.isEmpty
+              ? _buildEmptyState(isDark)
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: beneficiaryState.data!.length,
+                  itemBuilder: (context, index) {
+                    final beneficiary = beneficiaryState.data![index];
+                    return _buildBeneficiaryTile(context, beneficiary, isDark);
+                  },
+                ),
     );
   }
 
@@ -88,11 +72,7 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
               color: const Color(0xFFF76301).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.school,
-              size: 60,
-              color: Color(0xFFF76301),
-            ),
+            child: const Icon(Icons.school, size: 60, color: Color(0xFFF76301)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -117,11 +97,7 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBeneficiaryTile(
-    BuildContext context,
-    Map<String, String> beneficiary,
-    bool isDark,
-  ) {
+  Widget _buildBeneficiaryTile(BuildContext context, Beneficiary beneficiary, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -131,7 +107,6 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
             width: 40,
             height: 40,
@@ -139,22 +114,15 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
               color: const Color(0xFFF76301).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.school,
-              color: Color(0xFFF76301),
-              size: 20,
-            ),
+            child: const Icon(Icons.school, color: Color(0xFFF76301), size: 20),
           ),
-
           const SizedBox(width: 12),
-
-          // Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  beneficiary['studentId']!,
+                  beneficiary.accountNumber,
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
                     fontSize: 16,
@@ -163,7 +131,7 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  beneficiary['institution']!,
+                  beneficiary.accountName,
                   style: TextStyle(
                     color: isDark ? Colors.white70 : Colors.grey[600],
                     fontSize: 14,
@@ -172,82 +140,8 @@ class EducationSavedBeneficiaryScreen extends StatelessWidget {
               ],
             ),
           ),
-
-          // More options
-          IconButton(
-            onPressed: () {
-              _showOptionsBottomSheet(context, beneficiary, isDark);
-            },
-            icon: Icon(
-              Icons.more_vert,
-              color: isDark ? Colors.white70 : Colors.grey[600],
-            ),
-          ),
+          const Icon(Icons.chevron_right, size: 16),
         ],
-      ),
-    );
-  }
-
-  void _showOptionsBottomSheet(
-    BuildContext context,
-    Map<String, String> beneficiary,
-    bool isDark,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2B2725) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            ListTile(
-              leading: const Icon(Icons.edit, color: Color(0xFFF76301)),
-              title: Text(
-                'Edit Beneficiary',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                // Handle edit
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text(
-                'Delete Beneficiary',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                // Handle delete
-              },
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
       ),
     );
   }

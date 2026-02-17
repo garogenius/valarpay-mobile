@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
-import 'package:valarpay/features/dashboard/view/services/swap_currency/beneficiary_account_details_screen.dart';
+import 'package:valarpay/core/utils/currency_formatter.dart';
+
 import 'package:valarpay/features/dashboard/view/services/swap_currency/swap_currency_card.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import '../../../widgets/services_widgets/swap_currency_widgets/currency_selector_modal.dart';
 import 'transaction_details_screen.dart';
+
+import 'dart:async';
+import 'package:valarpay/features/notifiers/currency_notifier.dart';
 
 class SwapCurrencyScreen extends ConsumerStatefulWidget {
   const SwapCurrencyScreen({super.key});
@@ -32,26 +36,37 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
   final TextEditingController fromAmountController = TextEditingController();
   final TextEditingController toAmountController = TextEditingController();
 
-  double exchangeRate = 1650.0; // NGN to USD rate
+  Timer? _debounce;
+  String _displayRate = '';
 
   @override
   void initState() {
     super.initState();
-    fromAmountController.addListener(_calculateToAmount);
+    fromAmountController.addListener(_onAmountChanged);
   }
 
-  void _calculateToAmount() {
-    if (fromAmountController.text.isNotEmpty) {
-      try {
-        double fromAmount = double.parse(fromAmountController.text);
-        double toAmount = fromAmount / exchangeRate;
-        toAmountController.text = toAmount.toStringAsFixed(2);
-      } catch (e) {
-        toAmountController.text = '';
-      }
-    } else {
+  void _onAmountChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 800), () {
+      _fetchConversion();
+    });
+  }
+
+  void _fetchConversion() {
+    final amountText = fromAmountController.text;
+    if (amountText.isEmpty) {
       toAmountController.text = '';
+      return;
     }
+
+    final amount = double.tryParse(amountText.replaceAll(',', ''));
+    if (amount == null || amount <= 0) return;
+
+    ref.read(currencyNotifierProvider.notifier).convertCurrency(
+      amount: amount,
+      fromCurrency: fromCurrency.code,
+      toCurrency: toCurrency.code,
+    );
   }
 
   @override
@@ -59,6 +74,45 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ref.listen(currencyNotifierProvider, (previous, next) {
+      print('[SwapCurrencyScreen] State changed. isDataAvailable: ${next.isDataAvailable}');
+      if (next.isDataAvailable && next.singleData != null) {
+        final data = next.singleData!;
+        print('[SwapCurrencyScreen] Conversion result: ${data.convertedAmount}');
+        toAmountController.text = currencyFormatter(data.convertedAmount.toStringAsFixed(2), symbol: '');
+        
+        setState(() {
+          // The API parameters are swapped to handle backend inversion, 
+          // so we use local state currencies for correct display.
+          // data.rate is the multiplier used (approximately).
+          
+          if (data.exchangeRate < 1 && data.exchangeRate > 0) {
+             // Rate is like 0.0007. 1/rate is ~1400.
+             // We want "1 USD = 1400 NGN"
+             // In our swapped context: 
+             // Request was USD->NGN. Result ~0.0007.
+             // User view is NGN->USD.
+             // We want to show "1 USD = 1400 NGN".
+             // USD is 'toCurrency' in UI. NGN is 'fromCurrency' in UI.
+             // Display: 1 {to} = {1/rate} {from}
+             _displayRate = '1 ${toCurrency.code} = ${currencyFormatter((1/data.exchangeRate).toStringAsFixed(2), symbol: '')} ${fromCurrency.code}';
+          } else {
+             // Rate is > 1. e.g. 1400.
+             // User view USD->NGN.
+             // Request NGN->USD. Result ~1400.
+             // We want "1 USD = 1400 NGN".
+             // USD is 'fromCurrency' in UI.
+             // Display: 1 {from} = {rate} {to}
+             _displayRate = '1 ${fromCurrency.code} = ${currencyFormatter(data.exchangeRate.toStringAsFixed(2), symbol: '')} ${toCurrency.code}';
+          }
+        });
+      } else if (next.message != null && !next.isInitialLoading) {
+         // Optionally handle error
+      }
+    });
+
+    final currencyState = ref.watch(currencyNotifierProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
@@ -80,8 +134,7 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
           ),
         ),
         actions:
-            !isBvnVerified
-                // isBvnVerified
+            isBvnVerified
                 ? [
                   TextButton(
                     onPressed: () {},
@@ -94,14 +147,15 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
                 : null,
       ),
       body:
-          isBvnVerified
+          !isBvnVerified
               ? const KycNotSetWidget(
                 title: 'KYC Not Completed',
                 subtitle: 'Complete your KYC verification to swap currency',
               )
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 32),
@@ -159,14 +213,22 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                        Text(
-                          '${fromCurrency.symbol} 2,000.00 = ${toCurrency.symbol} 1',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        ref.watch(currencyNotifierProvider).isInitialLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                _displayRate.isNotEmpty
+                                    ? _displayRate
+                                    : 'Enter amount to see rate',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontSize: 16, // Reduced slightly to fit
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ],
                     ),
                     SizedBox(height: 20.h),
@@ -191,31 +253,11 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 80.h),
 
-                    FullWidthButton(
-                      text: 'Continue',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => BeneficiaryAccountDetailsScreen(
-                                  transactionData: {
-                                    'fromCurrency': "fromCurrency",
-                                    'toCurrency': "toCurrency",
-                                    'fromAmount': fromAmountController.text,
-                                    'toAmount': toAmountController.text,
-                                    'exchangeRate': exchangeRate.toString(),
-                                  },
-                                ),
-                          ),
-                        );
-                      },
-                    ),
                   ],
+                    ),
+                  ),
                 ),
-              ),
     );
   }
 
@@ -225,15 +267,8 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
       fromCurrency = toCurrency;
       toCurrency = temp;
 
-      // Update exchange rate
-      if (fromCurrency == 'USD' && toCurrency == 'NGN') {
-        exchangeRate = 1650.0;
-      } else if (fromCurrency == 'NGN' && toCurrency == 'USD') {
-        exchangeRate = 1650.0;
-      }
-
       // Recalculate amounts
-      _calculateToAmount();
+      _fetchConversion();
     });
   }
 
@@ -246,13 +281,13 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
             selectedCurrency:
                 isFromCurrency ? fromCurrency.code : toCurrency.code,
             onCurrencySelected: (currency) {
-              return setState(() {
+              setState(() {
                 if (isFromCurrency) {
                   fromCurrency = currency;
                 } else {
                   toCurrency = currency;
                 }
-                _calculateToAmount();
+                 _fetchConversion();
               });
             },
           ),

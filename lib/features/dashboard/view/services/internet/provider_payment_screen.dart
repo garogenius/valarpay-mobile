@@ -19,9 +19,14 @@ import 'package:valarpay/features/dashboard/widgets/services_widgets/cabletv_wid
 import 'package:valarpay/features/providers/user_provider.dart';
 
 class InternetProviderPaymentScreen extends ConsumerStatefulWidget {
-  String providerName;
+  final String providerName;
+  final String billerCode;
 
-  InternetProviderPaymentScreen({super.key, required this.providerName});
+  InternetProviderPaymentScreen({
+    super.key,
+    required this.providerName,
+    required this.billerCode,
+  });
 
   @override
   ConsumerState<InternetProviderPaymentScreen> createState() =>
@@ -46,16 +51,9 @@ class _InternetProviderPaymentScreenState
     super.initState();
     _selectedProvider = widget.providerName;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final plans = ref.read(internetPlansNotifierProvider).data;
-      if (plans != null && plans.isNotEmpty) {
-        final match = plans.firstWhere(
-          (p) => p.planName == _selectedProvider,
-          orElse: () => plans.first,
-        );
-        ref
-            .read(internetVariationNotifierProvider.notifier)
-            .getVariations(billerCode: match.billerCode);
-      }
+      ref
+          .read(internetVariationNotifierProvider.notifier)
+          .getVariations(billerCode: widget.billerCode);
     });
   }
 
@@ -73,28 +71,7 @@ class _InternetProviderPaymentScreenState
 
     final planNames = variationsState.data?.map((v) => v.name).toList() ?? [];
 
-    void _showLoading() {
-      if (_loadingShown) return;
-      _loadingShown = true;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (_) => WillPopScope(
-              onWillPop: () async => false,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-      );
-    }
 
-    void _hideLoading() {
-      if (!_loadingShown) return;
-      _loadingShown = false;
-
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
 
     void _navigateToReceipt() {
       final variations = ref.read(internetVariationNotifierProvider).data;
@@ -185,77 +162,51 @@ class _InternetProviderPaymentScreenState
       );
     }
 
-    Future<void> _processPayment(String pin) async {
-      if (_accountController.text.isEmpty || _selectedPlan.isEmpty) {
-        return;
-      }
+  Future<void> _processPayment(String pin) async {
+    if (_accountController.text.isEmpty || _selectedPlan.isEmpty) {
+      return;
+    }
 
-      final variations = ref.read(internetVariationNotifierProvider).data;
-      if (variations == null || variations.isEmpty) {
-        AppMessenger.show(
-          context,
-          message: 'Plan not available',
-          type: MessageType.error,
-        );
-        return;
-      }
-
-      final selectedVar = variations.firstWhere(
-        (v) => v.name == _selectedPlan,
-        orElse: () => variations.first,
+    final variations = ref.read(internetVariationNotifierProvider).data;
+    if (variations == null || variations.isEmpty) {
+      AppMessenger.show(
+        context,
+        message: 'Plan not available',
+        type: MessageType.error,
       );
+      return;
+    }
 
-      _showLoading();
+    final selectedVar = variations.firstWhere(
+      (v) => v.name == _selectedPlan,
+      orElse: () => variations.first,
+    );
 
-      try {
-        await ref
-            .read(internetPaymentNotifierProvider.notifier)
-            .payInternet(
-              InternetPayRequest(
-                walletPin: pin,
-                itemCode: selectedVar.itemCode,
-                billerCode: selectedVar.billerCode,
-                currency: 'NGN',
-                amount: selectedVar.payAmount ?? selectedVar.amount,
-                billerNumber: _accountController.text,
-              ),
-            );
-
-        _hideLoading();
-
-        if (!mounted) return;
-
-        final state = ref.read(internetPaymentNotifierProvider);
-
-        if (state.isDataAvailable &&
-            state.data != null &&
-            state.data!.isNotEmpty) {
-          _navigateToReceipt();
-        } else {
-          final errorMessage =
-              state.message ?? 'Payment failed. Please try again.';
-
-          final isIncorrectPin =
-              errorMessage.toLowerCase().contains('incorrect pin') ||
-              errorMessage.toLowerCase().contains('wrong pin') ||
-              errorMessage.toLowerCase().contains('invalid pin') ||
-              errorMessage.toLowerCase().contains('pin is incorrect');
-
-          AppMessenger.show(
-            context,
-            message:
-                isIncorrectPin
-                    ? 'Incorrect PIN. Please try again.'
-                    : errorMessage,
-            type: MessageType.error,
+    try {
+      await ref
+          .read(internetPaymentNotifierProvider.notifier)
+          .payInternet(
+            InternetPayRequest(
+              walletPin: pin,
+              itemCode: selectedVar.itemCode,
+              billerCode: selectedVar.billerCode,
+              currency: 'NGN',
+              amount: selectedVar.payAmount ?? selectedVar.amount,
+              billerNumber: _accountController.text,
+            ),
           );
-        }
-      } catch (e) {
-        _hideLoading();
 
-        if (!mounted) return;
+      if (!mounted) return;
 
-        final errorMessage = e.toString();
+      final state = ref.read(internetPaymentNotifierProvider);
+
+      if (state.isDataAvailable &&
+          state.data != null &&
+          state.data!.isNotEmpty) {
+        _navigateToReceipt();
+      } else {
+        final errorMessage =
+            state.message ?? 'Payment failed. Please try again.';
 
         final isIncorrectPin =
             errorMessage.toLowerCase().contains('incorrect pin') ||
@@ -268,11 +219,31 @@ class _InternetProviderPaymentScreenState
           message:
               isIncorrectPin
                   ? 'Incorrect PIN. Please try again.'
-                  : 'Payment failed: $errorMessage',
+                  : errorMessage,
           type: MessageType.error,
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      final errorMessage = e.toString();
+
+      final isIncorrectPin =
+          errorMessage.toLowerCase().contains('incorrect pin') ||
+          errorMessage.toLowerCase().contains('wrong pin') ||
+          errorMessage.toLowerCase().contains('invalid pin') ||
+          errorMessage.toLowerCase().contains('pin is incorrect');
+
+      AppMessenger.show(
+        context,
+        message:
+            isIncorrectPin
+                ? 'Incorrect PIN. Please try again.'
+                : 'Payment failed: $errorMessage',
+        type: MessageType.error,
+      );
     }
+  }
 
     _handlePin({bool biometric = false}) async {
       final totalAmount =
@@ -343,7 +314,26 @@ class _InternetProviderPaymentScreenState
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_selectedProvider),
+                    Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(child: _getProviderIcon(_selectedProvider)),
+                        ),
+                        Text(
+                          _selectedProvider,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
                     Icon(
                       Icons.keyboard_arrow_down,
                       color: isDark ? Colors.white70 : Colors.grey[600],
@@ -393,11 +383,7 @@ class _InternetProviderPaymentScreenState
                   children: [
                     Text(_selectedPlan.isEmpty ? 'Select Plan' : _selectedPlan),
                     variationsState.isInitialLoading
-                        ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                        ? const SizedBox.shrink()
                         : Icon(
                           Icons.keyboard_arrow_down,
                           color: isDark ? Colors.white70 : Colors.grey[600],
@@ -485,7 +471,16 @@ class _InternetProviderPaymentScreenState
 
   void _showProviderSelector(BuildContext context) {
     final plans = ref.read(internetPlansNotifierProvider).data ?? [];
-    final providers = plans.map((e) => e.planName).toList();
+    final uniqueProvidersMap = <String, InternetPlanInfo>{};
+    for (var plan in plans) {
+      if (!uniqueProvidersMap.containsKey(plan.billerCode)) {
+        uniqueProvidersMap[plan.billerCode] = plan;
+      }
+    }
+    final providers = uniqueProvidersMap.values
+        .map((e) => _getCleanProviderName(e.planName))
+        .toList();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -493,21 +488,82 @@ class _InternetProviderPaymentScreenState
           (context) => CableTvProviderSelectorModal(
             selectedProvider: _selectedProvider,
             providers: providers,
-            onProviderSelected: (provider) {
+            onProviderSelected: (providerName) {
               setState(() {
-                _selectedProvider = provider;
-                widget.providerName = provider;
+                _selectedProvider = providerName;
+                _selectedPlan = ''; // Reset plan when provider changes
+                _amountController.text = '0';
               });
-              final match = plans.firstWhere(
-                (p) => p.planName == provider,
-                orElse: () => plans.first,
+              
+              // Find the representative plan to get the billerCode
+              final match = uniqueProvidersMap.values.firstWhere(
+                (p) => _getCleanProviderName(p.planName) == providerName,
+                orElse: () => uniqueProvidersMap.values.first,
               );
+
               ref
                   .read(internetVariationNotifierProvider.notifier)
                   .getVariations(billerCode: match.billerCode);
             },
           ),
     );
+  }
+
+  String _getCleanProviderName(String planName) {
+    final lower = planName.toLowerCase();
+    if (lower.contains('smile')) return 'Smile';
+    if (lower.contains('spectranet')) return 'Spectranet';
+    if (lower.contains('ipnx')) return 'ipNX';
+    if (lower.contains('swift')) return 'Swift';
+    if (lower.contains('mtn')) return 'MTN Hynet';
+    if (lower.contains('airtel')) return 'Airtel';
+    if (lower.contains('glo')) return 'Glo';
+    if (lower.contains('9mobile') || lower.contains('etisalat')) return '9mobile';
+    if (lower.contains('tizeti')) return 'Tizeti';
+
+    final parts = planName.split(' ');
+    if (parts.length > 2) {
+      return '${parts[0]} ${parts[1]}';
+    }
+    return planName;
+  }
+
+  Widget _getProviderIcon(String providerName) {
+    final name = providerName.toLowerCase();
+
+    if (name.contains('smile')) {
+      return const Icon(Icons.wifi, color: Color(0xFFE91E63), size: 18);
+    } else if (name.contains('spectranet')) {
+      return const Icon(Icons.wifi_tethering, color: Color(0xFF2196F3), size: 18);
+    } else if (name.contains('ipnx')) {
+      return const Icon(Icons.router, color: Color(0xFF4CAF50), size: 18);
+    } else if (name.contains('swift')) {
+      return const Icon(Icons.speed, color: Color(0xFFDD2C00), size: 18);
+    } else if (name.contains('mtn')) {
+      return Image.asset(
+        'assets/images/mtn.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('airtel')) {
+      return Image.asset(
+        'assets/images/airtel.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('glo')) {
+      return Image.asset(
+        'assets/images/glo.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('9mobile') || name.contains('etisalat')) {
+      return Image.asset(
+        'assets/images/9mobile.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('tizeti')) {
+      return const Icon(Icons.wifi, color: Color(0xFF00ACC1), size: 18);
+    }
+
+    return const Icon(Icons.wifi, color: Colors.grey, size: 18);
   }
 
   void _showPlanSelector(BuildContext context, List<String> planNames) {

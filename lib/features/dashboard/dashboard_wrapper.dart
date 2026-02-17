@@ -32,7 +32,7 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowModals();
-      SessionTimeoutService.startMonitoring(context);
+      SessionTimeoutService.startMonitoring(context); // Enabled session timeout
     });
   }
 
@@ -81,43 +81,9 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
         return;
       }
 
-      // Check if user should be logged out based on settings
-      final shouldLogout = await SessionTimeoutService.shouldLogoutOnResume();
-
-      if (shouldLogout && mounted) {
-        // Stop monitoring BEFORE navigating to login
-        SessionTimeoutService.stopMonitoring();
-
-        // Wait a bit to ensure any ongoing operations complete
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        if (!mounted) return;
-
-        // Close any open dialogs/modals before navigating
-        Navigator.of(
-          context,
-          rootNavigator: true,
-        ).popUntil((route) => route.isFirst);
-
-        // Small delay after closing modals
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        if (!mounted) return;
-
-        // Check if biometric is enabled
-        final hasBiometric =
-            await LocalStorageService.getBool('pref_biometric_fingerprint') ??
-            false;
-        final hasFaceId =
-            await LocalStorageService.getBool('pref_biometric_faceid') ?? false;
-
-        if (hasBiometric || hasFaceId) {
-          context.go('/biometric-login');
-        } else {
-          context.go('/signin');
-        }
-      } else {
-        // Just record activity if no logout needed
+      // Session timeout enabled
+      final shouldLogout = await SessionTimeoutService.onAppResumed(context);
+      if (!shouldLogout) {
         SessionTimeoutService.recordActivity();
       }
     }
@@ -305,8 +271,8 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => SessionTimeoutService.recordActivity(),
-      onPanDown: (_) => SessionTimeoutService.recordActivity(),
+      // onTap: () => SessionTimeoutService.recordActivity(), // Disabled session timeout
+      // onPanDown: (_) => SessionTimeoutService.recordActivity(), // Disabled session timeout
       behavior: HitTestBehavior.translucent,
       child: Scaffold(
         body: widget.child,

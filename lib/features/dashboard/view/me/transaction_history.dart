@@ -9,7 +9,7 @@ import '../../widgets/me_widgets/category.dart';
 import '../../widgets/me_widgets/status_selection.dart';
 import '../../widgets/me_widgets/modal/date_picker_modal.dart';
 import '../../widgets/transaction_widgets/transaction_item_widget.dart';
-import 'transaction_details_page.dart';
+
 import '../../widgets/transaction_widgets/transaction_shimmer_loader.dart';
 import '../../widgets/transaction_widgets/empty_transactions_widget.dart';
 import '../../../notifiers/transaction_notifier.dart';
@@ -210,6 +210,7 @@ class _TransactionHistoryPageState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
     final selectedMonth = ref.watch(selectedMonthProvider);
@@ -279,15 +280,22 @@ class _TransactionHistoryPageState
     }
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Transaction History',
-          style: TextStyle(fontFamily: 'SF Pro', fontSize: 18),
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontFamily: 'SF Pro', 
+            fontSize: 18, 
+            fontWeight: FontWeight.bold
+          ),
         ),
         actions: [
           Padding(
@@ -302,8 +310,6 @@ class _TransactionHistoryPageState
                     fontFamily: 'SF Pro',
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
-                    height: 1.33,
-                    letterSpacing: 0.06,
                   ),
                 ),
               ),
@@ -320,6 +326,7 @@ class _TransactionHistoryPageState
               )
               : RefreshIndicator(
                 onRefresh: _handleRefresh,
+                color: const Color(0xFFF76301),
                 child: Column(
                   children: [
                     // Header section with search and filters
@@ -331,30 +338,33 @@ class _TransactionHistoryPageState
                           // Search Bar
                           Container(
                             width: MediaQuery.of(context).size.width,
-                            height: 40,
+                            height: 44,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                              horizontal: 16,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFB0B0B0).withOpacity(0.5),
+                              color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
                               borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: isDark ? Colors.transparent : Colors.grey.withOpacity(0.2)
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.search,
-                                  size: 16,
-                                  color: Colors.grey[600],
+                                  size: 18,
+                                  color: isDark ? Colors.white24 : Colors.grey[400],
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: TextField(
                                     controller: _searchController,
+                                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
                                     decoration: InputDecoration(
                                       hintText: 'Search transactions...',
                                       hintStyle: TextStyle(
-                                        color: Colors.grey[600],
+                                        color: isDark ? Colors.white24 : Colors.grey[400],
                                         fontFamily: 'SF Pro',
                                         fontSize: 14,
                                       ),
@@ -363,7 +373,6 @@ class _TransactionHistoryPageState
                                       contentPadding: EdgeInsets.zero,
                                     ),
                                     onChanged: (value) {
-                                      // Trigger rebuild when search changes
                                       setState(() {});
                                     },
                                   ),
@@ -376,14 +385,14 @@ class _TransactionHistoryPageState
                                     },
                                     child: Icon(
                                       Icons.clear,
-                                      size: 16,
-                                      color: Colors.grey[600],
+                                      size: 18,
+                                      color: isDark ? Colors.white24 : Colors.grey[400],
                                     ),
                                   ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           // Month Selector and Sort By
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -398,16 +407,18 @@ class _TransactionHistoryPageState
                                       children: [
                                         Text(
                                           selectedMonth,
-                                          style: const TextStyle(
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : Colors.black,
                                             fontFamily: 'SF Pro',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         const SizedBox(width: 4),
-                                        const Icon(
+                                        Icon(
                                           Icons.keyboard_arrow_down,
-                                          size: 16,
+                                          size: 18,
+                                          color: isDark ? Colors.white : Colors.black,
                                         ),
                                       ],
                                     ),
@@ -417,21 +428,19 @@ class _TransactionHistoryPageState
                                     children: [
                                       Text(
                                         'In ${currencyFormatter(totalIn.toStringAsFixed(2))}',
-                                        style: const TextStyle(
-                                          color: Color(0xFF9CA3AF),
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white54 : Colors.black54,
                                           fontFamily: 'SF Pro',
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
                                         'Out ${currencyFormatter(totalOut.toStringAsFixed(2))}',
-                                        style: const TextStyle(
-                                          color: Color(0xFF9CA3AF),
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white54 : Colors.black54,
                                           fontFamily: 'SF Pro',
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ],
@@ -443,8 +452,8 @@ class _TransactionHistoryPageState
                                 onTap: _showFilterBottomSheet,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
+                                    horizontal: 14,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF76301),
@@ -458,14 +467,14 @@ class _TransactionHistoryPageState
                                         size: 16,
                                         color: Colors.white,
                                       ),
-                                      SizedBox(width: 4),
+                                      SizedBox(width: 6),
                                       Text(
                                         'Sort by',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontFamily: 'SF Pro',
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w400,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ],
@@ -548,12 +557,7 @@ class _TransactionHistoryPageState
         return TransactionItemWidget(
           transaction: transaction,
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder:
-                    (_) => TransactionDetailsPage(transaction: transaction),
-              ),
-            );
+            context.push('/transaction-details', extra: transaction);
           },
         );
       },

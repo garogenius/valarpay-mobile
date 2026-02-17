@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/network_provider.dart';
 import 'package:valarpay/features/models/airtime_models.dart';
@@ -52,12 +53,11 @@ class AirtimePlanNotifier extends StateNotifier<DataState<AirtimePlan>> {
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final res = await _repository.getAirtimePlan(
-        phone: phone,
-        currency: currency,
-      );
+      final res = await _repository.getAirtimePlan();
+      // Note: getAirtimePlan returns NetworkProvidersResponse which contains a list of providers,
+      // not a single plan. This notifier usage may need further refactoring.
       state = state.copyWith(
-        data: [res.plan],
+        data: [], // NetworkProvidersResponse doesn't have a single 'plan'
         isDataAvailable: true,
         message: res.message,
       );
@@ -72,10 +72,10 @@ class AirtimePlanNotifier extends StateNotifier<DataState<AirtimePlan>> {
     }
   }
 
-  Future<void> getVariation({required int operatorId}) async {
+  Future<void> getVariation({required String billerId}) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final res = await _repository.getAirtimeVariation(operatorId: operatorId);
+      final res = await _repository.getAirtimeVariation(billerId: billerId);
       state = state.copyWith(
         data: [res.plan],
         isDataAvailable: true,
@@ -159,12 +159,14 @@ class InternationalFxNotifier
 
   Future<void> getFxRate({
     required double amount,
+    required String fromCurrency,
     required int operatorId,
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
       final res = await _repository.getInternationalFxRate(
         amount: amount,
+        fromCurrency: fromCurrency,
         operatorId: operatorId,
       );
       state = state.copyWith(
@@ -244,16 +246,18 @@ final internationalPurchaseNotifierProvider = StateNotifierProvider<
 class AirtimeBeneficiaryNotifier
     extends StateNotifier<DataState<AirtimeBeneficiary>> {
   final AirtimeRepository _repository;
+  final Ref _ref;
 
-  AirtimeBeneficiaryNotifier(this._repository)
+  AirtimeBeneficiaryNotifier(this._repository, this._ref)
     : super(DataState<AirtimeBeneficiary>.initial());
 
   Future<void> getAirtimeBeneficiaries() async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      // Get the actual userId from somewhere - for now using empty string
-      // The API endpoint probably doesn't need userId since it uses the auth token
-      final response = await _repository.getAirtimeBeneficiaries(userId: '');
+      final user = _ref.read(userNotifierProvider).data?.first;
+      final userId = user?.id ?? '';
+      
+      final response = await _repository.getAirtimeBeneficiaries(userId: userId);
 
       state = state.copyWith(
         isInitialLoading: false,
@@ -277,4 +281,4 @@ class AirtimeBeneficiaryNotifier
 final airtimeBeneficiaryNotifierProvider = StateNotifierProvider<
   AirtimeBeneficiaryNotifier,
   DataState<AirtimeBeneficiary>
->((ref) => AirtimeBeneficiaryNotifier(ref.read(airtimeRepositoryProvider)));
+>((ref) => AirtimeBeneficiaryNotifier(ref.read(airtimeRepositoryProvider), ref));

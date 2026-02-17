@@ -330,8 +330,12 @@ class _ReuseableTransactionDetailsScreenState
         false;
     final faceIdEnabled =
         await LocalStorageService.getBool('pref_transaction_faceid') ?? false;
+    final genericBiometricEnabled =
+        await LocalStorageService.getBool('pref_transaction_biometric') ??
+        false;
 
-    final biometricEnabled = fingerprintEnabled || faceIdEnabled;
+    final biometricEnabled =
+        genericBiometricEnabled || fingerprintEnabled || faceIdEnabled;
 
     showModalBottomSheet(
       context: context,

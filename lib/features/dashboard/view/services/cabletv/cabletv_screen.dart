@@ -315,33 +315,7 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
           'Cable Tv',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
-        actions:
-            isBvnVerified
-                ? [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => CableTvSavedBeneficiaryScreen(
-                                onSelectBeneficiary: (beneficiary) {
-                                  setState(() {
-                                    _smartcardController.text =
-                                        beneficiary.smartCardNumber;
-                                  });
-                                },
-                              ),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Saved Beneficiary',
-                      style: TextStyle(color: Color(0xFFF76301), fontSize: 14),
-                    ),
-                  ),
-                ]
-                : null,
+        actions: null,
       ),
       body:
           !isBvnVerified
@@ -378,20 +352,38 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              ref
-                                      .watch(cableSelectedProviderProvider)
-                                      ?.planName ??
-                                  'Select Provider',
-                              style: TextStyle(fontSize: 16),
+                            Row(
+                              children: [
+                                if (ref.watch(cableSelectedProviderProvider) != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: ClipOval(
+                                      child: _buildSelectedProviderIcon(
+                                        ref.watch(cableSelectedProviderProvider)!,
+                                      ),
+                                    ),
+                                  ),
+                                Text(
+                                  ref
+                                          .watch(cableSelectedProviderProvider)
+                                          ?.planName ??
+                                      'Select Provider',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: ref.watch(cableSelectedProviderProvider) == null
+                                        ? Colors.grey
+                                        : (isDark ? Colors.white : Colors.black),
+                                  ),
+                                ),
+                              ],
                             ),
                             ref
                                     .watch(cablePlansNotifierProvider)
                                     .isInitialLoading
-                                ? SizedBox(
+                                ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 )
                                 : Icon(
                                   Icons.keyboard_arrow_down,
@@ -408,12 +400,44 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                     const SizedBox(height: 24),
 
                     // Smartcard Number
-                    Text(
-                      'Smartcard Number',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Smartcard Number',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (isBvnVerified)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CableTvSavedBeneficiaryScreen(
+                                        onSelectBeneficiary: (beneficiary) {
+                                          setState(() {
+                                            _smartcardController.text =
+                                                beneficiary.smartCardNumber;
+                                          });
+                                        },
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Saved Beneficiary',
+                              style: TextStyle(
+                                color: Color(0xFFF76301),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     ReuseableTextFieldWithCountry(
@@ -610,7 +634,12 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                             Text(
                               ref.watch(cableSelectedPlanProvider) ??
                                   'Select a plan',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: ref.watch(cableSelectedPlanProvider) == null
+                                    ? Colors.grey
+                                    : (isDark ? Colors.white : Colors.black),
+                              ),
                             ),
                             ref
                                     .watch(cableVariationNotifierProvider)
@@ -757,27 +786,52 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final plans = ref.read(cablePlansNotifierProvider).data;
-        final providers =
-            plans != null && plans.isNotEmpty
-                ? plans.map((e) => e.planName).toSet().toList().cast<String>()
-                : <String>[];
+        final plans = ref.watch(cablePlansNotifierProvider).data;
+
+        // Deduplicate providers by billerName
+        final uniqueProvidersMap = <String, CablePlanInfo>{};
+        if (plans != null) {
+          for (var plan in plans) {
+            final key = plan.billerName ?? plan.planName;
+            if (!uniqueProvidersMap.containsKey(key)) {
+              // Create a representative plan info for the provider
+              uniqueProvidersMap[key] = CablePlanInfo(
+                id: plan.id,
+                planName: plan.billerName ?? plan.planName, // Use billerName as display name
+                countryISOCode: plan.countryISOCode,
+                billerCode: plan.billerCode,
+                billerId: plan.billerId,
+                billerName: plan.billerName,
+                billerIcon: plan.billerIcon,
+              );
+            }
+          }
+        }
+        final uniqueProviders = uniqueProvidersMap.values.toList();
+
         return CableTvProviderSelectorModal(
           selectedProvider:
-              ref.read(cableSelectedProviderProvider)?.planName ??
-              'Select Provider',
-          providers: providers,
-          onProviderSelected: (providerName) {
-            if (plans != null && plans.isNotEmpty) {
-              final match = plans.firstWhere(
-                (p) => p.planName == providerName,
-                orElse: () => plans.first,
-              );
-              ref.read(cableSelectedProviderProvider.notifier).state = match;
-              ref
-                  .read(cableVariationNotifierProvider.notifier)
-                  .getVariations(billerCode: match.billerCode);
-            }
+              ref.read(cableSelectedProviderProvider)?.planName ?? '',
+          providers: uniqueProviders,
+          onProviderSelected: (provider) {
+            // Store the selected provider (which is our representative object)
+            ref.read(cableSelectedProviderProvider.notifier).state = provider;
+            
+            // Fetch variations/plans for this provider
+            ref
+                .read(cableVariationNotifierProvider.notifier)
+                .getVariations(billerCode: provider.billerCode);
+            
+            // Reset verification when provider changes
+            setState(() {
+              _verifyResponse = null;
+              _verifiedUserName = null;
+              _showVerifyButton = _smartcardController.text.isNotEmpty;
+              _errorMessage = null;
+              // Clear selected plan when provider changes
+              ref.read(cableSelectedPlanProvider.notifier).state = null;
+              _planAmount = ' Amount';
+            });
           },
         );
       },
@@ -809,5 +863,45 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
             },
           ),
     );
+  }
+
+  Widget _buildSelectedProviderIcon(CablePlanInfo provider) {
+    if (provider.billerIcon != null && provider.billerIcon!.isNotEmpty) {
+      return Image.network(
+        provider.billerIcon!,
+        width: 24,
+        height: 24,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildLocalProviderIcon(provider.planName),
+      );
+    }
+    return _buildLocalProviderIcon(provider.planName);
+  }
+
+  Widget _buildLocalProviderIcon(String planName) {
+    final normalizedName = planName.toLowerCase().trim();
+    String assetName = '';
+
+    if (normalizedName.contains('dstv')) {
+      assetName = 'dstv.png';
+    } else if (normalizedName.contains('gotv')) {
+      assetName = 'gotv.png';
+    } else if (normalizedName.contains('startimes')) {
+      assetName = 'startimes.png';
+    }
+
+    if (assetName.isNotEmpty) {
+      return Image.asset(
+        'assets/images/$assetName',
+        width: 24,
+        height: 24,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.tv, size: 20),
+      );
+    }
+
+    return const Icon(Icons.tv, size: 20);
   }
 }

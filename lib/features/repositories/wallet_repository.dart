@@ -56,7 +56,7 @@ class WalletRepository {
 
       final response = await apiClient.get(
         ApiEndpoints.getTransactions,
-        query: queryParams.isNotEmpty ? queryParams : null,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       return TransactionsResponse.fromJson(response.data);
@@ -85,7 +85,7 @@ class WalletRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getTransferFee,
-        query: {'amount': amount.toString(), 'transferType': transferType},
+        queryParameters: {'amount': amount.toString(), 'transferType': transferType},
       );
       return response.data;
     } on DioException catch (e) {
@@ -136,6 +136,67 @@ class WalletRepository {
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to initiate transfer',
+      );
+    }
+  }
+
+  /// Convert currency
+  Future<Map<String, dynamic>> convertCurrency({
+    required double amount,
+    required String fromCurrency,
+    required String toCurrency,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.convertCurrency,
+        data: {
+          'amount': amount,
+          'fromCurrency': fromCurrency,
+          'toCurrency': toCurrency,
+        },
+        useAuth: false,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to convert currency',
+      );
+    }
+  }
+
+  /// Get exchange rate
+  Future<Map<String, dynamic>> getExchangeRate({
+    required String fromCurrency,
+    required String toCurrency,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getCurrencyRates,
+        queryParameters: {
+          'from': fromCurrency,
+          'to': toCurrency,
+        },
+        useAuth: false,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to get exchange rate',
+      );
+    }
+  }
+
+  /// Get supported currencies
+  Future<Map<String, dynamic>> getSupportedCurrencies() async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getSupportedCurrencies,
+        useAuth: false,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to get supported currencies',
       );
     }
   }

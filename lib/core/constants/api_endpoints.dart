@@ -48,18 +48,19 @@ class ApiEndpoints {
   // Bill payment endpoints
   static const String getAirtimeNetworkProviders =
       '/api/v1/bill/airtime/network-providers';
-  static const String getAirtimePlan = '/api/v1/bill/airtime/get-plan';
+  static const String getAirtimePlan = '/api/v1/bill/airtime/palmpay/get-plan';
   static const String getAirtimeVariation =
-      '/api/v1/bill/airtime/get-variation';
-  static const String payAirtime = '/api/v1/bill/airtime/pay';
+      '/api/v1/bill/airtime/palmpay/get-items';
+  static const String payAirtime = '/api/v1/bill/airtime/palmpay/pay';
   static const String getDataNetworkProviders =
       '/api/v1/bill/data/network-providers';
-  static const String getDataPlan = '/api/v1/bill/data/get-plan';
-  static const String getDataVariation = '/api/v1/bill/data/get-variation';
-  static const String purchaseData = '/api/v1/bill/data/pay';
+  static const String getDataPlan = '/api/v1/bill/data/palmpay/get-plan';
+  static const String getDataVariation = '/api/v1/bill/data/palmpay/get-items';
+  static const String purchaseData = '/api/v1/bill/data/palmpay/pay';
 
   // Cable TV endpoints
   static const String getCablePlan = '/api/v1/bill/cable/get-plan';
+  static const String getCableVariation = '/api/v1/bill/cable/get-bill-info';
   static const String getCableBillInfo = '/api/v1/bill/cable/get-bill-info';
   static const String verifyCableNumber =
       '/api/v1/bill/cable/verify-cable-number';
@@ -78,6 +79,10 @@ class ApiEndpoints {
       '/api/v1/bill/airtime/international/get-plan';
   static const String payInternationalAirtime =
       '/api/v1/bill/airtime/international/pay';
+  static const String getInternationalCountries =
+      '/api/v1/bill/airtime/international/get-countries';
+  static const String getInternationalBalance =
+      '/api/v1/bill/airtime/international/get-balance';
 
   // Giftcard endpoints
   static const String getGiftCardCategories =
@@ -90,6 +95,7 @@ class ApiEndpoints {
 
   // Electricity endpoints
   static const String getElectricityPlan = '/api/v1/bill/electricity/get-plan';
+  static const String getElectricityVariation = '/api/v1/bill/electricity/get-variation';
   static const String getElectricityBillInfo =
       '/api/v1/bill/electricity/get-bill-info';
   static const String verifyMeterNumber =
@@ -109,6 +115,9 @@ class ApiEndpoints {
   static const String getTransactions = '/api/v1/wallet/transaction';
   static const String generateQRCode = '/api/v1/wallet/generate-qrcode';
   static const String decodeQRCode = '/api/v1/wallet/decode-qrcode';
+  static const String convertCurrency = '/api/v1/currency/convert';
+  static const String getCurrencyRates = '/api/v1/currency/rates';
+  static const String getSupportedCurrencies = '/api/v1/currency/supported';
 
   // Notification endpoints
   static const String getNotifications = '/api/v1/notification';
@@ -118,6 +127,60 @@ class ApiEndpoints {
   static const String registerDevice = '/api/v1/notification/devices';
   static const String notificationPreferences =
       '/api/v1/notification/preferences';
+
+  // Savings endpoints
+  static const String getSavingsProducts = '/api/v1/savings/products';
+  static const String savingsPlans = '/api/v1/savings/plans';
+  static const String fundSavingsPlan = '/api/v1/savings/plans/fund';
+  static String withdrawSavingsPlan(String planId) =>
+      '/api/v1/savings/plans/$planId/withdraw';
+  static String getSavingsPlanDetails(String planId) =>
+      '/api/v1/savings/plans/$planId';
+
+  // EasyLife Savings endpoints
+  static const String getEasyLifeProduct = '/api/v1/easylife-savings/product';
+  static const String easyLifePlans = '/api/v1/easylife-savings/plans';
+  static const String fundEasyLifePlan = '/api/v1/easylife-savings/plans/fund';
+  static String withdrawEasyLifePlan(String planId) =>
+      '/api/v1/easylife-savings/plans/$planId/withdraw';
+  static String getEasyLifePlanDetails(String planId) =>
+      '/api/v1/easylife-savings/plans/$planId';
+
+  // Fixed Deposit endpoints
+  static const String getFixedDepositPlans = '/api/v1/fixed-deposits/plans';
+  static const String fixedDeposits = '/api/v1/fixed-deposits';
+  static const String earlyWithdrawFixedDeposit =
+      '/api/v1/fixed-deposits/early-withdrawal';
+  static String payoutFixedDeposit(String id) =>
+      '/api/v1/fixed-deposits/$id/payout';
+  static const String rolloverFixedDeposit = '/api/v1/fixed-deposits/rollover';
+
+  // Investment endpoints
+  static const String getInvestmentProduct = '/api/v1/investment/product';
+  static const String investments = '/api/v1/investment';
+  static String getInvestmentDetails(String id) => '/api/v1/investment/$id';
+
+  // Betting endpoints
+  static const String getBettingPlatforms = '/api/v1/betting/palmpay/platforms';
+  static const String payBetting = '/api/v1/betting/palmpay/pay';
+
+  // Education endpoints
+  static const String getSchoolBillers = '/api/v1/bill/education/billers';
+  static const String getRemitaSchoolBillers = '/api/v1/bill/remita/school/billers';
+  static const String getSchoolBillInfo = '/api/v1/bill/school/get-bill-info';
+  static const String getEducationBillerItems = '/api/v1/bill/remita/education/biller-items';
+  static const String verifySchoolCustomer = '/api/v1/bill/remita/education/verify-customer';
+  static const String verifyRemitaSchoolBillerNumber = '/api/v1/bill/remita/school/verify-biller-number';
+  static const String paySchoolFees = '/api/v1/bill/school/pay';
+  static const String payEducationSchoolFee = '/api/v1/bill/education/school-fee/pay';
+
+  // JAMB & WAEC endpoints
+  static const String getVendingProviders = '/api/v1/bill/remita/vending/providers';
+  static const String getVendingProducts = '/api/v1/bill/remita/vending/products';
+  static const String verifyWaecBillerNumber = '/api/v1/bill/remita/waec/verify-biller-number';
+  static const String payWaec = '/api/v1/bill/waec/pay';
+  static const String verifyJambBillerNumber = '/api/v1/bill/remita/jamb/verify-biller-number';
+  static const String payJamb = '/api/v1/bill/jamb/pay';
 
   // future endpoints can go here
 }

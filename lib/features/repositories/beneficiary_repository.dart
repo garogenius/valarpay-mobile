@@ -9,22 +9,25 @@ class BeneficiaryRepository {
 
   Future<BeneficiariesResponse> getBeneficiaries({
     required String category,
-    required String transferType,
-    String? userId,
+    String? transferType,
+    String? billType,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'category': category,
-        'transferType': transferType,
       };
 
-      if (userId != null && userId.isNotEmpty) {
-        queryParams['userId'] = userId;
+      if (transferType != null && transferType.isNotEmpty) {
+        queryParams['transferType'] = transferType;
+      }
+
+      if (billType != null && billType.isNotEmpty) {
+        queryParams['billType'] = billType;
       }
 
       final response = await apiClient.get(
         ApiEndpoints.getBeneficiaries,
-        query: queryParams,
+        queryParameters: queryParams,
       );
 
       return BeneficiariesResponse.fromJson(response.data);

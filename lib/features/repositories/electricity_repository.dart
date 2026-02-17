@@ -14,7 +14,7 @@ class ElectricityRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getElectricityPlan,
-        query: {'currency': currency},
+        queryParameters: {'currency': currency},
       );
       return ElectricityPlanResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -25,12 +25,12 @@ class ElectricityRepository {
   }
 
   Future<ElectricityBillInfoResponse> getBillInfo({
-    required String billerCode,
+    required String billerId,
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getElectricityBillInfo,
-        query: {'billerCode': billerCode},
+        ApiEndpoints.getElectricityVariation,
+        queryParameters: {'billerId': billerId},
       );
       return ElectricityBillInfoResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -74,8 +74,8 @@ class ElectricityRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getUserBeneficiaries,
-        query: {'type': 'BILL'},
+        ApiEndpoints.getBeneficiaries,
+        queryParameters: {'category': 'BILL', 'billType': 'ELECTRICITY'},
       );
 
       return ElectricityBeneficiariesResponse.fromJson(response.data);

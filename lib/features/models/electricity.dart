@@ -7,6 +7,13 @@ class ElectricityPlan {
   final String shortName;
   final String createdAt;
   final String updatedAt;
+  final String? billerId;
+  final String? billerName;
+  final String? billerIcon;
+  final String? itemCode;
+  final String? itemName;
+  final double amount;
+  final String? category;
 
   ElectricityPlan({
     required this.id,
@@ -17,18 +24,32 @@ class ElectricityPlan {
     required this.shortName,
     required this.createdAt,
     required this.updatedAt,
+    this.billerId,
+    this.billerName,
+    this.billerIcon,
+    this.itemCode,
+    this.itemName,
+    this.amount = 0.0,
+    this.category,
   });
 
   factory ElectricityPlan.fromJson(Map<String, dynamic> json) {
     return ElectricityPlan(
-      id: json['id'] ?? '',
-      planName: json['planName'] ?? '',
+      id: json['id']?.toString() ?? json['billerId'] ?? '',
+      planName: json['planName'] ?? json['itemName'] ?? json['name'] ?? json['billerName'] ?? '',
       countryISOCode: json['countryISOCode'] ?? '',
-      billerCode: json['billerCode'] ?? '',
+      billerCode: json['billerCode'] ?? json['billerId'] ?? '',
       description: json['description'] ?? '',
-      shortName: json['shortName'] ?? '',
+      shortName: json['shortName'] ?? json['itemName'] ?? json['billerName'] ?? '',
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
+      billerId: json['billerId']?.toString(),
+      billerName: json['billerName']?.toString(),
+      billerIcon: json['billerIcon']?.toString(),
+      itemCode: json['itemCode']?.toString(),
+      itemName: json['itemName']?.toString(),
+      amount: (json['amount'] is num) ? (json['amount'] as num).toDouble() : 0.0,
+      category: json['category']?.toString(),
     );
   }
 
@@ -42,6 +63,13 @@ class ElectricityPlan {
       'shortName': shortName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'billerId': billerId,
+      'billerName': billerName,
+      'billerIcon': billerIcon,
+      'itemCode': itemCode,
+      'itemName': itemName,
+      'amount': amount,
+      'category': category,
     };
   }
 }
@@ -58,14 +86,16 @@ class ElectricityPlanResponse {
   });
 
   factory ElectricityPlanResponse.fromJson(Map<String, dynamic> json) {
+    final dynamic dataJson = json['data'] ?? json['billers'];
     return ElectricityPlanResponse(
       message: json['message'] ?? '',
       statusCode: json['statusCode'] ?? 0,
       data:
-          (json['data'] as List?)
-              ?.map((item) => ElectricityPlan.fromJson(item))
-              .toList() ??
-          [],
+          (dataJson is List)
+              ? dataJson.map((item) => ElectricityPlan.fromJson(item)).toList()
+              : (json['billers'] is List)
+                  ? (json['billers'] as List).map((item) => ElectricityPlan.fromJson(item)).toList()
+                  : [],
     );
   }
 
@@ -131,22 +161,22 @@ class ElectricityBillInfo {
 
   factory ElectricityBillInfo.fromJson(Map<String, dynamic> json) {
     return ElectricityBillInfo(
-      id: json['id'] ?? 0,
-      billerCode: json['biller_code'] ?? '',
-      name: json['name'] ?? '',
+      id: json['id'] ?? json['itemId'] ?? 0,
+      billerCode: json['biller_code'] ?? json['billerCode'] ?? json['billerId'] ?? '',
+      name: json['name'] ?? json['itemName'] ?? '',
       defaultCommission: (json['default_commission'] ?? 0).toDouble(),
       dateAdded: json['date_added'] ?? '',
       country: json['country'] ?? '',
       isAirtime: json['is_airtime'] ?? false,
-      billerName: json['biller_name'] ?? '',
-      itemCode: json['item_code'] ?? '',
-      shortName: json['short_name'] ?? '',
+      billerName: json['biller_name'] ?? json['billerName'] ?? '',
+      itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId'] ?? '',
+      shortName: json['short_name'] ?? json['itemName'] ?? '',
       fee: (json['fee'] ?? 0).toDouble(),
       commissionOnFee: json['commission_on_fee'] ?? false,
       regExpression: json['reg_expression'] ?? '',
-      labelName: json['label_name'] ?? '',
+      labelName: json['label_name'] ?? json['itemName'] ?? '',
       amount: (json['amount'] ?? 0).toDouble(),
-      isResolvable: json['is_resolvable'] ?? false,
+      isResolvable: json['is_resolvable'] ?? true,
       groupName: json['group_name'] ?? '',
       categoryName: json['category_name'] ?? '',
       isData: json['is_data'],
@@ -198,14 +228,16 @@ class ElectricityBillInfoResponse {
   });
 
   factory ElectricityBillInfoResponse.fromJson(Map<String, dynamic> json) {
+    final dynamic dataJson = json['data'] ?? json['items'];
     return ElectricityBillInfoResponse(
       message: json['message'] ?? '',
       statusCode: json['statusCode'] ?? 0,
       data:
-          (json['data'] as List?)
-              ?.map((item) => ElectricityBillInfo.fromJson(item))
-              .toList() ??
-          [],
+          (dataJson is List)
+              ? dataJson.map((item) => ElectricityBillInfo.fromJson(item)).toList()
+              : (json['items'] is List)
+                  ? (json['items'] as List).map((item) => ElectricityBillInfo.fromJson(item)).toList()
+                  : [],
     );
   }
 

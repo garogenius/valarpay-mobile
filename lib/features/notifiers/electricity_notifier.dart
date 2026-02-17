@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/electricity.dart';
 import 'package:valarpay/features/repositories/electricity_repository.dart';
@@ -43,10 +44,10 @@ class ElectricityBillInfoNotifier
   ElectricityBillInfoNotifier(this._repository)
     : super(DataState<ElectricityBillInfo>.initial());
 
-  Future<void> getBillInfo({required String billerCode}) async {
+  Future<void> getBillInfo({required String billerId}) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final response = await _repository.getBillInfo(billerCode: billerCode);
+      final response = await _repository.getBillInfo(billerId: billerId);
       state = state.copyWith(
         isInitialLoading: false,
         data: response.data,

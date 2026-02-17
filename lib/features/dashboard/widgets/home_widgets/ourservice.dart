@@ -22,7 +22,7 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/betting.svg',
         label: 'Betting',
-        onTap: () => context.push('/coming-soon'),
+        onTap: () => context.push('/betting'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/light.svg',
@@ -78,22 +78,16 @@ class OurServicesWidget extends StatelessWidget {
       ),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 16, bottom: 12),
-          child: Text(
-            'Our Services',
-            style: TextStyle(
-              fontFamily: 'SF Pro',
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              height: 22 / 18,
-            ),
-          ),
-        ),
-        Container(
+    List<ServiceItem> displayedServices = services.take(7).toList();
+    displayedServices.add(
+      ServiceItem(
+        icon: 'assets/images/service_icon/arrow-swap-horizontal.svg', // generic more icon or similar
+        label: 'More',
+        onTap: () => context.push('/all-services'),
+      ),
+    );
+
+    return Container(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
@@ -102,31 +96,30 @@ class OurServicesWidget extends StatelessWidget {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 100, // adaptive
-              crossAxisSpacing: 8,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
               mainAxisSpacing: 10,
               childAspectRatio: 0.9,
             ),
-            itemCount: services.length,
+            itemCount: displayedServices.length,
             itemBuilder: (context, index) {
               return _buildServiceItem(
                 context,
-                services[index],
-                services[index].onTap,
+                displayedServices[index],
+                displayedServices[index].onTap,
+                isMore: displayedServices[index].label == 'More',
               );
             },
           ),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildServiceItem(
     BuildContext context,
     ServiceItem service,
-    Function() onTap,
-  ) {
+    Function() onTap, {
+    bool isMore = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
@@ -145,15 +138,21 @@ class OurServicesWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Center(
-                child: SvgPicture.asset(
-                  service.icon,
-                  width: 18,
-                  height: 18,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFFF76301),
-                    BlendMode.srcIn,
-                  ),
-                ),
+                child: isMore
+                    ? const Icon(
+                        Icons.grid_view_rounded,
+                        size: 18,
+                        color: Color(0xFFF76301),
+                      )
+                    : SvgPicture.asset(
+                        service.icon,
+                        width: 18,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFFF76301),
+                          BlendMode.srcIn,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 8),

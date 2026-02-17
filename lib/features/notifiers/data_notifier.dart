@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/network_provider.dart';
 import 'package:valarpay/features/models/data_models.dart';
@@ -49,14 +50,16 @@ class DataPlansNotifier extends StateNotifier<DataState<DataPlanInfo>> {
     : super(DataState<DataPlanInfo>.initial());
 
   Future<void> getPlans({
-    required String phone,
-    required String currency,
+    String? phone,
+    String? currency,
+    String? category,
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
       final res = await _repository.getDataPlan(
         phone: phone,
         currency: currency,
+        category: category,
       );
       state = state.copyWith(
         isInitialLoading: false,
@@ -77,20 +80,92 @@ class DataPlansNotifier extends StateNotifier<DataState<DataPlanInfo>> {
   void reset() => state = DataState<DataPlanInfo>.initial();
 }
 
-/// Provider: data variation (DataPlan)
-class DataVariationNotifier extends StateNotifier<DataState<DataPlan>> {
+/// Provider: data variation (DataPlanBundle)
+class DataVariationNotifier extends StateNotifier<DataState<DataPlanBundle>> {
   final DataRepository _repository;
 
   DataVariationNotifier(this._repository)
-    : super(DataState<DataPlan>.initial());
+    : super(DataState<DataPlanBundle>.initial());
 
-  Future<void> getVariation({required int operatorId}) async {
+  Future<void> getVariation({
+    String? network,
+    int? operatorId,
+    String? billerId,
+    String? filterCategory, // Used for client-side filtering only
+  }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final res = await _repository.getDataVariation(operatorId: operatorId);
+      final res = await _repository.getDataPlansByNetwork(
+        network: network,
+        operatorId: operatorId,
+        billerId: billerId,
+      );
+      
+      // Client-side filtering based on validity days from extInfo
+      List<DataPlanBundle> filteredData = res.data;
+      
+      if (filterCategory != null && filterCategory != 'HOT') {
+        filteredData = res.data.where((bundle) {
+          final validityDate = bundle.extInfo?.validityDate ?? 0;
+          final name = bundle.name.toLowerCase();
+          
+          switch (filterCategory) {
+            case 'Daily':
+              return validityDate >= 1 && validityDate <= 3;
+            case 'Weekly':
+              return validityDate >= 4 && validityDate <= 13;
+            case 'Monthly':
+              return validityDate >= 14 && validityDate < 360;
+            case 'Yearly':
+              return validityDate >= 360 || name.contains('year');
+            case 'XtraValue':
+              final note = bundle.extInfo?.validityAttachNote?.toLowerCase() ?? '';
+              final desc = bundle.extInfo?.itemDescription?.toLowerCase() ?? '';
+              return name.contains('xtra') || name.contains('extra') || name.contains('talk') || 
+                     note.contains('xtra') || desc.contains('xtra') || desc.contains('extra') || desc.contains('talk');
+            case 'Social':
+              final note = bundle.extInfo?.validityAttachNote?.toLowerCase() ?? '';
+              final desc = bundle.extInfo?.itemDescription?.toLowerCase() ?? '';
+              return name.contains('social') || 
+                     name.contains('whatsapp') || 
+                     name.contains('facebook') || 
+                     name.contains('instagram') ||
+                     name.contains('youtube') ||
+                     name.contains('tiktok') ||
+                     name.contains('fb/ig') ||
+                     note.contains('social') ||
+                     note.contains('whatsapp') ||
+                     note.contains('facebook') ||
+                     note.contains('instagram') ||
+                     note.contains('youtube') ||
+                     note.contains('tiktok') ||
+                     desc.contains('social') ||
+                     desc.contains('whatsapp') ||
+                     desc.contains('facebook') ||
+                     desc.contains('instagram') ||
+                     desc.contains('youtube') ||
+                     desc.contains('tiktok');
+            case 'Broadband':
+              final note = bundle.extInfo?.validityAttachNote?.toLowerCase() ?? '';
+              final desc = bundle.extInfo?.itemDescription?.toLowerCase() ?? '';
+              return name.contains('broadband') || 
+                     name.contains('router') || 
+                     name.contains('mifi') ||
+                     name.contains('hynet') ||
+                     note.contains('broadband') ||
+                     desc.contains('broadband') ||
+                     desc.contains('router') ||
+                     desc.contains('mifi') ||
+                     desc.contains('hynet');
+            default:
+              return true; // HOT or unknown - show all
+          }
+        }).toList();
+      }
+      
       state = state.copyWith(
         isInitialLoading: false,
-        data: [res.data],
+        data: filteredData,
         isDataAvailable: true,
         message: res.message,
       );
@@ -104,7 +179,7 @@ class DataVariationNotifier extends StateNotifier<DataState<DataPlan>> {
     }
   }
 
-  void reset() => state = DataState<DataPlan>.initial();
+  void reset() => state = DataState<DataPlanBundle>.initial();
 }
 
 /// Provider: data purchase
@@ -142,14 +217,17 @@ class DataPurchaseNotifier
 class DataBeneficiaryNotifier
     extends StateNotifier<DataState<DataBeneficiary>> {
   final DataRepository _repository;
+  final Ref _ref;
 
-  DataBeneficiaryNotifier(this._repository)
+  DataBeneficiaryNotifier(this._repository, this._ref)
     : super(DataState<DataBeneficiary>.initial());
 
   Future<void> getDataBeneficiaries() async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final response = await _repository.getDataBeneficiaries(userId: '');
+      final user = _ref.read(userNotifierProvider).data?.first;
+      final userId = user?.id ?? '';
+      final response = await _repository.getDataBeneficiaries(userId: userId);
 
       state = state.copyWith(
         isInitialLoading: false,
@@ -182,7 +260,7 @@ final dataPlansNotifierProvider =
     );
 
 final dataVariationNotifierProvider =
-    StateNotifierProvider<DataVariationNotifier, DataState<DataPlan>>(
+    StateNotifierProvider<DataVariationNotifier, DataState<DataPlanBundle>>(
       (ref) => DataVariationNotifier(ref.read(dataRepositoryProvider)),
     );
 
@@ -193,10 +271,11 @@ final dataPurchaseNotifierProvider = StateNotifierProvider<
 
 final dataBeneficiaryNotifierProvider =
     StateNotifierProvider<DataBeneficiaryNotifier, DataState<DataBeneficiary>>(
-      (ref) => DataBeneficiaryNotifier(ref.read(dataRepositoryProvider)),
+      (ref) => DataBeneficiaryNotifier(ref.read(dataRepositoryProvider), ref),
     );
 
 /// UI StateProviders for data screen selections
-final dataSelectedNetworkProvider = StateProvider<String>((ref) => '');
+final dataSelectedNetworkProvider = StateProvider<String>((ref) => 'MTN');
 final dataSelectedOperatorIdProvider = StateProvider<int>((ref) => 0);
+final dataSelectedBillerIdProvider = StateProvider<String?>((ref) => 'MTN');
 final dataSelectedPlanProvider = StateProvider<String>((ref) => '');

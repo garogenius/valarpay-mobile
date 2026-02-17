@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/login.dart';
 import 'package:valarpay/features/models/username_request.dart';

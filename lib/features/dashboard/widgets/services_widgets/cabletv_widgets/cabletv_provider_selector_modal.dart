@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:valarpay/features/models/cable_models.dart';
 
 class CableTvProviderSelectorModal extends StatelessWidget {
   final String selectedProvider;
-  final Function(String) onProviderSelected;
-  final List<String>? providers;
+  final Function(CablePlanInfo) onProviderSelected;
+  final List<CablePlanInfo>? providers;
 
   const CableTvProviderSelectorModal({
     super.key,
@@ -16,10 +17,7 @@ class CableTvProviderSelectorModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cableTvProviders = providers ??
-        [
-         
-        ];
+    final cableTvProviders = providers ?? [];
 
     return Container(
       decoration: BoxDecoration(
@@ -55,30 +53,79 @@ class CableTvProviderSelectorModal extends StatelessWidget {
             ),
 
             // Provider list
-            ...cableTvProviders.map((provider) {
-              final isSelected = selectedProvider == provider;
-              return ListTile(
-                title: Text(
-                  provider,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 16,
+            if (cableTvProviders.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text('No providers available'),
+              )
+            else
+              ...cableTvProviders.map((provider) {
+                final isSelected = selectedProvider == provider.planName;
+                return ListTile(
+                  leading: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                    child: ClipOval(
+                      child: _buildProviderIcon(provider),
+                    ),
                   ),
-                ),
-                trailing: isSelected
-                    ? Icon(Icons.check, color: Theme.of(context).primaryColor)
-                    : null,
-                onTap: () {
-                  onProviderSelected(provider);
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
+                  title: Text(
+                    provider.planName,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+                      : null,
+                  onTap: () {
+                    onProviderSelected(provider);
+                    Navigator.pop(context);
+                  },
+                );
+              }).toList(),
 
             const SizedBox(height: 20),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildProviderIcon(CablePlanInfo provider) {
+    if (provider.billerIcon != null && provider.billerIcon!.isNotEmpty) {
+      return Image.network(
+        provider.billerIcon!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildLocalAssetIcon(provider.planName),
+      );
+    }
+    return _buildLocalAssetIcon(provider.planName);
+  }
+
+  Widget _buildLocalAssetIcon(String planName) {
+    final normalizedName = planName.toLowerCase().trim();
+    String assetName = '';
+
+    if (normalizedName.contains('dstv')) {
+      assetName = 'dstv.png';
+    } else if (normalizedName.contains('gotv')) {
+      assetName = 'gotv.png';
+    } else if (normalizedName.contains('startimes')) {
+      assetName = 'startimes.png';
+    }
+
+    if (assetName.isNotEmpty) {
+      return Image.asset(
+        'assets/images/$assetName',
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const Icon(Icons.tv),
+      );
+    }
+
+    return const Icon(Icons.tv);
   }
 }

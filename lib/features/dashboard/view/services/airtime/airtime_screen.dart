@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ import 'package:valarpay/features/notifiers/airtime_notifier.dart';
 import 'package:valarpay/features/providers/airtime_providers.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/models/airtime_models.dart';
+import 'package:valarpay/features/models/network_provider.dart';
 import 'saved_beneficiary_screen.dart';
 
 class AirtimeScreen extends ConsumerStatefulWidget {
@@ -37,6 +39,18 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
   AirtimeBeneficiary? _selectedBeneficiary;
+  bool _showRecentBeneficiaries = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(airtimeBeneficiaryNotifierProvider.notifier)
+          .getAirtimeBeneficiaries();
+      ref.read(airtimeProvidersNotifierProvider.notifier).fetchProviders();
+    });
+  }
 
   @override
   void dispose() {
@@ -101,37 +115,73 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     }
   }
 
-  bool _isFormValid(String network, int operatorId) =>
-      _phoneController.text.isNotEmpty &&
+  bool _isFormValid(String network, int operatorId) {
+    return _phoneController.text.isNotEmpty &&
       _amountController.text.isNotEmpty &&
-      network.isNotEmpty &&
-      operatorId > 0;
+      network.isNotEmpty;
+  }
 
   void _detectNetworkProvider(String phoneNumber) {
     final formatted = _formatTo11(phoneNumber);
     final cleanedPhone = formatted.replaceAll(RegExp(r'\D'), '');
 
     if (cleanedPhone.length >= 10) {
-      ref
-          .read(airtimePlanNotifierProvider.notifier)
-          .getPlan(phone: formatted, currency: 'NGN')
-          .then((_) {
-            final s = ref.read(airtimePlanNotifierProvider);
-            if (s.isDataAvailable && s.data!.isNotEmpty) {
-              final p = s.data!.first;
-              ref.read(airtimeSelectedNetworkProvider.notifier).state = p.name;
-              ref.read(airtimeSelectedOperatorIdProvider.notifier).state =
-                  p.operatorId;
+      final providers = ref.read(airtimeProvidersNotifierProvider).data ?? [];
+      if (providers.isNotEmpty) {
+        final prefix = formatted.substring(0, 4);
+        
+        String? detectedBillerId;
+        
+        // Comprehensive Nigerian Network Prefixes
+        const mtnPrefixes = {'0803', '0806', '0810', '0813', '0814', '0816', '0703', '0706', '0903', '0906', '0704'};
+        const airtelPrefixes = {'0802', '0808', '0812', '0701', '0708', '0902', '0907', '0901', '0904'};
+        const gloPrefixes = {'0805', '0807', '0811', '0815', '0705', '0905'};
+        const mobile9Prefixes = {'0809', '0817', '0818', '0909', '0908'};
+
+        if (mtnPrefixes.contains(prefix)) {
+          detectedBillerId = 'MTN';
+        } else if (airtelPrefixes.contains(prefix)) {
+          detectedBillerId = 'AIRTEL';
+        } else if (gloPrefixes.contains(prefix)) {
+          detectedBillerId = 'GLO';
+        } else if (mobile9Prefixes.contains(prefix)) {
+          detectedBillerId = '9MOBILE';
+        }
+
+        if (detectedBillerId != null) {
+          try {
+            final p = providers.firstWhere(
+              (provider) =>
+                  provider.billerId == detectedBillerId ||
+                  provider.network.toUpperCase().contains(detectedBillerId!) ||
+                  provider.id.toString() == detectedBillerId,
+              orElse: () => providers.first,
+            );
+            
+            // Manual OperatorID mapping for local PalmPay billers (since API doesn't return them)
+            int opId = p.operatorId;
+            if (opId == 0) {
+              final bId = p.billerId?.toUpperCase() ?? p.network.toUpperCase();
+              if (bId.contains('MTN')) opId = 341;
+              else if (bId.contains('AIRTEL')) opId = 342;
+              else if (bId.contains('GLO')) opId = 344;
+              else if (bId.contains('9MOBILE') || bId.contains('ETISALAT')) opId = 340;
             }
-            if (mounted) {
-              setState(() {});
-            }
-          })
-          .catchError((e) {
-            if (mounted) {
-              setState(() {});
-            }
-          });
+
+            // Set all relevant providers state
+            ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
+            ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
+            ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+            
+            if (mounted) setState(() {});
+          } catch (e) {
+            log('[AirtimeScreen] Provider matching error: $e');
+          }
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -156,10 +206,12 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     _showLoading();
 
     try {
+      final billerId = ref.read(airtimeSelectedBillerIdProvider);
       final request = AirtimePurchaseRequest(
         walletPin: pin,
         amount: Helpers.parsedAmount(_amountController.text),
         operatorId: operatorId,
+        billerId: billerId,
         phone: _phoneController.text.trim(),
         currency: 'NGN',
         addBeneficiary: _saveBeneficiary,
@@ -266,9 +318,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
         builder:
             (_) => TransactionReceiptWidget(
               headerText: 'Transaction',
-              amount: currencyFormatter(
-                _amountController.text.replaceAll(',', ''),
-              ),
+              amount: _amountController.text.replaceAll(',', ''),
               topDetails: [
                 TransactionDetail(
                   label: 'Transaction ID',
@@ -404,8 +454,9 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Padding(
                         padding: EdgeInsets.all(8),
@@ -436,8 +487,8 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                           onChanged: filter,
                         ),
                       ),
-                      SizedBox(
-                        height: 450,
+                      const SizedBox(height: 10),
+                      Expanded(
                         child: ListView.separated(
                           itemCount: filtered.length,
                           separatorBuilder: (_, __) => const Divider(height: 1),
@@ -451,9 +502,9 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                               title: Text(c.displayName),
                               subtitle: Text(number),
                               onTap: () {
-                                _phoneController.text = Helpers.formatTo11(
-                                  number,
-                                );
+                                final formattedNumber = Helpers.formatTo11(number);
+                                _phoneController.text = formattedNumber;
+                                _detectNetworkProvider(formattedNumber);
                                 Navigator.pop(context);
                               },
                             );
@@ -462,6 +513,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                       ),
                     ],
                   ),
+                ),
                 ),
               );
             },
@@ -484,313 +536,582 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     final isVerified = user?.isBvnVerified ?? false;
     final network = ref.watch(airtimeSelectedNetworkProvider);
     final operatorId = ref.watch(airtimeSelectedOperatorIdProvider);
-    final planState = ref.watch(airtimePlanNotifierProvider);
-    final plan =
-        planState.data?.isNotEmpty == true ? planState.data!.first : null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ref.listen(airtimeProvidersNotifierProvider, (previous, next) {
+      if (next.isDataAvailable && next.data != null && next.data!.isNotEmpty) {
+        if (_phoneController.text.isNotEmpty) {
+          _detectNetworkProvider(_phoneController.text);
+        }
+      }
+    });
 
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text(
           'Airtime',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        actions:
-            isVerified
-                ? [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => AirtimeSavedBeneficiaryScreen(
-                                onSelectBeneficiary: (beneficiary) {
-                                  setState(() {
-                                    _selectedBeneficiary = beneficiary;
-                                    _phoneController.text =
-                                        beneficiary.phoneNumber;
-                                  });
-
-                                  // Trigger network detection for saved beneficiary
-                                  _detectNetworkProvider(
-                                    beneficiary.phoneNumber,
-                                  );
-                                },
-                              ),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Saved Beneficiary',
-                      style: TextStyle(color: appTheme.primaryColor),
-                    ),
-                  ),
-                ]
-                : null,
       ),
-      body:
-          !isVerified
-              ? const KycNotSetWidget(
-                title: 'KYC Not Completed',
-                subtitle: 'Complete your KYC to purchase airtime.',
-              )
-              : SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Display Selected Beneficiary if available
-                      if (_selectedBeneficiary != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
+      body: !isVerified
+          ? const KycNotSetWidget(
+              title: 'KYC Not Completed',
+              subtitle: 'Complete your KYC to purchase airtime.',
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Bar: Provider | Phone | Contact
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: appTheme.primaryColor.withOpacity(0.3),
-                                width: 1.5,
-                              ),
+                              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
                               children: [
-                                // Network Icon
-                                Container(
-                                  width: 45,
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    color: appTheme.primaryColor.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.phone,
-                                    color: Color(0xFFF76301),
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Beneficiary Details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                // Provider Selector
+                                GestureDetector(
+                                  onTap: () => _showProviderModal(context),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        _selectedBeneficiary!.phoneNumber,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.transparent, // Asset should handle bg or fit
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      if (_selectedBeneficiary!.network != null)
-                                        Text(
-                                          _selectedBeneficiary!.network!
-                                              .toUpperCase(),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[500],
+                                        child: ClipOval(
+                                          child: Builder(
+                                            builder: (context) {
+                                              final providers = ref.watch(airtimeProvidersNotifierProvider).data ?? [];
+                                              final selectedBillerId = ref.watch(airtimeSelectedBillerIdProvider);
+                                              String? iconUrl;
+                                              try {
+                                                iconUrl = providers.firstWhere((p) => p.billerId == selectedBillerId || p.network == network).billerIcon;
+                                              } catch (_) {}
+
+                                              if (iconUrl != null && iconUrl.isNotEmpty) {
+                                                return Image.network(
+                                                  iconUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, o, s) => Image.asset(_assetForProvider(network)),
+                                                );
+                                              }
+                                              return Image.asset(
+                                                _assetForProvider(network),
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (c, o, s) => Container(
+                                                  color: Colors.grey, 
+                                                  child: const Icon(Icons.phone_android, size: 20, color: Colors.white),
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        color: isDark ? Colors.grey : Colors.black54,
+                                      ),
                                     ],
                                   ),
                                 ),
-                                // Clear button
-                                IconButton(
-                                  icon: const Icon(Icons.close),
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedBeneficiary = null;
-                                      _phoneController.clear();
-                                    });
-                                  },
-                                  tooltip: 'Clear selection',
+                                Container(
+                                  height: 24,
+                                  width: 1,
+                                  color: Colors.grey.withOpacity(0.5),
+                                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                // Phone Input
+                                Expanded(
+                                  child: TextField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    textAlignVertical: TextAlignVertical.center,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: '0000 0000 000',
+                                      hintStyle: TextStyle(
+                                        color: isDark ? Colors.white38 : Colors.grey,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                      suffixIcon: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _showRecentBeneficiaries = !_showRecentBeneficiaries;
+                                          });
+                                        },
+                                        child: Icon(
+                                          _showRecentBeneficiaries
+                                              ? Icons.keyboard_arrow_up
+                                              : Icons.keyboard_arrow_down,
+                                          color: isDark ? Colors.grey : Colors.black54,
+                                        ),
+                                      )
+                                    ),
+                                    onChanged: (v) {
+                                        _detectNetworkProvider(v);
+                                        setState(() {});
+                                    },
+                                  ),
+                                ),
+                                // Contact Picker
+                                GestureDetector(
+                                  onTap: _pickContact,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.primaryColor, // Brand Primary Color
+                                    ),
+                                    child: const Icon(Icons.person, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          if (_showRecentBeneficiaries)
+                            _buildRecentBeneficiariesDropdown(),
+
+                          const SizedBox(height: 24),
+
+                          // Top Up Title
+                          Text(
+                            'Top up',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Top Up Grid
+                          GridView.count(
+                            crossAxisCount: 3,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.1,
+                            children: [50, 100, 200, 500, 1000, 2000].map((amount) {
+                              final cashback = (amount * 0.01).toStringAsFixed(amount < 100 ? 1 : 0); // Mock cashback logic
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _amountController.text = amount.toString();
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: _amountController.text == amount.toString() 
+                                      ? Border.all(color: AppColors.primaryColor, width: 1.5)
+                                      : null,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '₦$cashback Cashback',
+                                          style: const TextStyle(
+                                            color: AppColors.primaryColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        currencyFormatter(amount.toString()),
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                          const AirtimeServicesSection(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Bottom Input Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      boxShadow: [
+                         BoxShadow(
+                           color: Colors.black.withOpacity(0.1),
+                           blurRadius: 10,
+                           offset: const Offset(0, -2),
+                         )
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.black : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '₦',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.grey : Colors.black54,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _amountController,
+                                    keyboardType: TextInputType.number,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: '50-500,000',
+                                      hintStyle: TextStyle(
+                                        color: isDark ? Colors.grey[700] : Colors.grey[500],
+                                        fontSize: 16,
+                                      ),
+                                      border: InputBorder.none,
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      const Text(
-                        'Phone Number',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ReuseableTextFieldWithCountry(
-                        controller: _phoneController,
-                        maxLength: 11,
-                        countryCode: '+234 ',
-                        flagImagePath: 'assets/images/ngflag.png',
-                        hintText: '812 345 6789',
-                        textInputType: TextInputType.phone,
-                        suffixWidget: IconButton(
-                          icon: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: appTheme.primaryColor,
-                              borderRadius: BorderRadius.circular(6),
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          height: 50,
+                          width: 100,
+                          child: ElevatedButton(
+                            onPressed: _isFormValid(network, operatorId) 
+                                ? () => _navigateToDetails(network, operatorId)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor, // Brand Primary Color
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 0,
                             ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 16,
+                            child: const Text(
+                              'Pay',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          onPressed: _pickContact,
                         ),
-                        onChanged: (v) {
-                          setState(() {});
-                          _detectNetworkProvider(v);
-                        },
-                        isReadOnly: false,
-                        showCountryLabel: true,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Network Provider',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child:
-                            (planState.isInitialLoading && plan == null)
-                                ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                                : plan == null
-                                ? const Text(
-                                  'Enter phone number to automatically detect network provider',
-                                  style: TextStyle(color: Colors.orange),
-                                )
-                                : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      height: 80,
-                                      width: 80,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).cardColor.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: appTheme.primaryColor
-                                                .withOpacity(0.5),
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 60,
-                                            height: 60,
-                                            child: Image.asset(
-                                              _assetForProvider(plan.name),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Amount',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ReuseableAmountTextfield(
-                        amountController: _amountController,
-                        prefixText: '₦',
-                        hintText: '500',
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: 16),
-                      // Quick Amount Selection
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children:
-                              [100, 200, 300, 400, 500, 1000, 2000,3000,5000].map((
-                                amount,
-                              ) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _amountController.text =
-                                            amount.toString();
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).cardColor.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: appTheme.primaryColor
-                                              .withOpacity(0.3),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        '₦$amount',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color:
-                                              _amountController.text ==
-                                                      amount.toString()
-                                                  ? appTheme.primaryColor
-                                                  : Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      FullWidthButton(
-                        text: 'Continue',
-                        isEnabled: _isFormValid(network, operatorId),
-                        onPressed:
-                            () => _navigateToDetails(network, operatorId),
-                      ),
-                      const SizedBox(height: 40),
-                      const AirtimeServicesSection(),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  void _showProviderModal(BuildContext context) {
+    final providers = ref.watch(airtimeProvidersNotifierProvider).data ?? [];
+    final currentNetwork = ref.watch(airtimeSelectedNetworkProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              
+              const Text(
+                'Select Provider',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Provider List
+              if (providers.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text('No providers available'),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: providers.length,
+                    itemBuilder: (context, index) {
+                      final p = providers[index];
+                      final isSelected = currentNetwork == p.network;
+                      return InkWell(
+                        onTap: () {
+                          // Manual OperatorID mapping for local PalmPay billers
+                          int opId = p.operatorId;
+                          if (opId == 0) {
+                            final bId = p.billerId?.toUpperCase() ?? p.network.toUpperCase();
+                            if (bId.contains('MTN')) opId = 341;
+                            else if (bId.contains('AIRTEL')) opId = 342;
+                            else if (bId.contains('GLO')) opId = 344;
+                            else if (bId.contains('9MOBILE') || bId.contains('ETISALAT')) opId = 340;
+                          }
+
+                          ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
+                          ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
+                          ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : Colors.transparent,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                ),
+                                child: ClipOval(
+                                  child: p.billerIcon != null && p.billerIcon!.isNotEmpty
+                                      ? Image.network(
+                                          p.billerIcon!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, e, s) => Image.asset(_assetForProvider(p.network)),
+                                        )
+                                      : Image.asset(_assetForProvider(p.network)),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                p.network,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (isSelected)
+                                const Icon(Icons.check_circle, color: AppColors.primaryColor, size: 24),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
-}
+
+  Widget _buildRecentBeneficiariesDropdown() {
+    final state = ref.watch(airtimeBeneficiaryNotifierProvider);
+    final beneficiaries = state.data ?? [];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.read(userProvider);
+    final userPhone = user?.phoneNumber != null ? _formatTo11(user!.phoneNumber!) : null;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2B2725) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (state.isInitialLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (beneficiaries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('No recent beneficiaries')),
+            )
+          else ...[
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: beneficiaries.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final b = beneficiaries[index];
+                  final isMe = userPhone != null && _formatTo11(b.phoneNumber) == userPhone;
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          Helpers.formatPhoneNumber(b.phoneNumber),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        if (isMe) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'me',
+                              style: TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (b.network != null)
+                          Text(
+                            (b.network ?? '').toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.close, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                  onTap: () {
+                      _phoneController.text = b.phoneNumber;
+                      setState(() {
+                         _showRecentBeneficiaries = false;
+                      });
+                      _detectNetworkProvider(b.phoneNumber);
+                  },
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            TextButton.icon(
+              onPressed: () {
+                 // ref.read(airtimeBeneficiaryNotifierProvider.notifier).clearAll();
+              },
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Delete All'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+} // End _AirtimeScreenState

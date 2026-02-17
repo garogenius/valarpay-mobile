@@ -201,7 +201,7 @@ class _CableTvSavedBeneficiaryScreenState
                 color: appTheme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.tv, color: Color(0xFFF76301), size: 20),
+              child: Center(child: _buildProviderIcon(beneficiary.providerName)),
             ),
             const SizedBox(width: 12),
             // Details
@@ -284,5 +284,37 @@ class _CableTvSavedBeneficiaryScreenState
         ],
       ),
     );
+  }
+
+  Widget _buildProviderIcon(String? providerName) {
+    if (providerName == null) {
+      return const Icon(Icons.tv, color: Color(0xFFF76301), size: 20);
+    }
+
+    final normalizedName = providerName.toLowerCase().trim();
+    String assetName = '';
+
+    if (normalizedName.contains('dstv')) {
+      assetName = 'dstv.png';
+    } else if (normalizedName.contains('gotv')) {
+      assetName = 'gotv.png';
+    } else if (normalizedName.contains('startimes')) {
+      assetName = 'startimes.png';
+    }
+
+    if (assetName.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.asset(
+          'assets/images/$assetName',
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.tv, color: Color(0xFFF76301), size: 20),
+        ),
+      );
+    }
+    return const Icon(Icons.tv, color: Color(0xFFF76301), size: 20);
   }
 }

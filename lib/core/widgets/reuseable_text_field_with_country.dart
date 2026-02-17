@@ -7,11 +7,15 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
   String? countryCode;
   TextEditingController controller;
   Widget? suffixWidget;
+  Widget? prefixWidget;
   int? maxLength;
   void Function(String)? onChanged;
+  VoidCallback? onArrowTap;
   bool isReadOnly;
   String hintText;
   bool showCountryLabel;
+  bool showArrow;
+  bool isExpanded;
   TextInputType textInputType;
   List<TextInputFormatter>? inputFormatters;
 
@@ -21,10 +25,14 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
     required this.controller,
     required this.hintText,
     this.onChanged,
+    this.onArrowTap,
     required this.isReadOnly,
     required this.textInputType,
     this.suffixWidget,
+    this.prefixWidget,
     required this.showCountryLabel,
+    this.showArrow = false,
+    this.isExpanded = false,
     this.maxLength,
     this.inputFormatters,
     super.key,
@@ -71,7 +79,23 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
               hintStyle: TextStyle(
                 color: isDark ? Colors.white38 : Colors.grey[400],
               ),
-              suffixIcon: suffixWidget,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (showArrow)
+                    IconButton(
+                      icon: Icon(
+                        isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                      onPressed: onArrowTap,
+                    ),
+                  if (suffixWidget != null) suffixWidget!,
+                ],
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
@@ -88,6 +112,7 @@ class ReuseableTextFieldWithCountry extends StatelessWidget {
                 horizontal: 12,
                 vertical: 18,
               ),
+              prefixIcon: prefixWidget,
               filled: true,
               fillColor: Theme.of(context).cardColor.withOpacity(0.5),
             ),

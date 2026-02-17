@@ -127,4 +127,11 @@ class SessionService {
       logout();
     }
   }
+
+  static Future<void> saveUser(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userDetailsKey, jsonEncode(user.toJson()));
+    await prefs.setString(_userFullnameKey, user.fullname);
+    await prefs.setString(_userPhoneNumberKey, user.phoneNumber ?? '');
+  }
 }

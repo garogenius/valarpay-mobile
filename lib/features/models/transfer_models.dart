@@ -41,9 +41,9 @@ class Bank {
   factory Bank.fromJson(Map<String, dynamic> json) => Bank(
     name: json['name'] ?? '',
     alias: List<String>.from(json['alias'] ?? []),
-    routingKey: json['routingKey'] ?? '',
+    routingKey: json['routingKey'] ?? json['code'] ?? '',
     logoImage: json['logoImage'],
-    bankCode: json['bankCode'] ?? '',
+    bankCode: json['bankCode'] ?? json['code'] ?? '',
     nubanCode: json['nubanCode'],
   );
 

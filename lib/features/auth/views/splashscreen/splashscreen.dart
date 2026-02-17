@@ -75,8 +75,18 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkSession() async {
     final savedUsername = await SessionService.getUsername();
+    final autoLogoutSetting = await LocalStorageService.get(
+      'auto_logout_setting',
+    );
+    final isLoggedIn = await SessionService.isLoggedIn();
 
     if (!mounted) return;
+
+    // Check if Password Free Login is enabled and user is already logged in
+    if (autoLogoutSetting == 'Password Free Log in' && isLoggedIn) {
+      context.go('/');
+      return;
+    }
 
     // On app restart, always require login
     // If user has saved credentials, go to biometric/passcode login

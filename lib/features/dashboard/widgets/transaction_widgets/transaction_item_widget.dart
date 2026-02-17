@@ -195,9 +195,54 @@ class TransactionItemWidget extends StatelessWidget {
         return transaction.transferDetails?.beneficiaryName ?? 'Bank Transfer';
       case 'BILL_PAYMENT':
       case 'BILL':
-        final provider = transaction.billDetails?.provider ?? '';
-        final type = transaction.billDetails?.billType ?? 'Bill Payment';
-        return '$provider $type';
+        // Use network if available (e.g. Airtel), otherwise provider (e.g. PalmPay)
+        // This gives better context like "Airtel Airtime" instead of "PalmPay Airtime"
+        final rawProvider = transaction.billDetails?.network ??
+            transaction.billDetails?.provider ??
+            '';
+        
+        // Capitalize first letter
+        final provider = rawProvider.isNotEmpty
+            ? rawProvider[0].toUpperCase() +
+                (rawProvider.length > 1
+                    ? rawProvider.substring(1).toLowerCase()
+                    : '')
+            : '';
+
+        final rawType = (transaction.billDetails?.billType ?? '').trim().toUpperCase();
+
+        String displayType;
+        if (rawType == 'AIRTIME') {
+          displayType = 'Airtime';
+        } else if (rawType == 'DATA' || rawType == 'MOBILE_DATA') {
+          displayType = 'Mobile Data';
+        } else if (rawType == 'CABLE' ||
+            rawType == 'TV' ||
+            rawType == 'CABLE_TV') {
+          displayType = 'Cable TV';
+        } else if (rawType == 'ELECTRICITY') {
+          displayType = 'Electricity';
+        } else if (rawType == 'GIFTCARD' || rawType == 'GIFT_CARD') {
+          displayType = 'Gift Card';
+        } else if (rawType == 'INTERNATIONAL_AIRTIME') {
+          displayType = 'Intl. Airtime';
+        } else {
+          // Fallback: Check description for keywords if billType is generic
+          final desc = transaction.description.toUpperCase();
+          if (desc.contains('AIRTIME')) {
+            displayType = 'Airtime';
+          } else if (desc.contains('DATA') || desc.contains('BUNDLE')) {
+            displayType = 'Mobile Data';
+          } else if (desc.contains('CABLE') || desc.contains('TV')) {
+            displayType = 'Cable TV';
+          } else if (desc.contains('ELECTRICITY') || desc.contains('POWER')) {
+            displayType = 'Electricity';
+          } else {
+            displayType = transaction.billDetails?.billType ?? 'Bill Payment';
+          }
+        }
+
+        return provider.isEmpty ? displayType : '$provider $displayType';
       case 'WITHDRAWAL':
         return 'Withdrawal';
       default:

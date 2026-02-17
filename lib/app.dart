@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/services/user_activity_service.dart';
 import 'package:valarpay/core/services/connectivity_service.dart';
-import 'package:valarpay/features/providers/idle_provider.dart';
+import 'package:valarpay/core/services/session_timeout_service.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import '../core/routing/app_router.dart';
 import '../core/themes/app_theme.dart';
@@ -37,28 +37,17 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
 
-    ref.listen<bool>(userIdleProvider, (previous, isIdle) async {
-      if (isIdle) {
-        ref.read(userProvider.notifier).clearUser();
-        SessionService(context).logout2();
-
-        ref.read(userIdleProvider.notifier).stopMonitoring();
-      }
-    });
-
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       builder: (context, child) {
         return Listener(
-          onPointerDown:
-              (_) => ref.read(userIdleProvider.notifier).resetTimer(),
-          onPointerMove:
-              (_) => ref.read(userIdleProvider.notifier).resetTimer(),
-          onPointerUp: (_) => ref.read(userIdleProvider.notifier).resetTimer(),
+          onPointerDown: (_) => SessionTimeoutService.recordActivity(),
+          onPointerMove: (_) => SessionTimeoutService.recordActivity(),
+          onPointerUp: (_) => SessionTimeoutService.recordActivity(),
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () => ref.read(userIdleProvider.notifier).resetTimer(),
+            onTap: () => SessionTimeoutService.recordActivity(),
 
             child: MaterialApp.router(
               title: 'ValarPay - Beyond Banking',
@@ -69,13 +58,7 @@ class _MyAppState extends ConsumerState<MyApp> {
               routerConfig: router,
               builder: (context, child) {
                 return GlobalLoadingOverlay(
-                  child: Navigator(
-                    key: ConnectivityService.navigatorKey,
-                    onPopPage: (route, result) => route.didPop(result),
-                    pages: [
-                      MaterialPage(child: child ?? const SizedBox.shrink()),
-                    ],
-                  ),
+                  child: child ?? const SizedBox.shrink(),
                 );
               },
             ),

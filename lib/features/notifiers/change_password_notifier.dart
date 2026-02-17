@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/change_password_models.dart';
 import 'package:valarpay/features/repositories/change_password_repository.dart';
-import 'package:valarpay/features/notifiers/user_notifier.dart'
-    show apiClientProvider;
+import 'package:valarpay/core/network/api_client.dart';
 
 class ChangePasswordNotifier
     extends StateNotifier<DataState<ChangePasswordResponse>> {

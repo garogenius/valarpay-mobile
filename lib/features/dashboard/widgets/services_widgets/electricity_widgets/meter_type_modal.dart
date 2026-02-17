@@ -68,7 +68,7 @@ class MeterTypeModal extends StatelessWidget {
               itemCount: meterTypes.length,
               itemBuilder: (context, index) {
                 final type = meterTypes[index];
-                final isSelected = type.id == selectedType?.id;
+                final isSelected = type.itemCode == selectedType?.itemCode && type.itemCode.isNotEmpty;
 
                 return ListTile(
                   leading: Container(

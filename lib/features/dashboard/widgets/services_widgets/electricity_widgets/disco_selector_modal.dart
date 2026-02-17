@@ -69,28 +69,24 @@ class DiscoSelectorModal extends StatelessWidget {
               itemCount: discos.length,
               itemBuilder: (context, index) {
                 final disco = discos[index];
-                final isSelected = disco.id == selectedDisco?.id;
+                final isSelected = disco.billerCode == selectedDisco?.billerCode;
 
                 return ListTile(
                   leading: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color:
-                            isSelected ? const Color(0xFFF76301) : Colors.grey,
-                        width: 2,
-                      ),
                     ),
-                    child:
-                        isSelected
-                            ? const Icon(
-                              Icons.circle,
-                              color: Color(0xFFF76301),
-                              size: 12,
+                    child: ClipOval(
+                      child: disco.billerIcon != null && disco.billerIcon!.isNotEmpty
+                          ? Image.network(
+                              disco.billerIcon!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => const Icon(Icons.flash_on),
                             )
-                            : null,
+                          : const Icon(Icons.flash_on),
+                    ),
                   ),
                   title: Text(
                     disco.planName,
@@ -105,6 +101,26 @@ class DiscoSelectorModal extends StatelessWidget {
                       color: isDark ? Colors.white70 : Colors.grey[600],
                       fontSize: 14,
                     ),
+                  ),
+                  trailing: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color:
+                            isSelected ? const Color(0xFFF76301) : Colors.grey,
+                        width: 2,
+                      ),
+                    ),
+                    child:
+                        isSelected
+                            ? const Icon(
+                                Icons.circle,
+                                color: Color(0xFFF76301),
+                                size: 12,
+                              )
+                            : null,
                   ),
                   onTap: () {
                     onDiscoSelected(disco);

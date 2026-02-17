@@ -8,6 +8,7 @@ class DataState<T> {
   final String? message;
   final List<T>? data;
   final T? singleData;
+  final String? error;
 
   const DataState({
     this.isOverlayHidden = false,
@@ -19,6 +20,7 @@ class DataState<T> {
     this.message,
     this.data,
     this.singleData,
+    this.error,
   });
 
   factory DataState.initial() => DataState<T>(
@@ -31,6 +33,7 @@ class DataState<T> {
     message: null,
     data: const [],
     singleData: null,
+    error: null,
   );
 
   DataState<T> copyWith({
@@ -43,6 +46,7 @@ class DataState<T> {
     String? message,
     List<T>? data,
     T? singleData,
+    String? error,
   }) {
     return DataState<T>(
       isOverlayHidden: isOverlayHidden ?? this.isOverlayHidden,
@@ -54,6 +58,15 @@ class DataState<T> {
       message: message ?? this.message,
       data: data ?? this.data,
       singleData: singleData ?? this.singleData,
+      error: error ?? this.error,
     );
   }
+}
+
+class DataSuccess<T> extends DataState<T> {
+  const DataSuccess({super.data, super.singleData}) : super(isDataAvailable: true);
+}
+
+class DataFailed<T> extends DataState<T> {
+  const DataFailed(String error) : super(error: error, isDataAvailable: false);
 }

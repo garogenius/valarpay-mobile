@@ -40,6 +40,9 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
           allBanks
               .where((bank) => bank.name.toLowerCase().contains(query))
               .toList();
+      sortedBanks = List.from(filteredBanks)..sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
     });
   }
 
@@ -52,10 +55,11 @@ class _SelectBankScreenState extends ConsumerState<SelectBankScreen> {
     final banksState = ref.watch(banksNotifierProvider);
 
     ref.listen(banksNotifierProvider, (previous, next) {
-      if (next.isDataAvailable && next.data != null) {
+      if (next.isDataAvailable && next.singleData != null) {
         setState(() {
-          filteredBanks = next.singleData!.data;
-          sortedBanks = List.from(filteredBanks)..sort(
+          allBanks = next.singleData!.data;
+          filteredBanks = allBanks;
+          sortedBanks = List.from(allBanks)..sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           );
         });

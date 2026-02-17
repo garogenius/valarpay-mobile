@@ -171,7 +171,7 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
 
       final request = VerifyMeterNumberRequest(
         itemCode: selectedMeterType.itemCode,
-        billerCode: selectedDisco.billerCode,
+        billerCode: selectedDisco.billerCode, // Use billerCode
         billerNumber: _meterNumberController.text,
       );
 
@@ -381,12 +381,26 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
       if (!electricityState.isDataAvailable || electricityState.data == null)
         return;
 
+      // Deduplicate plans by billerCode or billerName to show unique Discos
+      final uniqueDiscosMap = <String, ElectricityPlan>{};
+      for (var plan in electricityState.data!) {
+        // Use billerCode as primary key, or billerName if code not available
+        final key = plan.billerCode.isNotEmpty ? plan.billerCode : (plan.billerName ?? '');
+        if (key.isNotEmpty && !uniqueDiscosMap.containsKey(key)) {
+          // We want to store a representative plan for the Disco.
+          // Ideally one with a generic name like "Eko Disco" instead of "Eko Disco Prepaid"
+          // But usually they share the same billerName/Icon so any plan works for display.
+          uniqueDiscosMap[key] = plan;
+        }
+      }
+      final uniqueDiscos = uniqueDiscosMap.values.toList();
+
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         builder:
             (context) => DiscoSelectorModal(
-              discos: electricityState.data!,
+              discos: uniqueDiscos, // Pass the deduplicated list
               selectedDisco: ref.read(electricitySelectedDiscoProvider),
               onDiscoSelected: (disco) {
                 ref.read(electricitySelectedDiscoProvider.notifier).state =
@@ -397,25 +411,58 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                   _isMeterVerified = false;
                   _customerName = '';
                 });
-                // Load bill info for selected disco
-                ref
-                    .read(electricityBillInfoNotifierProvider.notifier)
-                    .getBillInfo(billerCode: disco.billerCode);
+                // We DO NOT call getBillInfo here anymore as the variations are in the plans list
               },
             ),
       );
     }
 
     void _showMeterTypeModal(BuildContext context) {
-      final billInfoState = ref.read(electricityBillInfoNotifierProvider);
-      if (!billInfoState.isDataAvailable || billInfoState.data == null) return;
+      final electricityState = ref.read(electricityNotifierProvider);
+      final selectedDisco = ref.read(electricitySelectedDiscoProvider);
+      
+      if (!electricityState.isDataAvailable || electricityState.data == null || selectedDisco == null) return;
+
+      // Filter all plans to find those belonging to the selected Disco
+      final discoBillerCode = selectedDisco.billerCode;
+      
+      final relevantPlans = electricityState.data!.where((plan) {
+         // Match by billerCode. fallback to billerName if needed
+         return plan.billerCode == discoBillerCode;
+      }).toList();
+
+      // Convert these plans to ElectricityBillInfo for the modal
+      // The modal expects ElectricityBillInfo but we have ElectricityPlan
+      // We'll create temporary bill info objects
+      final meterTypes = relevantPlans.map((plan) => ElectricityBillInfo(
+        id: int.tryParse(plan.id) ?? 0, 
+        billerCode: plan.billerCode, 
+        name: plan.planName, // This should be "Eko Prepaid" etc
+        defaultCommission: 0, 
+        dateAdded: plan.createdAt, 
+        country: plan.countryISOCode, 
+        isAirtime: false, 
+        billerName: plan.billerName ?? '', 
+        itemCode: plan.itemCode ?? '', 
+        shortName: plan.shortName, 
+        fee: plan.amount, 
+        commissionOnFee: false, 
+        regExpression: '', 
+        labelName: '', 
+        amount: plan.amount, 
+        isResolvable: true, 
+        groupName: '', 
+        categoryName: plan.planName, 
+        commissionOnFeeOrAmount: 0, 
+        payAmount: plan.amount
+      )).toList();
 
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         builder:
             (context) => MeterTypeModal(
-              meterTypes: billInfoState.data!,
+              meterTypes: meterTypes,
               selectedType: ref.read(electricitySelectedMeterTypeProvider),
               onTypeSelected: (type) {
                 ref.read(electricitySelectedMeterTypeProvider.notifier).state =
@@ -468,40 +515,7 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
           'Electricity',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
-        actions:
-            isBvnVerified
-                ? [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => SavedBeneficiaryScreen(
-                                onSelectBeneficiary: (beneficiary) {
-                                  setState(() {
-                                    _meterNumberController.text =
-                                        beneficiary.meterNumber;
-                                  });
-                                  // Verify meter number
-                                  if (ref.read(
-                                        electricitySelectedMeterTypeProvider,
-                                      ) !=
-                                      null) {
-                                    _verifyMeterNumber();
-                                  }
-                                },
-                              ),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Saved Beneficiary',
-                      style: TextStyle(color: Color(0xFFF76301), fontSize: 14),
-                    ),
-                  ),
-                ]
-                : null,
+        actions: null,
       ),
       body:
           !isBvnVerified
@@ -541,24 +555,46 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              ref
-                                      .watch(electricitySelectedDiscoProvider)
-                                      ?.planName ??
-                                  'Select Disco',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    ref.watch(
-                                              electricitySelectedDiscoProvider,
-                                            ) ==
-                                            null
-                                        ? Colors.grey
-                                        : null,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  if (ref.watch(electricitySelectedDiscoProvider)?.billerIcon != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: ClipOval(
+                                        child: Image.network(
+                                          ref.watch(electricitySelectedDiscoProvider)!.billerIcon!,
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, e, s) => const Icon(Icons.flash_on, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      ref
+                                              .watch(electricitySelectedDiscoProvider)
+                                              ?.planName ??
+                                          'Select Disco',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color:
+                                            ref.watch(
+                                                      electricitySelectedDiscoProvider,
+                                                    ) ==
+                                                    null
+                                                ? Colors.grey
+                                                : (isDark ? Colors.white : Colors.black),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             electricityState.isInitialLoading
-                                ? SizedBox(
+                                ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -590,7 +626,7 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap:
-                          billInfoState.isDataAvailable
+                          electricityState.isDataAvailable && ref.watch(electricitySelectedDiscoProvider) != null
                               ? () => _showMeterTypeModal(context)
                               : null,
                       child: Container(
@@ -605,22 +641,25 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              ref
-                                      .watch(
-                                        electricitySelectedMeterTypeProvider,
-                                      )
-                                      ?.name ??
-                                  'Select Meter Type',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    ref.watch(
-                                              electricitySelectedMeterTypeProvider,
-                                            ) ==
-                                            null
-                                        ? Colors.grey
-                                        : null,
+                            Expanded(
+                              child: Text(
+                                ref
+                                        .watch(
+                                          electricitySelectedMeterTypeProvider,
+                                        )
+                                        ?.name ??
+                                    'Select Meter Type',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color:
+                                      ref.watch(
+                                                electricitySelectedMeterTypeProvider,
+                                              ) ==
+                                              null
+                                          ? Colors.grey
+                                          : (isDark ? Colors.white : Colors.black),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             billInfoState.isInitialLoading
@@ -646,12 +685,51 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                     const SizedBox(height: 24),
 
                     // Meter Number
-                    Text(
-                      'Meter Number',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Meter Number',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (isBvnVerified)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => SavedBeneficiaryScreen(
+                                        onSelectBeneficiary: (beneficiary) {
+                                          setState(() {
+                                            _meterNumberController.text =
+                                                beneficiary.meterNumber;
+                                          });
+                                          // Verify meter number
+                                          if (ref.read(
+                                                electricitySelectedMeterTypeProvider,
+                                              ) !=
+                                              null) {
+                                            _verifyMeterNumber();
+                                          }
+                                        },
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Saved Beneficiary',
+                              style: TextStyle(
+                                color: Color(0xFFF76301),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     ReuseableTextFieldWithCountry(

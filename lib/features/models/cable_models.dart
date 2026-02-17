@@ -4,19 +4,28 @@ class CablePlanInfo {
   final String planName;
   final String countryISOCode;
   final String billerCode;
+  final String? billerId;
+  final String? billerName;
+  final String? billerIcon;
 
   CablePlanInfo({
     required this.id,
     required this.planName,
     required this.countryISOCode,
     required this.billerCode,
+    this.billerId,
+    this.billerName,
+    this.billerIcon,
   });
 
   factory CablePlanInfo.fromJson(Map<String, dynamic> json) => CablePlanInfo(
-    id: json['id']?.toString() ?? '',
-    planName: json['planName'] ?? '',
+    id: json['id']?.toString() ?? json['billerId'] ?? '',
+    planName: json['planName'] ?? json['name'] ?? json['billerName'] ?? '',
     countryISOCode: json['countryISOCode'] ?? '',
-    billerCode: json['billerCode'] ?? '',
+    billerCode: json['billerCode'] ?? json['biller_code'] ?? json['billerId'] ?? '',
+    billerId: json['billerId']?.toString(),
+    billerName: json['billerName']?.toString(),
+    billerIcon: json['billerIcon']?.toString(),
   );
 }
 
@@ -33,9 +42,17 @@ class CablePlanResponse {
 
   factory CablePlanResponse.fromJson(Map<String, dynamic> json) {
     final list = <CablePlanInfo>[];
-    if (json['data'] != null && json['data'] is List) {
+    final dynamic dataJson = json['data'] ?? json['billers'];
+    
+    if (dataJson != null && dataJson is List) {
       list.addAll(
-        (json['data'] as List).map(
+        (dataJson).map(
+          (e) => CablePlanInfo.fromJson(e as Map<String, dynamic>),
+        ),
+      );
+    } else if (json['billers'] != null && json['billers'] is List) {
+      list.addAll(
+        (json['billers'] as List).map(
           (e) => CablePlanInfo.fromJson(e as Map<String, dynamic>),
         ),
       );
@@ -49,7 +66,7 @@ class CablePlanResponse {
 }
 
 class CableVariationInfo {
-  final int id;
+  final dynamic id;
   final String billerCode;
   final String name;
   final double fee;
@@ -58,6 +75,9 @@ class CableVariationInfo {
   final double amount;
   final bool isResolvable;
   final double? payAmount;
+  final String? itemId;
+  final String? itemName;
+  final String? billerId;
 
   CableVariationInfo({
     required this.id,
@@ -69,22 +89,28 @@ class CableVariationInfo {
     required this.amount,
     required this.isResolvable,
     this.payAmount,
+    this.itemId,
+    this.itemName,
+    this.billerId,
   });
 
   factory CableVariationInfo.fromJson(Map<String, dynamic> json) =>
       CableVariationInfo(
-        id: json['id'] ?? 0,
-        billerCode: json['biller_code'] ?? json['billerCode'] ?? '',
-        name: json['name'] ?? '',
+        id: json['id'] ?? json['itemId'] ?? 0,
+        billerCode: json['biller_code'] ?? json['billerCode'] ?? json['billerId'] ?? '',
+        name: json['name'] ?? json['itemName'] ?? '',
         fee: (json['fee'] ?? 0).toDouble(),
-        itemCode: json['item_code'] ?? json['itemCode'] ?? '',
-        labelName: json['label_name'] ?? json['labelName'] ?? '',
+        itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId'] ?? '',
+        labelName: json['label_name'] ?? json['labelName'] ?? json['itemName'] ?? '',
         amount: (json['amount'] ?? 0).toDouble(),
-        isResolvable: json['is_resolvable'] ?? json['isResolvable'] ?? false,
+        isResolvable: json['is_resolvable'] ?? json['isResolvable'] ?? true,
         payAmount:
             json['payAmount'] != null
                 ? (json['payAmount'] as num).toDouble()
                 : null,
+        itemId: json['itemId']?.toString(),
+        itemName: json['itemName']?.toString(),
+        billerId: json['billerId']?.toString(),
       );
 }
 
@@ -101,9 +127,38 @@ class CableVariationResponse {
 
   factory CableVariationResponse.fromJson(Map<String, dynamic> json) {
     final list = <CableVariationInfo>[];
-    if (json['data'] != null && json['data'] is List) {
+    final dynamic dataJson = json['data'] ?? json['items'];
+
+    if (dataJson != null && dataJson is List) {
       list.addAll(
-        (json['data'] as List).map(
+        (dataJson).map(
+          (e) => CableVariationInfo.fromJson(e as Map<String, dynamic>),
+        ),
+      );
+    } else if (dataJson != null &&
+        dataJson is Map &&
+        dataJson['plans'] is List) {
+      final String billerCode =
+          dataJson['billerCode'] ?? json['billerCode'] ?? '';
+      list.addAll(
+        (dataJson['plans'] as List).map((e) {
+          final map = e as Map<String, dynamic>;
+          return CableVariationInfo(
+            id: map['id'],
+            billerCode: billerCode,
+            name: map['name'] ?? '',
+            fee: 0,
+            itemCode: map['id']?.toString() ?? '',
+            labelName: map['name'] ?? '',
+            amount: (map['amount'] ?? 0).toDouble(),
+            isResolvable: true,
+            payAmount: (map['amount'] ?? 0).toDouble(),
+          );
+        }),
+      );
+    } else if (json['items'] != null && json['items'] is List) {
+      list.addAll(
+        (json['items'] as List).map(
           (e) => CableVariationInfo.fromJson(e as Map<String, dynamic>),
         ),
       );

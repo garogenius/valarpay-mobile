@@ -56,4 +56,15 @@ class Helpers {
     }
     return digits;
   }
+
+  static String formatPhoneNumber(String phone) {
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('234')) {
+      digits = '0${digits.substring(3)}';
+    }
+    if (digits.length == 11) {
+      return '${digits.substring(0, 4)} ${digits.substring(4, 8)} ${digits.substring(8)}';
+    }
+    return digits;
+  }
 }

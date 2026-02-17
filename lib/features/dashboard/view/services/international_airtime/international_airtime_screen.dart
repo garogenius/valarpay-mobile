@@ -1,184 +1,12 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:valarpay/core/widgets/reuseable_appbar_text_button.dart';
-// import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
-// import 'package:valarpay/features/providers/user_provider.dart';
-// import 'package:valarpay/features/notifiers/airtime_notifier.dart';
-// import 'package:valarpay/features/models/network_provider.dart';
-// import 'saved_beneficiary_screen.dart';
-// import 'country_provider_screen.dart';
-
-// class InternationalAirtimeScreen extends ConsumerStatefulWidget {
-//   const InternationalAirtimeScreen({super.key});
-
-//   @override
-//   ConsumerState<InternationalAirtimeScreen> createState() =>
-//       _InternationalAirtimeScreenState();
-// }
-
-// class _InternationalAirtimeScreenState
-//     extends ConsumerState<InternationalAirtimeScreen> {
-//   String selectedCountry = '';
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       // fetch network providers to show dynamically
-//       ref.read(airtimeProvidersNotifierProvider.notifier).fetchProviders();
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final user = ref.watch(userProvider);
-//     final isBvnVerified = user?.isBvnVerified ?? false;
-//     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-//     return Scaffold(
-//       appBar: AppBar(
-//         leading: IconButton(
-//           icon: Icon(Icons.arrow_back),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: Text(
-//           'International Airtime',
-//           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-//         ),
-//         actions:
-//             isBvnVerified
-//                 ? [
-//                   ReuseableAppbarTextButton(
-//                     onTap:
-//                         () => Navigator.push(
-//                           context,
-//                           MaterialPageRoute(
-//                             builder:
-//                                 (context) =>
-//                                     const InternationalAirtimeSavedBeneficiaryScreen(),
-//                           ),
-//                         ),
-//                     text: 'Saved Beneficiary',
-//                   ),
-//                 ]
-//                 : null,
-//       ),
-//       body:
-//           isBvnVerified
-//               ? const KycNotSetWidget(
-//                 title: 'KYC Not Completed',
-//                 subtitle:
-//                     'Complete your KYC verification to purchase international airtime',
-//               )
-//               : Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     // Countries/Providers List (dynamic)
-//                     Expanded(
-//                       child: Consumer(
-//                         builder: (context, ref, _) {
-//                           final providersState = ref.watch(
-//                             airtimeProvidersNotifierProvider,
-//                           );
-//                           final providers =
-//                               providersState.data ?? <NetworkProvider>[];
-
-//                           if (providersState.isInitialLoading &&
-//                               providers.isEmpty) {
-//                             return const Center(
-//                               child: CircularProgressIndicator(),
-//                             );
-//                           }
-
-//                           if (!providersState.isDataAvailable &&
-//                               providers.isEmpty) {
-//                             return Center(
-//                               child: Text(
-//                                 providersState.message ??
-//                                     'No providers available',
-//                                 style: const TextStyle(color: Colors.grey),
-//                               ),
-//                             );
-//                           }
-
-//                           return ListView.builder(
-//                             itemCount: providers.length,
-//                             itemBuilder: (context, index) {
-//                               final p = providers[index];
-//                               return _buildCountryTile(p, isDark);
-//                             },
-//                           );
-//                         },
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//     );
-//   }
-
-//   Widget _buildCountryTile(NetworkProvider provider, bool isDark) {
-//     final displayName =
-//         '${provider.network} ${_mapIsoToCountry(provider.countryISOCode)}';
-
-//     return Container(
-//       margin: const EdgeInsets.only(bottom: 12),
-//       child: ListTile(
-//         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//         tileColor: isDark ? const Color(0xFF2B2725) : Colors.grey[100],
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-//         title: Text(
-//           displayName,
-//           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-//         ),
-//         trailing: Icon(
-//           Icons.arrow_forward_ios,
-//           color: isDark ? Colors.white70 : Colors.grey[600],
-//           size: 16,
-//         ),
-//         onTap: () {
-//           Navigator.push(
-//             context,
-//             MaterialPageRoute(
-//               builder:
-//                   (context) =>
-//                       CountryProviderScreen(countryProvider: displayName),
-//             ),
-//           );
-//         },
-//       ),
-//     );
-//   }
-
-//   String _mapIsoToCountry(String iso) {
-//     final code = iso.toUpperCase();
-//     switch (code) {
-//       case 'GH':
-//         return 'Ghana';
-//       case 'CA':
-//       case 'CAN':
-//         return 'Canada';
-//       case 'KE':
-//         return 'Kenya';
-//       case 'SN':
-//         return 'Senegal';
-//       default:
-//         return iso;
-//     }
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:valarpay/core/themes/color_utils.dart';
 import 'package:valarpay/core/utils/responsive_utils.dart';
-import 'package:valarpay/core/widgets/reuseable_appbar_text_button.dart';
 import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
-import 'package:valarpay/features/notifiers/airtime_notifier.dart';
-import 'package:valarpay/features/models/network_provider.dart';
-import 'saved_beneficiary_screen.dart';
+import 'package:valarpay/features/notifiers/international_airtime_notifier.dart';
+import 'package:valarpay/features/models/international_airtime_models.dart';
 import 'country_provider_screen.dart';
 
 class InternationalAirtimeScreen extends ConsumerStatefulWidget {
@@ -191,14 +19,30 @@ class InternationalAirtimeScreen extends ConsumerStatefulWidget {
 
 class _InternationalAirtimeScreenState
     extends ConsumerState<InternationalAirtimeScreen> {
-  String selectedCountry = '';
+  final _searchController = TextEditingController();
+  List<InternationalCountry> _filteredCountries = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // fetch network providers to show dynamically
-      ref.read(airtimeProvidersNotifierProvider.notifier).fetchProviders();
+      ref.read(internationalCountriesProvider.notifier).fetchCountries();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query, List<InternationalCountry> countries) {
+    setState(() {
+      _filteredCountries = countries
+          .where((c) =>
+              c.name.toLowerCase().contains(query.toLowerCase()) ||
+              c.isoCode.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -207,185 +51,151 @@ class _InternationalAirtimeScreenState
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final countriesState = ref.watch(internationalCountriesProvider);
+    final allCountries = countriesState.data ?? [];
+    
+    final displayCountries = _searchController.text.isEmpty ? allCountries : _filteredCountries;
 
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F5F5),
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'International Airtime',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        actions:
-            isBvnVerified
-                ? [
-                  ReuseableAppbarTextButton(
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) =>
-                                    const InternationalAirtimeSavedBeneficiaryScreen(),
-                          ),
-                        ),
-                    text: 'Saved Beneficiary',
-                  ),
-                ]
-                : null,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
       ),
-      body:
-          isBvnVerified
-              ? const KycNotSetWidget(
-                title: 'KYC Not Completed',
-                subtitle:
-                    'Complete your KYC verification to purchase international airtime',
-              )
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).iconTheme.color,
-                        ),
-                        hintText: "Searching",
-                        filled: true,
-                        fillColor: Theme.of(context).cardColor,
-                        border: OutlineInputBorder(
-                          borderRadius: ResponsiveUtils.borderRadius12,
-                          borderSide: BorderSide.none,
-                        ),
+      body: !isBvnVerified
+          ? const KycNotSetWidget(
+              title: 'KYC Not Completed',
+              subtitle: 'Complete your KYC verification to purchase international airtime',
+            )
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (v) => _onSearchChanged(v, allCountries),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: isDark ? Colors.grey : Colors.black54,
+                      ),
+                      hintText: "Search Country",
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: ResponsiveUtils.borderRadius12,
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                    SizedBox(height: 20),
-
+                  ),
+                  const SizedBox(height: 20),
+                  if (countriesState.isInitialLoading)
+                    const Expanded(child: Center(child: CircularProgressIndicator()))
+                  else if (displayCountries.isEmpty)
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'No countries found',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
                     Expanded(
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final providersState = ref.watch(
-                            airtimeProvidersNotifierProvider,
-                          );
-                          final providers =
-                              providersState.data ?? <NetworkProvider>[];
-
-                          if (providersState.isInitialLoading &&
-                              providers.isEmpty) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          if (!providersState.isDataAvailable &&
-                              providers.isEmpty) {
-                            return Center(
-                              child: Text(
-                                providersState.message ??
-                                    'No providers available',
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            itemCount: providers.length,
-                            itemBuilder: (context, index) {
-                              final p = providers[index];
-                              return _buildCountryTile(p, isDark);
-                            },
-                          );
+                      child: ListView.builder(
+                        itemCount: displayCountries.length,
+                        itemBuilder: (context, index) {
+                          final country = displayCountries[index];
+                          return _buildCountryTile(country, isDark);
                         },
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
+            ),
     );
   }
 
-  // Widget _buildFlightTile(String flightName, bool isDark) {
-  //   return Container(
-  //     margin: const EdgeInsets.only(bottom: 12),
-  //     child: ListTile(
-  //       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  //       tileColor: isDark ? const Color(0xFF2B2725) : Colors.grey[100],
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  //       title: Text(
-  //         flightName,
-  //         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-  //       ),
-  //       trailing: Icon(
-  //         Icons.arrow_forward_ios,
-  //         color: isDark ? Colors.white70 : Colors.grey[600],
-  //         size: 16,
-  //       ),
-  //       onTap: () {
-  //         // Navigator.push(
-  //         //   context,
-  //         //   MaterialPageRoute(
-  //         //     builder: (context) => FlightScreen(flightName: flightName),
-  //         //   ),
-  //         // );
-  //       },
-  //     ),
-  //   );
-  // }
-
-  Widget _buildCountryTile(NetworkProvider provider, bool isDark) {
-    final displayName =
-        '${provider.network} ${_mapIsoToCountry(provider.countryISOCode)}';
-
+  Widget _buildCountryTile(InternationalCountry country, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: country.flag.isNotEmpty
+                ? SvgPicture.network(
+                    country.flag,
+                    fit: BoxFit.cover,
+                    placeholderBuilder: (context) => Center(
+                      child: Text(
+                        country.isoCode,
+                        style: const TextStyle(
+                          color: AppColors.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      country.isoCode,
+                      style: const TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+          ),
         ),
-        tileColor: isDark ? const Color(0xFF2B2725) : Colors.grey[100],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         title: Text(
-          displayName,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          country.name,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
-        // trailing: Icon(
-        //   Icons.arrow_forward_ios,
-        //   color: isDark ? Colors.white70 : Colors.grey[600],
-        //   size: 16,
-        // ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: isDark ? Colors.white70 : Colors.grey[600],
+          size: 16,
+        ),
         onTap: () {
+          ref.read(selectedCountryIsoProvider.notifier).state = country.isoCode;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder:
-                  (context) =>
-                      CountryProviderScreen(countryProvider: displayName),
+              builder: (context) => CountryProviderScreen(
+                countryName: country.name,
+                countryIso: country.isoCode,
+                countryFlag: country.flag,
+              ),
             ),
           );
         },
       ),
     );
-  }
-
-  String _mapIsoToCountry(String iso) {
-    final code = iso.toUpperCase();
-    switch (code) {
-      case 'GH':
-        return 'Ghana';
-      case 'CA':
-      case 'CAN':
-        return 'Canada';
-      case 'KE':
-        return 'Kenya';
-      case 'SN':
-        return 'Senegal';
-      default:
-        return iso;
-    }
   }
 }

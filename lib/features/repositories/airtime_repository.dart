@@ -9,11 +9,11 @@ class AirtimeRepository {
 
   AirtimeRepository(this.apiClient);
 
-  /// Get available network providers for airtime
+  /// Get available network providers for airtime using PalmPay
   Future<NetworkProvidersResponse> getAirtimeNetworkProviders() async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getAirtimeNetworkProviders,
+        ApiEndpoints.getAirtimePlan,
       );
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -25,17 +25,13 @@ class AirtimeRepository {
   }
 
   /// Get available network providers for data
-  /// Get airtime plan for a phone number
-  Future<AirtimePlanResponse> getAirtimePlan({
-    required String phone,
-    required String currency,
-  }) async {
+  /// Get airtime billers via PalmPay
+  Future<NetworkProvidersResponse> getAirtimePlan() async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getAirtimePlan,
-        query: {'phone': phone, 'currency': currency},
       );
-      return AirtimePlanResponse.fromJson(response.data);
+      return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to fetch airtime plan',
@@ -43,14 +39,14 @@ class AirtimeRepository {
     }
   }
 
-  /// Get airtime variation by operator ID
+  /// Get airtime items by biller ID
   Future<AirtimePlanResponse> getAirtimeVariation({
-    required int operatorId,
+    required String billerId,
   }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getAirtimeVariation,
-        query: {'operatorId': operatorId.toString()},
+        query: {'billerId': billerId},
       );
       return AirtimePlanResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -116,8 +112,56 @@ class AirtimeRepository {
   /// Get international FX rate
   Future<InternationalFxRateResponse> getInternationalFxRate({
     required double amount,
+    required String fromCurrency,
     required int operatorId,
   }) async {
+    // 1. If NGN, no conversion needed
+    if (fromCurrency.toUpperCase() == 'NGN') {
+      return InternationalFxRateResponse(
+        message: 'Success',
+        statusCode: 200,
+        data: InternationalFxRate(
+          id: 0,
+          name: 'NGN',
+          fxRate: 1.0,
+          currencyCode: 'NGN',
+        ),
+      );
+    }
+
+    // 2. Only USD, GBP, and EUR use the convert-currency endpoint
+    const convertSupported = ['USD', 'GBP', 'EUR'];
+    if (convertSupported.contains(fromCurrency.toUpperCase())) {
+      try {
+        final response = await apiClient.post(
+          ApiEndpoints.convertCurrency,
+          data: {
+            'amount': amount,
+            'fromCurrency': fromCurrency,
+            'toCurrency': 'NGN',
+          },
+          useAuth: false,
+        );
+        final rawData = response.data;
+        if (rawData != null) {
+          return InternationalFxRateResponse(
+            message: response.data['message'] ?? 'Success',
+            statusCode: response.data['statusCode'] ?? 200,
+            data: InternationalFxRate(
+              id: 0,
+              name: rawData['fromCurrency'] ?? fromCurrency,
+              fxRate: (rawData['rate'] ?? rawData['fxRate'] ?? 0.0).toDouble(),
+              currencyCode: rawData['fromCurrency'] ?? fromCurrency,
+            ),
+          );
+        }
+        return InternationalFxRateResponse.fromJson(response.data);
+      } catch (e) {
+        // Fallback or handle error
+      }
+    }
+
+    // 3. Others use the "fix rate logic" (the original international FX rate endpoint)
     try {
       final response = await apiClient.get(
         ApiEndpoints.getInternationalFxRate,
@@ -128,7 +172,7 @@ class AirtimeRepository {
       );
       return InternationalFxRateResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Failed to fetch FX rate');
+      throw Exception(e.response?.data?['message'] ?? 'Failed to fetch FX rate');
     }
   }
 
@@ -173,7 +217,7 @@ class AirtimeRepository {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getUserBeneficiaries,
-        query: {'transferType': 'TRANSFER', 'billType': 'airtime'},
+        query: {'category': 'BILL', 'billType': 'AIRTIME'},
       );
 
       // Debug log the raw response

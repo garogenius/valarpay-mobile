@@ -4,6 +4,8 @@ class NetworkProvider {
   final String network;
   final String countryISOCode;
   final int operatorId;
+  final String? billerId;
+  final String? billerIcon;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -13,17 +15,21 @@ class NetworkProvider {
     required this.network,
     required this.countryISOCode,
     required this.operatorId,
+    this.billerId,
+    this.billerIcon,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory NetworkProvider.fromJson(Map<String, dynamic> json) =>
       NetworkProvider(
-        id: json['id']?.toString() ?? '',
-        planName: json['planName'] ?? '',
-        network: json['network'] ?? '',
+        id: json['id']?.toString() ?? json['billerId'] ?? '',
+        planName: json['name'] ?? json['planName'] ?? json['billerName'] ?? '',
+        network: json['network'] ?? json['billerName'] ?? '',
         countryISOCode: json['countryISOCode'] ?? '',
         operatorId: json['operatorId'] ?? 0,
+        billerId: json['billerId']?.toString(),
+        billerIcon: json['billerIcon']?.toString(),
         createdAt: json['createdAt'] != null
             ? DateTime.parse(json['createdAt'])
             : DateTime.now(),
@@ -38,6 +44,8 @@ class NetworkProvider {
         'network': network,
         'countryISOCode': countryISOCode,
         'operatorId': operatorId,
+        'billerId': billerId,
+        'billerIcon': billerIcon,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -56,9 +64,14 @@ class NetworkProvidersResponse {
 
   factory NetworkProvidersResponse.fromJson(Map<String, dynamic> json) {
     List<NetworkProvider> providersList = [];
+    final dynamic dataJson = json['data'] ?? json['billers'];
 
-    if (json['data'] != null && json['data'] is List) {
-      providersList = (json['data'] as List)
+    if (dataJson != null && dataJson is List) {
+      providersList = (dataJson)
+          .map((provider) => NetworkProvider.fromJson(provider))
+          .toList();
+    } else if (json['billers'] != null && json['billers'] is List) {
+      providersList = (json['billers'] as List)
           .map((provider) => NetworkProvider.fromJson(provider))
           .toList();
     }

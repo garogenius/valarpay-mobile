@@ -1,7 +1,7 @@
 name: valarpay
 description: "A new Flutter project."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.7.2
@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   go_router: ^14.2.0
   flutter_riverpod: ^2.5.1
+  file_picker: ^10.1.0
   flutter_screenutil: ^5.9.3
   shared_preferences: ^2.5.3
   url_launcher: ^6.2.2
@@ -70,6 +71,7 @@ flutter:
     - assets/images/nav_icons/
     - assets/images/service_icon/
     - assets/images/me_icons/
+    - assets/images/investment/
     # - assets/fonts/
 
 

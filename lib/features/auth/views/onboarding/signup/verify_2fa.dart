@@ -60,7 +60,14 @@ class _Verify2faScreenState extends ConsumerState<Verify2faScreen>
       await ref
           .read(authNotifierProvider.notifier)
           .verify2fa(
-            VerifyOtpRequest(username: widget.request.email, otpCode: _otp),
+            VerifyOtpRequest(
+              username:
+                  widget.request.username.isNotEmpty
+                      ? widget.request.username
+                      : widget.request.phoneNumber ??
+                          widget.request.email,
+              otpCode: _otp,
+            ),
           );
       final userState = ref.read(authNotifierProvider);
 
@@ -72,7 +79,7 @@ class _Verify2faScreenState extends ConsumerState<Verify2faScreen>
           await SessionService.saveSession(loginResponse);
           ref.read(userProvider.notifier).setUser(loginResponse.user);
         }
-        context.pushReplacement('/', extra: widget.request);
+        context.go('/');
         return;
       } else {
         if (!mounted) return;

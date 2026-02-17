@@ -4,7 +4,7 @@ import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/api_response.dart';
 import 'package:valarpay/features/models/bvn_verification_request.dart';
 import 'package:valarpay/features/repositories/wallet_repository.dart';
-import 'package:valarpay/features/notifiers/user_notifier.dart' show apiClientProvider;
+import 'package:valarpay/core/network/api_client.dart';
 
 class WalletNotifier extends StateNotifier<DataState<ApiResponse>> {
   final WalletRepository _repository;

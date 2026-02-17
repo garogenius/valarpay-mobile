@@ -560,8 +560,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
             context.push(
               '/notification-view',
               extra: {
-                'title': notification.title,
-                'content': notification.message,
+                'title': notification.formattedTitle,
+                'content': notification.formattedMessage,
               },
             );
           },
@@ -569,8 +569,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           child: widgets.NotificationTile(
             notification: widgets.NotificationItem(
               icon: notification.getIcon(),
-              title: notification.title,
-              subtitle: notification.message,
+              title: notification.formattedTitle,
+              subtitle: notification.formattedMessage,
               time: notification.getTimeAgo(),
               isRead: notification.isRead,
             ),

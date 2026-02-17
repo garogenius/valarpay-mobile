@@ -2,11 +2,16 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/services/session_service.dart';
+import 'package:valarpay/core/network/data_state.dart';
+
+final apiClientProvider = Provider((ref) => ApiClient());
 
 class ApiClient {
-  //static const String baseUrl = 'https://valarpay.nattycore.com';
-  static const String baseUrl =  'https://valar-pay-backend-staging.up.railway.app';
+  static const String baseUrl = 'https://valarpay.nattycore.com';
+    // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
+  // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
   static const String apiKey = '5821039487621507';
 
   late final Dio dio;
@@ -74,10 +79,46 @@ class ApiClient {
     }
   }
 
-  Future<Response> post(String path, {Map<String, dynamic>? data}) async {
+  // --- Base HTTP Methods (Returning Response) ---
+
+  Future<Response> post(String path, {Map<String, dynamic>? data, bool useAuth = true}) async {
     final options = Options();
-    await _withAuth(options);
+    if (useAuth) {
+      await _withAuth(options);
+    }
     return await dio.post(path, data: data, options: options);
+  }
+
+  Future<Response> get(String path, {Map<String, dynamic>? query, Map<String, dynamic>? queryParameters, bool useAuth = true}) async {
+    final options = Options();
+    if (useAuth) {
+      await _withAuth(options);
+    }
+    return await dio.get(path, queryParameters: query ?? queryParameters, options: options);
+  }
+
+  Future<Response> put(String path, {Map<String, dynamic>? data, bool useAuth = true}) async {
+    final options = Options();
+    if (useAuth) {
+      await _withAuth(options);
+    }
+    return await dio.put(path, data: data, options: options);
+  }
+
+  Future<Response> patch(String path, {Map<String, dynamic>? data, Map<String, dynamic>? queryParameters, bool useAuth = true}) async {
+    final options = Options();
+    if (useAuth) {
+      await _withAuth(options);
+    }
+    return await dio.patch(path, data: data, queryParameters: queryParameters, options: options);
+  }
+
+  Future<Response> delete(String path, {bool useAuth = true}) async {
+    final options = Options();
+    if (useAuth) {
+      await _withAuth(options);
+    }
+    return await dio.delete(path, options: options);
   }
 
   Future<Response> postFormData(String path, {required FormData data}) async {
@@ -92,137 +133,204 @@ class ApiClient {
     return await dio.put(path, data: data, options: options);
   }
 
-  Future<Response> get(String path, {Map<String, dynamic>? query}) async {
-    final options = Options();
-    await _withAuth(options);
-    return await dio.get(path, queryParameters: query, options: options);
+  // --- DataState Methods (Strongly Typed with Converters) ---
+
+  Future<DataState<T>> getData<T>(String path, {Map<String, dynamic>? query, Map<String, dynamic>? queryParameters, bool useAuth = true, required dynamic Function(dynamic) converter}) async {
+    try {
+      final response = await get(path, query: query, queryParameters: queryParameters, useAuth: useAuth);
+      final converted = converter(response.data);
+      if (converted is List) {
+        return DataSuccess<T>(data: converted.cast<T>());
+      }
+      return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
+    } on DioException catch (e) {
+      return DataFailed<T>(e.message ?? 'An error occurred');
+    } catch (e) {
+      return DataFailed<T>(e.toString());
+    }
   }
 
-  Future<Response> put(String path, {Map<String, dynamic>? data}) async {
-    final options = Options();
-    await _withAuth(options);
-    return await dio.put(path, data: data, options: options);
+  Future<DataState<T>> postData<T>(String path, {Map<String, dynamic>? data, bool useAuth = true, required dynamic Function(dynamic) converter}) async {
+    try {
+      final response = await post(path, data: data, useAuth: useAuth);
+      final converted = converter(response.data);
+      if (converted is List) {
+        return DataSuccess<T>(data: converted.cast<T>());
+      }
+      return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
+    } on DioException catch (e) {
+      return DataFailed<T>(e.message ?? 'An error occurred');
+    } catch (e) {
+      return DataFailed<T>(e.toString());
+    }
+  }
+
+  Future<DataState<T>> putData<T>(String path, {Map<String, dynamic>? data, required dynamic Function(dynamic) converter}) async {
+    try {
+      final response = await put(path, data: data);
+      final converted = converter(response.data);
+      if (converted is List) {
+        return DataSuccess<T>(data: converted.cast<T>());
+      }
+      return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
+    } on DioException catch (e) {
+      return DataFailed<T>(e.message ?? 'An error occurred');
+    } catch (e) {
+      return DataFailed<T>(e.toString());
+    }
+  }
+
+  Future<DataState<T>> patchData<T>(String path, {Map<String, dynamic>? data, Map<String, dynamic>? queryParameters, required dynamic Function(dynamic) converter}) async {
+    try {
+      final response = await patch(path, data: data, queryParameters: queryParameters);
+      final converted = converter(response.data);
+      if (converted is List) {
+        return DataSuccess<T>(data: converted.cast<T>());
+      }
+      return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
+    } on DioException catch (e) {
+      return DataFailed<T>(e.message ?? 'An error occurred');
+    } catch (e) {
+      return DataFailed<T>(e.toString());
+    }
   }
 
   void _logRequest(RequestOptions options) {
-    log(
-      '╔════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ 🌐 API REQUEST');
-    log(
-      '╠════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ Method: ${options.method}');
-    log('║ URL: ${options.baseUrl}${options.path}');
+    final logMessage = StringBuffer();
+    logMessage.writeln('╔════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ 🌐 API REQUEST');
+    logMessage.writeln('╠════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ Method: ${options.method}');
+    logMessage.writeln('║ URL: ${options.baseUrl}${options.path}');
 
     if (options.queryParameters.isNotEmpty) {
-      log('║ Query Parameters: ${options.queryParameters}');
+      logMessage.writeln('║ Query Parameters: ${options.queryParameters}');
     }
 
     if (options.headers.isNotEmpty) {
-      log('║ Headers:');
+      logMessage.writeln('║ Headers:');
       options.headers.forEach((key, value) {
         // Mask sensitive headers
         if (key.toLowerCase() == 'authorization') {
-          log('║   $key: Bearer ***');
+          logMessage.writeln('║   $key: Bearer ***');
         } else if (key.toLowerCase() == 'x-api-key') {
-          log('║   $key: ***');
+          logMessage.writeln('║   $key: ***');
         } else {
-          log('║   $key: $value');
+          logMessage.writeln('║   $key: $value');
         }
       });
     }
 
     if (options.data != null) {
-      log('║ Payload:');
-      log('║ ${_formatJson(options.data)}');
+      logMessage.writeln('║ Payload:');
+      logMessage.writeln(_formatJson(options.data));
     }
 
-    log(
-      '╚════════════════════════════════════════════════════════════════════════════',
-    );
+    logMessage.writeln('╚════════════════════════════════════════════════════════════════════════════');
+    
+    _printLog(logMessage.toString(), 'API_REQUEST');
   }
 
   void _logResponse(Response response) {
-    log(
-      '╔════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ ✅ API RESPONSE');
-    log(
-      '╠════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ Method: ${response.requestOptions.method}');
-    log(
-      '║ URL: ${response.requestOptions.baseUrl}${response.requestOptions.path}',
-    );
-    log(
-      '║ Status Code: ${response.statusCode} ${response.statusMessage ?? ''}',
-    );
+    final logMessage = StringBuffer();
+    logMessage.writeln('╔════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ ✅ API RESPONSE');
+    logMessage.writeln('╠════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ Method: ${response.requestOptions.method}');
+    logMessage.writeln('║ URL: ${response.requestOptions.baseUrl}${response.requestOptions.path}');
+    logMessage.writeln('║ Status Code: ${response.statusCode} ${response.statusMessage ?? ''}');
 
     if (response.headers.map.isNotEmpty) {
-      log('║ Response Headers:');
+      logMessage.writeln('║ Response Headers:');
       response.headers.map.forEach((key, value) {
-        log('║   $key: ${value.join(', ')}');
+        logMessage.writeln('║   $key: ${value.join(', ')}');
       });
     }
 
     if (response.data != null) {
-      log('║ Response Data:');
-      log('║ ${_formatJson(response.data)}');
+      logMessage.writeln('║ Response Data:');
+      logMessage.writeln(_formatJson(response.data));
     }
 
-    log(
-      '╚════════════════════════════════════════════════════════════════════════════',
-    );
+    logMessage.writeln('╚════════════════════════════════════════════════════════════════════════════');
+    
+    _printLog(logMessage.toString(), 'API_RESPONSE');
   }
 
   void _logError(DioException error) {
-    log(
-      '╔════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ ❌ API ERROR');
-    log(
-      '╠════════════════════════════════════════════════════════════════════════════',
-    );
-    log('║ Method: ${error.requestOptions.method}');
-    log('║ URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}');
-    log('║ Error Type: ${error.type}');
-    log('║ Error Message: ${error.message}');
+    final logMessage = StringBuffer();
+    logMessage.writeln('╔════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ ❌ API ERROR');
+    logMessage.writeln('╠════════════════════════════════════════════════════════════════════════════');
+    logMessage.writeln('║ Method: ${error.requestOptions.method}');
+    logMessage.writeln('║ URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}');
+    logMessage.writeln('║ Error Type: ${error.type}');
+    logMessage.writeln('║ Error Message: ${error.message}');
 
     if (error.response != null) {
-      log('║ Status Code: ${error.response!.statusCode}');
-      log('║ Response Data:');
-      log('║ ${_formatJson(error.response!.data)}');
+      logMessage.writeln('║ Status Code: ${error.response!.statusCode}');
+      logMessage.writeln('║ Response Data:');
+      logMessage.writeln(_formatJson(error.response!.data));
     }
 
-    log('║ Stack Trace:');
-    log('║ ${error.stackTrace.toString().split('\n').take(5).join('\n║ ')}');
+    logMessage.writeln('║ Stack Trace:');
+    logMessage.writeln('║ ${error.stackTrace.toString().split('\n').take(5).join('\n║ ')}');
 
-    log(
-      '╚════════════════════════════════════════════════════════════════════════════',
-    );
+    logMessage.writeln('╚════════════════════════════════════════════════════════════════════════════');
+    
+    _printLog(logMessage.toString(), 'API_ERROR');
+  }
+
+  void _printLog(String message, String name) {
+    // 1. Log to DevTools using dart:developer log (handles large strings better)
+    log(message, name: name);
+    
+    // 2. Print to console string splitting to avoid truncation (Android logcat limit is ~4kb)
+    // We strictly prefer printing line by line to keep the box formatting intact
+    const int maxChunkSize = 800;
+    
+    final lines = message.split('\n');
+    for (final line in lines) {
+      if (line.length <= maxChunkSize) {
+        print(line);
+      } else {
+        // If a single line is massive (e.g. minified JSON), split it
+        for (int i = 0; i < line.length; i += maxChunkSize) {
+          int end = (i + maxChunkSize < line.length) ? i + maxChunkSize : line.length;
+          print(line.substring(i, end));
+        }
+      }
+    }
   }
 
   String _formatJson(dynamic data) {
     try {
-      if (data == null) return 'null';
-      if (data is String) return data;
+      if (data == null) return '║    null';
+      
+      dynamic content = data;
+      
+      // If data is a String, try to parse it as JSON to pretty print it
+      if (data is String) {
+        try {
+          if (data.trim().startsWith('{') || data.trim().startsWith('[')) {
+             content = jsonDecode(data);
+          }
+        } catch (_) {
+          // Keep as string if parsing fails
+        }
+      }
 
       // Pretty print JSON with indentation
       final encoder = const JsonEncoder.withIndent('  ');
-      return encoder
-          .convert(data)
-          .split('\n')
-          .map((line) => '   $line')
-          .join('\n║');
+      final jsonString = encoder.convert(content);
+      
+      // Split into lines and prefix each with the box character
+      final lines = jsonString.split('\n');
+      final formattedLines = lines.map((line) => '║    $line').toList();
+      
+      return formattedLines.join('\n');
     } catch (e) {
-      return data.toString();
+      return '║    ${data.toString()}';
     }
-  }
-
-  Future<Response> delete(String path) async {
-    final options = Options();
-    await _withAuth(options);
-    return await dio.delete(path, options: options);
   }
 }

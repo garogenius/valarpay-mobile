@@ -36,10 +36,8 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
   String? _capitalizedUsername;
   String? _accountNumber;
   String? _profileImageUrl;
-  bool _isLoading = false;
-  BiometricType _availableBiometricType = BiometricType.fingerprint; // Default
+  BiometricType? _availableBiometricType;
   String _biometricLabel = 'Biometric';
-
   @override
   void initState() {
     super.initState();
@@ -275,19 +273,7 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
 
     // Handle navigation based on result
     if (result == BiometricAuthResult.success) {
-      // Show loading indicator
-      setState(() {
-        _isLoading = true;
-      });
-
       await _handleBiometricLogin(context, ref);
-
-      // Hide loading indicator (in case navigation fails)
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     } else if (result == BiometricAuthResult.fallback) {
       context.go('/passcode-login');
     } else {
@@ -492,66 +478,47 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
                     style: TextStyle(fontSize: 15.sp, color: Colors.grey[300]),
                   ),
                   SizedBox(height: 50.h),
-                  _isLoading
-                      ? Column(
-                        children: [
-                          CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              appTheme.primaryColor,
-                            ),
+                  GestureDetector(
+                    onTap: () => _requestBiometricAndCameraPermissions(),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 90.w,
+                          height: 90.w,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 16.h),
-                          Text(
-                            'Logging in...',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
+                          child: Icon(
+                            _availableBiometricType == BiometricType.face
+                                ? Icons.face
+                                : _availableBiometricType ==
+                                    BiometricType.iris
+                                ? Icons.remove_red_eye
+                                : Icons.fingerprint,
+                            size: 50.sp,
+                            color: appTheme.primaryColor,
                           ),
-                        ],
-                      )
-                      : GestureDetector(
-                        onTap: () => _requestBiometricAndCameraPermissions(),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 90.w,
-                              height: 90.w,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                _availableBiometricType == BiometricType.face
-                                    ? Icons.face
-                                    : _availableBiometricType ==
-                                        BiometricType.iris
-                                    ? Icons.remove_red_eye
-                                    : Icons.fingerprint,
-                                size: 50.sp,
-                                color: appTheme.primaryColor,
-                              ),
-                            ),
-                            SizedBox(height: 14.h),
-                            Text(
-                              'Tap to use $_biometricLabel',
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
                         ),
-                      ),
+                        SizedBox(height: 14.h),
+                        Text(
+                          'Tap to use $_biometricLabel',
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   SizedBox(height: 50.h),
                   SizedBox(
                     width: double.infinity,

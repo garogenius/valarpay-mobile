@@ -23,10 +23,10 @@ class SessionTimeoutService {
   static const String _backgroundTimeKey = 'background_timestamp';
 
   // Timeout when user is inactive (not touching the app)
-  static const Duration _inactivityTimeout = Duration(minutes: 2);
+  static Duration _inactivityTimeout = const Duration(minutes: 60);
 
   // Timeout when app is in background
-  static const Duration _backgroundTimeout = Duration(minutes: 1);
+  static Duration _backgroundTimeout = const Duration(minutes: 10);
 
   // How often to check for timeout
   static const Duration _checkInterval = Duration(seconds: 10);
@@ -55,9 +55,36 @@ class SessionTimeoutService {
     '/account-created',
   ];
 
+  /// Load timeout settings from storage
+  static Future<void> _loadSettings() async {
+    final setting = await LocalStorageService.get('auto_logout_setting');
+    
+    switch (setting) {
+      case 'Password Free Log in':
+        // Effectively disable timeout (set to 365 days)
+        _inactivityTimeout = const Duration(days: 365);
+        _backgroundTimeout = const Duration(days: 365);
+        break;
+      case '60 Minutes Password Free Log in':
+        _inactivityTimeout = const Duration(minutes: 60);
+        _backgroundTimeout = const Duration(minutes: 60);
+        break;
+      case 'Always Require Password to Log in':
+        _inactivityTimeout = const Duration(minutes: 5);
+        _backgroundTimeout = const Duration(minutes: 1);
+        break;
+      default:
+        // Default to long timeout as per user request (60 mins)
+        _inactivityTimeout = const Duration(minutes: 60);
+        _backgroundTimeout = const Duration(minutes: 60);
+    }
+  }
+
   /// Start monitoring user inactivity
   static void startMonitoring(BuildContext context) async {
     if (_isActive) return;
+
+    await _loadSettings();
 
     _isActive = true;
     _lastActivityTime = DateTime.now();
@@ -103,13 +130,20 @@ class SessionTimeoutService {
       return false;
     }
 
+    await _loadSettings();
+
     // Check if we should logout due to background timeout
     final shouldLogout = await _checkBackgroundTimeout();
 
     if (shouldLogout) {
+      // Get friendly duration text
+      final durationText = _backgroundTimeout.inMinutes >= 60 
+          ? '${_backgroundTimeout.inHours} hours' 
+          : '${_backgroundTimeout.inMinutes} minutes';
+          
       await _handleAutoLogout(
         context,
-        reason: 'Your session expired after 1 minute in the background',
+        reason: 'Your session expired after $durationText in the background',
       );
       return true; // Logged out
     }
@@ -184,12 +218,18 @@ class SessionTimeoutService {
       final lastActivity = _lastActivityTime ?? now;
       final inactiveDuration = now.difference(lastActivity);
 
-      // If user hasn't touched the app for 2 minutes, logout
+      // If user hasn't touched the app for X time, logout
       if (inactiveDuration >= _inactivityTimeout) {
         timer.cancel();
+        
+        // Get friendly duration text
+        final durationText = _inactivityTimeout.inMinutes >= 60 
+          ? '${_inactivityTimeout.inHours} hours' 
+          : '${_inactivityTimeout.inMinutes} minutes';
+          
         await _handleAutoLogout(
           context,
-          reason: 'Your session expired after 2 minutes of inactivity',
+          reason: 'Your session expired after $durationText of inactivity',
         );
       }
     });
@@ -233,6 +273,8 @@ class SessionTimeoutService {
   static Future<bool> shouldLogoutOnResume() async {
     // If monitoring isn't active, don't check timeouts (user just logged in)
     if (!_isActive) return false;
+
+    await _loadSettings();
 
     // Grace period: If last activity was very recent (< 10 seconds), skip timeout check
     // This handles the case where user just logged in and app lifecycle triggers

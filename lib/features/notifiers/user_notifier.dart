@@ -20,10 +20,14 @@ import 'package:valarpay/features/models/verify_phone_number.dart';
 import 'package:valarpay/features/models/verify_wallet_pin_request.dart';
 import 'package:valarpay/features/repositories/user_repository.dart';
 
+import 'package:valarpay/core/services/session_service.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
+
 class UserNotifier extends StateNotifier<DataState<UserModel>> {
   final UserRepository _repository;
+  final Ref _ref;
 
-  UserNotifier(this._repository) : super(DataState<UserModel>.initial());
+  UserNotifier(this._repository, this._ref) : super(DataState<UserModel>.initial());
 
   Future<void> register(SignUpRequest request) async {
     state = state.copyWith(isInitialLoading: true, message: null);
@@ -321,11 +325,71 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     }
   }
 
+  Future<void> editProfile({
+    String? fullName,
+    String? phoneNumber,
+    String? dateOfBirth,
+    String? address,
+    String? city,
+    String? state,
+    String? postalCode,
+    String? employmentStatus,
+    String? occupation,
+    String? primaryPurpose,
+    String? sourceOfFunds,
+    num? expectedMonthlyInflow,
+    String? passportNumber,
+    String? passportCountry,
+    String? profileImagePath,
+    String? documentPath,
+    String? documentType,
+  }) async {
+    this.state = this.state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final updatedUser = await _repository.editProfile(
+        fullName: fullName,
+        phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
+        address: address,
+        city: city,
+        state: state,
+        postalCode: postalCode,
+        employmentStatus: employmentStatus,
+        occupation: occupation,
+        primaryPurpose: primaryPurpose,
+        sourceOfFunds: sourceOfFunds,
+        expectedMonthlyInflow: expectedMonthlyInflow,
+        passportNumber: passportNumber,
+        passportCountry: passportCountry,
+        profileImagePath: profileImagePath,
+        documentPath: documentPath,
+        documentType: documentType,
+      );
+      // Persist user data
+      await SessionService.saveUser(updatedUser);
+      // Sync with userProvider
+      _ref.read(userProvider.notifier).setUser(updatedUser);
+
+      this.state = this.state.copyWith(
+        isInitialLoading: false,
+        data: [updatedUser],
+        isDataAvailable: true,
+        message: 'Profile updated successfully',
+      );
+    } catch (e, stack) {
+      log('[UserNotifier editProfile Error] $e\n$stack');
+      this.state = this.state.copyWith(
+        isInitialLoading: false,
+        message: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
   void reset() => state = DataState<UserModel>.initial();
 }
 
 // 🔹 Providers
-final apiClientProvider = Provider((ref) => ApiClient());
 
 final userRepositoryProvider = Provider(
   (ref) => UserRepository(ref.read(apiClientProvider)),
@@ -333,5 +397,5 @@ final userRepositoryProvider = Provider(
 
 final userNotifierProvider =
     StateNotifierProvider<UserNotifier, DataState<UserModel>>(
-      (ref) => UserNotifier(ref.read(userRepositoryProvider)),
+      (ref) => UserNotifier(ref.read(userRepositoryProvider), ref),
     );

@@ -52,7 +52,6 @@ class ResetPinNotifier extends StateNotifier<DataState<ResetPinRequest>> {
 }
 
 // 🔹 Providers
-final apiClientProvider = Provider((ref) => ApiClient());
 
 final resetPinRepositoryProvider = Provider(
   (ref) => ResetPinRepository(ref.read(apiClientProvider)),

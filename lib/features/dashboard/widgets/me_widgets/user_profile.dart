@@ -168,6 +168,28 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
                 ),
               ),
 
+              // Edit Profile icon
+              InkWell(
+                onTap: () => context.push('/edit-profile'),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF3F4F6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: Color(0xFF4B5563),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
               // Settings icon
               InkWell(
                 onTap: () => context.push('/settings'),

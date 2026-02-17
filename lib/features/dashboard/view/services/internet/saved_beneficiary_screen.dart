@@ -61,7 +61,7 @@ class _InternetSavedBeneficiaryScreenState
       ),
       body:
           state.isInitialLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SizedBox.shrink()
               : state.message != null && !state.isDataAvailable
               ? Center(
                 child: Column(
@@ -206,7 +206,9 @@ class _InternetSavedBeneficiaryScreenState
                 color: appTheme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.wifi, color: Color(0xFFF76301), size: 20),
+              child: Center(
+                child: _getProviderIcon(beneficiary.providerName),
+              ),
             ),
             const SizedBox(width: 12),
             // Details
@@ -289,5 +291,48 @@ class _InternetSavedBeneficiaryScreenState
         ],
       ),
     );
+  }
+
+  Widget _getProviderIcon(String? providerName) {
+    if (providerName == null) {
+      return const Icon(Icons.wifi, color: Color(0xFFF76301), size: 20);
+    }
+
+    final name = providerName.toLowerCase();
+
+    if (name.contains('smile')) {
+      return const Icon(Icons.wifi, color: Color(0xFFE91E63), size: 18);
+    } else if (name.contains('spectranet')) {
+      return const Icon(Icons.wifi_tethering,
+          color: Color(0xFF2196F3), size: 18);
+    } else if (name.contains('ipnx')) {
+      return const Icon(Icons.router, color: Color(0xFF4CAF50), size: 18);
+    } else if (name.contains('swift')) {
+      return const Icon(Icons.speed, color: Color(0xFFDD2C00), size: 18);
+    } else if (name.contains('mtn')) {
+      return Image.asset(
+        'assets/images/mtn.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('airtel')) {
+      return Image.asset(
+        'assets/images/airtel.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('glo')) {
+      return Image.asset(
+        'assets/images/glo.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('9mobile') || name.contains('etisalat')) {
+      return Image.asset(
+        'assets/images/9mobile.png',
+        errorBuilder: (_, __, ___) => const Icon(Icons.wifi, size: 18),
+      );
+    } else if (name.contains('tizeti')) {
+      return const Icon(Icons.wifi, color: Color(0xFF00ACC1), size: 18);
+    }
+
+    return const Icon(Icons.wifi, color: Colors.grey, size: 18);
   }
 }

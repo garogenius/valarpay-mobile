@@ -166,26 +166,34 @@ class NeedHelpModal {
   }
 
   static void _launchWhatsApp(BuildContext context) async {
-    try {
-      // Try direct WhatsApp URL first
-      final Uri whatsappUri = Uri.parse('whatsapp://send?phone=447441428182');
+    final urls = [
+      'whatsapp://send?phone=447441428182',
+      'https://wa.me/447441428182',
+      'https://api.whatsapp.com/send?phone=447441428182',
+    ];
 
-      final bool launched = await launchUrl(
-        whatsappUri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!launched) {
-        // Fallback to web WhatsApp
-        final Uri webWhatsApp = Uri.parse('https://wa.me/447441428182');
-        await launchUrl(webWhatsApp, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      // Try web WhatsApp as last resort
+    bool launched = false;
+    for (var url in urls) {
       try {
-        final Uri webWhatsApp = Uri.parse('https://wa.me/447441428182');
-        await launchUrl(webWhatsApp, mode: LaunchMode.externalApplication);
-      } catch (e2) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          launched = true;
+          break;
+        }
+      } catch (e) {
+        // Continue to next
+      }
+    }
+
+    if (!launched) {
+      // One last try directly with launchUrl if canLaunchUrl fails (can happen on some OS versions)
+      try {
+        await launchUrl(
+          Uri.parse('https://wa.me/447441428182'),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
         AppMessenger.show(
           context,
           type: MessageType.error,

@@ -15,9 +15,9 @@ class InternetPlanInfo {
   factory InternetPlanInfo.fromJson(Map<String, dynamic> json) =>
       InternetPlanInfo(
         id: json['id']?.toString() ?? '',
-        planName: json['planName'] ?? '',
+        planName: json['planName'] ?? json['name'] ?? json['billerName'] ?? '',
         countryISOCode: json['countryISOCode'] ?? '',
-        billerCode: json['billerCode'] ?? '',
+        billerCode: json['billerCode'] ?? json['biller_code'] ?? '',
       );
 }
 

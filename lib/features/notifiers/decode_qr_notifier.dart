@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/decode_qr_response.dart';
 import 'package:valarpay/features/repositories/decode_qr_repository.dart';
-import 'package:valarpay/features/notifiers/user_notifier.dart'
-    show apiClientProvider;
+import 'package:valarpay/core/network/api_client.dart';
 
 class DecodeQrNotifier extends StateNotifier<DataState<DecodeQrResponse>> {
   final DecodeQrRepository _repository;

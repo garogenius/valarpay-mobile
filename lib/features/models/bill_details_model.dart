@@ -4,6 +4,7 @@ class BillDetails {
   final String? accountNumber;
   final double? amount;
   final String? reference;
+  final String? network;
 
   BillDetails({
     this.billType,
@@ -11,15 +12,17 @@ class BillDetails {
     this.accountNumber,
     this.amount,
     this.reference,
+    this.network,
   });
 
   factory BillDetails.fromJson(Map<String, dynamic> json) {
     return BillDetails(
-      billType: json['billType'],
+      billType: json['billType'] ?? json['type'],
       provider: json['provider'],
-      accountNumber: json['accountNumber'],
+      accountNumber: json['accountNumber'] ?? json['recipientPhone'],
       amount: json['amount']?.toDouble(),
       reference: json['reference'],
+      network: json['network'],
     );
   }
 
@@ -29,5 +32,6 @@ class BillDetails {
     'accountNumber': accountNumber,
     'amount': amount,
     'reference': reference,
+    'network': network,
   };
 }

@@ -7,6 +7,7 @@ class Beneficiary {
   final String accountNumber;
   final String accountName;
   final String? network;
+  final String? favouriteName;
   final String? billType;
   final String? billerNumber;
   final String? operatorId;
@@ -25,6 +26,7 @@ class Beneficiary {
     required this.accountNumber,
     required this.accountName,
     this.network,
+    this.favouriteName,
     this.billType,
     this.billerNumber,
     this.operatorId,
@@ -45,6 +47,7 @@ class Beneficiary {
       accountNumber: json['accountNumber']?.toString() ?? '',
       accountName: json['accountName']?.toString() ?? '',
       network: json['network']?.toString(),
+      favouriteName: json['favouriteName']?.toString(),
       billType: json['billType']?.toString(),
       billerNumber: json['billerNumber']?.toString(),
       operatorId: json['operatorId']?.toString(),
@@ -66,6 +69,7 @@ class Beneficiary {
       'accountNumber': accountNumber,
       'accountName': accountName,
       'network': network,
+      'favouriteName': favouriteName,
       'billType': billType,
       'billerNumber': billerNumber,
       'operatorId': operatorId,
