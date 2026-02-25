@@ -305,6 +305,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 24),
 
+              const Text('Passport Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+
+              ResponsiveTextField(
+                controller: _passportNumberController,
+                hintText: 'Passport Number',
+                prefixIcon: const Icon(Icons.badge_outlined),
+              ),
+              const SizedBox(height: 12),
+
+              ResponsiveTextField(
+                controller: _passportCountryController,
+                hintText: 'Country of Issue (e.g. NG, US)',
+                prefixIcon: const Icon(Icons.public_outlined),
+              ),
               const SizedBox(height: 32),
 
               FullWidthButton(

@@ -28,6 +28,15 @@ class UserModel {
   final String? occupation;
   final String? passportNumber;
   final String? passportCountry;
+  final String? passportIssueDate;
+  final String? passportExpiryDate;
+  final String? passportDocumentUrl;
+  final String? bankStatementUrl;
+  final String? bankStatementIssueDate;
+  final String? bankStatementExpiryDate;
+  final String? utilityBillUrl;
+  final String? utilityBillIssueDate;
+  final String? utilityBillExpiryDate;
   final String? primaryPurpose;
   final String? sourceOfFunds;
   final String? postalCode;
@@ -81,6 +90,15 @@ class UserModel {
     this.occupation,
     this.passportNumber,
     this.passportCountry,
+    this.passportIssueDate,
+    this.passportExpiryDate,
+    this.passportDocumentUrl,
+    this.bankStatementUrl,
+    this.bankStatementIssueDate,
+    this.bankStatementExpiryDate,
+    this.utilityBillUrl,
+    this.utilityBillIssueDate,
+    this.utilityBillExpiryDate,
     this.primaryPurpose,
     this.sourceOfFunds,
     this.postalCode,
@@ -138,6 +156,15 @@ class UserModel {
       occupation: json['occupation'],
       passportNumber: json['passportNumber'] ?? json['passport_number'],
       passportCountry: json['passportCountry'] ?? json['passport_country'],
+      passportIssueDate: json['passportIssueDate'] ?? json['passport_issue_date'],
+      passportExpiryDate: json['passportExpiryDate'] ?? json['passport_expiry_date'],
+      passportDocumentUrl: json['passportDocumentUrl'] ?? json['passport_document_url'],
+      bankStatementUrl: json['bankStatementUrl'] ?? json['bank_statement_url'],
+      bankStatementIssueDate: json['bankStatementIssueDate'] ?? json['bank_statement_issue_date'],
+      bankStatementExpiryDate: json['bankStatementExpiryDate'] ?? json['bank_statement_expiry_date'],
+      utilityBillUrl: json['utilityBillUrl'] ?? json['utility_bill_url'],
+      utilityBillIssueDate: json['utilityBillIssueDate'] ?? json['utility_bill_issue_date'],
+      utilityBillExpiryDate: json['utilityBillExpiryDate'] ?? json['utility_bill_expiry_date'],
       primaryPurpose: json['primaryPurpose'] ?? json['primary_purpose'],
       sourceOfFunds: json['sourceOfFunds'] ?? json['source_of_funds'],
       postalCode: json['postalCode'] ?? json['postal_code'],
@@ -196,6 +223,15 @@ class UserModel {
     'occupation': occupation,
     'passportNumber': passportNumber,
     'passportCountry': passportCountry,
+    'passportIssueDate': passportIssueDate,
+    'passportExpiryDate': passportExpiryDate,
+    'passportDocumentUrl': passportDocumentUrl,
+    'bankStatementUrl': bankStatementUrl,
+    'bankStatementIssueDate': bankStatementIssueDate,
+    'bankStatementExpiryDate': bankStatementExpiryDate,
+    'utilityBillUrl': utilityBillUrl,
+    'utilityBillIssueDate': utilityBillIssueDate,
+    'utilityBillExpiryDate': utilityBillExpiryDate,
     'primaryPurpose': primaryPurpose,
     'sourceOfFunds': sourceOfFunds,
     'postalCode': postalCode,

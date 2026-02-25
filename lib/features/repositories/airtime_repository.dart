@@ -13,7 +13,7 @@ class AirtimeRepository {
   Future<NetworkProvidersResponse> getAirtimeNetworkProviders() async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getAirtimePlan,
+        ApiEndpoints.getAirtimeNetworkProviders,
       );
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -24,14 +24,24 @@ class AirtimeRepository {
     }
   }
 
-  /// Get available network providers for data
-  /// Get airtime billers via PalmPay
-  Future<NetworkProvidersResponse> getAirtimePlan() async {
+  /// Get airtime plan using phone and currency
+  Future<List<AirtimePlan>> getAirtimePlan({
+    required String phone,
+    required String currency,
+  }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getAirtimePlan,
+        query: {
+          'phone': phone,
+          'currency': currency,
+        },
       );
-      return NetworkProvidersResponse.fromJson(response.data);
+      final data = response.data['data'];
+      if (data != null && data is List) {
+        return data.map((e) => AirtimePlan.fromJson(e)).toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to fetch airtime plan',

@@ -179,6 +179,24 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
           }
         }
       }
+      
+      // Fetch plan from backend if phone is complete
+      if (cleanedPhone.length == 11) {
+        ref.read(airtimePlanNotifierProvider.notifier).getPlan(
+          phone: formatted, 
+          currency: 'NGN',
+        ).then((_) {
+          final plans = ref.read(airtimePlanNotifierProvider).data;
+          if (plans != null && plans.isNotEmpty && mounted) {
+            final plan = plans.first;
+            if (plan.operatorId != 0) {
+              ref.read(airtimeSelectedOperatorIdProvider.notifier).state = plan.operatorId;
+            }
+          }
+        }).catchError((e) {
+          log('[AirtimeScreen] getPlan error: $e');
+        });
+      }
     }
     if (mounted) {
       setState(() {});

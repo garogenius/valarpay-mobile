@@ -53,13 +53,11 @@ class AirtimePlanNotifier extends StateNotifier<DataState<AirtimePlan>> {
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final res = await _repository.getAirtimePlan();
-      // Note: getAirtimePlan returns NetworkProvidersResponse which contains a list of providers,
-      // not a single plan. This notifier usage may need further refactoring.
+      final res = await _repository.getAirtimePlan(phone: phone, currency: currency);
       state = state.copyWith(
-        data: [], // NetworkProvidersResponse doesn't have a single 'plan'
-        isDataAvailable: true,
-        message: res.message,
+        data: res, // res is List<AirtimePlan>
+        isDataAvailable: res.isNotEmpty,
+        message: 'Success',
       );
     } catch (e, stack) {
       log('[AirtimePlanNotifier getPlan] $e\n$stack');

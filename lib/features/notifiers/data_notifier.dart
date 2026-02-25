@@ -106,22 +106,47 @@ class DataVariationNotifier extends StateNotifier<DataState<DataPlanBundle>> {
       
       if (filterCategory != null && filterCategory != 'HOT') {
         filteredData = res.data.where((bundle) {
-          final validityDate = bundle.extInfo?.validityDate ?? 0;
+          int validityDate = bundle.extInfo?.validityDate ?? 0;
           final name = bundle.name.toLowerCase();
+          final validityText = bundle.validity.toLowerCase();
+          
+          if (validityDate == 0) {
+             final match = RegExp(r'(\d+)\s*(day|days|month|months|hr|hrs|hour|hours|wk|wks|week|weeks|year|years)').firstMatch(validityText);
+             if (match != null) {
+               final val = int.tryParse(match.group(1) ?? '0') ?? 0;
+               final unit = match.group(2) ?? '';
+               if (unit.contains('day')) {
+                 validityDate = val;
+               } else if (unit.contains('week') || unit.contains('wk')) {
+                 validityDate = val * 7;
+               } else if (unit.contains('month')) {
+                 validityDate = val * 30;
+               } else if (unit.contains('year')) {
+                 validityDate = val * 365;
+               } else if (unit.contains('hr') || unit.contains('hour')) {
+                 validityDate = 1;
+               }
+             } else {
+               if (validityText.contains('day') || validityText.contains('hr') || validityText.contains('hour')) validityDate = 1;
+               if (validityText.contains('week') || validityText.contains('wk')) validityDate = 7;
+               if (validityText.contains('month')) validityDate = 30;
+               if (validityText.contains('year')) validityDate = 365;
+             }
+          }
           
           switch (filterCategory) {
             case 'Daily':
-              return validityDate >= 1 && validityDate <= 3;
+              return validityDate >= 1 && validityDate <= 3 || name.contains('daily') || name.contains('1 day') || name.contains('2 day');
             case 'Weekly':
-              return validityDate >= 4 && validityDate <= 13;
+              return validityDate >= 4 && validityDate <= 13 || name.contains('weekly') || name.contains('7 day') || name.contains('14 day') || validityText.contains('week');
             case 'Monthly':
-              return validityDate >= 14 && validityDate < 360;
+              return validityDate >= 14 && validityDate < 360 || name.contains('monthly') || name.contains('30 day') || validityText.contains('month');
             case 'Yearly':
-              return validityDate >= 360 || name.contains('year');
+              return validityDate >= 360 || name.contains('year') || validityText.contains('year');
             case 'XtraValue':
               final note = bundle.extInfo?.validityAttachNote?.toLowerCase() ?? '';
               final desc = bundle.extInfo?.itemDescription?.toLowerCase() ?? '';
-              return name.contains('xtra') || name.contains('extra') || name.contains('talk') || 
+              return name.contains('xtra') || name.contains('extra') || name.contains('talk') || name.contains('voice') ||
                      note.contains('xtra') || desc.contains('xtra') || desc.contains('extra') || desc.contains('talk');
             case 'Social':
               final note = bundle.extInfo?.validityAttachNote?.toLowerCase() ?? '';
@@ -133,6 +158,7 @@ class DataVariationNotifier extends StateNotifier<DataState<DataPlanBundle>> {
                      name.contains('youtube') ||
                      name.contains('tiktok') ||
                      name.contains('fb/ig') ||
+                     validityText.contains('social') ||
                      note.contains('social') ||
                      note.contains('whatsapp') ||
                      note.contains('facebook') ||

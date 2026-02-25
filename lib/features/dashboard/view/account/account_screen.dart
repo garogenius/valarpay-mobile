@@ -26,7 +26,57 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     // Refresh user profile when screen loads to get latest wallet data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(userNotifierProvider.notifier).refreshUserProfile();
+      _showProfileReminder();
     });
+  }
+
+  void _showProfileReminder() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          "Update Your Profile",
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          "Please make sure you first update your profile and fill all the information in your profile before creating a multi-currency account.",
+          style: TextStyle(fontSize: 14.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Got it",
+              style: TextStyle(
+                color: appTheme.primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: appTheme.primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/edit-profile');
+            },
+            child: const Text(
+              "Update Profile",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

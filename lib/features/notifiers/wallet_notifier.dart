@@ -30,6 +30,35 @@ class WalletNotifier extends StateNotifier<DataState<ApiResponse>> {
       );
     }
   }
+
+  /// Create multi-currency account
+  Future<void> createMultiCurrencyAccount({
+    required String currency,
+    required String label,
+  }) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.createMultiCurrencyAccount(
+        currency: currency,
+        label: label,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        data: [res],
+        message: res.message,
+      );
+    } catch (e, stack) {
+      log('[WalletNotifier] create account error: $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
   void reset() => state = DataState<ApiResponse>.initial();
 }
 

@@ -53,13 +53,13 @@ class _DataScreenState extends ConsumerState<DataScreen> {
           .getDataBeneficiaries();
       
       // Fetch PalmPay billers (networks)
-      ref.read(dataPlansNotifierProvider.notifier).getPlans().then((_) {
-        final state = ref.read(dataPlansNotifierProvider);
+      ref.read(dataProvidersNotifierProvider.notifier).fetchProviders().then((_) {
+        final state = ref.read(dataProvidersNotifierProvider);
         if (state.isDataAvailable && state.data!.isNotEmpty) {
            final providers = state.data!;
            final selectedNetwork = ref.read(dataSelectedNetworkProvider);
            
-           DataPlanInfo? currentPlan;
+           NetworkProvider? currentPlan;
            try {
              currentPlan = providers.firstWhere((p) => p.network.toLowerCase() == selectedNetwork.toLowerCase());
            } catch (_) {
@@ -69,13 +69,11 @@ class _DataScreenState extends ConsumerState<DataScreen> {
            if (currentPlan != null) {
               ref.read(dataSelectedNetworkProvider.notifier).state = currentPlan.network;
               ref.read(dataSelectedBillerIdProvider.notifier).state = currentPlan.billerId;
-              if (currentPlan.id is int) {
-                ref.read(dataSelectedOperatorIdProvider.notifier).state = currentPlan.id;
-              }
-                            final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+              ref.read(dataSelectedOperatorIdProvider.notifier).state = currentPlan.operatorId;
+              final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
                ref.read(dataVariationNotifierProvider.notifier).getVariation(
                  network: currentPlan.network,
-                 operatorId: currentPlan.id is int ? currentPlan.id : null,
+                 operatorId: currentPlan.operatorId,
                  billerId: currentPlan.billerId,
                  filterCategory: currentCategory,
                );
@@ -139,6 +137,99 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         (selectedOperatorId > 0 || selectedBillerId != null);
   }
 
+  String _formatTo11(String raw) {
+    if (raw.isEmpty) return raw;
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('234')) {
+      final rest = digits.substring(3);
+      if (rest.length == 10) return '0$rest';
+      if (rest.length == 11 && rest.startsWith('0')) return rest;
+      if (rest.length > 10) return '0' + rest.substring(rest.length - 10);
+    }
+    if (digits.length == 11 && digits.startsWith('0')) return digits;
+    if (digits.length == 10) return '0$digits';
+    if (digits.length > 11) return '0' + digits.substring(digits.length - 10);
+    return digits;
+  }
+
+  void _detectNetworkProvider(String phoneNumber) {
+    final formatted = _formatTo11(phoneNumber);
+    final cleanedPhone = formatted.replaceAll(RegExp(r'\D'), '');
+
+    if (cleanedPhone.length >= 10) {
+      final providers = ref.read(dataProvidersNotifierProvider).data ?? [];
+      if (providers.isNotEmpty) {
+        final prefix = formatted.substring(0, 4);
+        
+        String? detectedBillerId;
+        
+        const mtnPrefixes = {'0803', '0806', '0810', '0813', '0814', '0816', '0703', '0706', '0903', '0906', '0704'};
+        const airtelPrefixes = {'0802', '0808', '0812', '0701', '0708', '0902', '0907', '0901', '0904'};
+        const gloPrefixes = {'0805', '0807', '0811', '0815', '0705', '0905'};
+        const mobile9Prefixes = {'0809', '0817', '0818', '0909', '0908'};
+
+        if (mtnPrefixes.contains(prefix)) {
+          detectedBillerId = 'MTN';
+        } else if (airtelPrefixes.contains(prefix)) {
+          detectedBillerId = 'AIRTEL';
+        } else if (gloPrefixes.contains(prefix)) {
+          detectedBillerId = 'GLO';
+        } else if (mobile9Prefixes.contains(prefix)) {
+          detectedBillerId = '9MOBILE';
+        }
+
+        if (detectedBillerId != null) {
+          try {
+            final p = providers.firstWhere(
+              (provider) =>
+                  provider.billerId == detectedBillerId ||
+                  provider.network.toUpperCase().contains(detectedBillerId!) ||
+                  provider.id.toString() == detectedBillerId,
+              orElse: () => providers.first,
+            );
+            
+            ref.read(dataSelectedNetworkProvider.notifier).state = p.network;
+            ref.read(dataSelectedOperatorIdProvider.notifier).state = p.operatorId;
+            ref.read(dataSelectedBillerIdProvider.notifier).state = p.billerId;
+            
+            if (mounted) setState(() {});
+          } catch (e) {
+            // Log or ignore
+          }
+        }
+      }
+      
+      if (cleanedPhone.length == 11) {
+        ref.read(dataPlansNotifierProvider.notifier).getPlans(
+          phone: formatted, 
+          currency: 'NGN',
+        ).then((_) {
+          final plans = ref.read(dataPlansNotifierProvider).data;
+          // In PalmPay if we get back targeted plan info, we can auto-select its operator. 
+          // Often the current setup simply needs us to know the phone is valid, and fetch variations
+          final network = ref.read(dataSelectedNetworkProvider);
+          final operatorId = ref.read(dataSelectedOperatorIdProvider);
+          final billerId = ref.read(dataSelectedBillerIdProvider);
+          if (network.isNotEmpty) {
+               final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+               ref.read(dataVariationNotifierProvider.notifier).getVariation(
+                 network: network,
+                 operatorId: operatorId,
+                 billerId: billerId,
+                 filterCategory: currentCategory,
+               );
+          }
+        }).catchError((e) {
+          // Log or handle
+        });
+      }
+
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
@@ -200,7 +291,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                         child: ClipOval(
                                           child: Builder(
                                             builder: (context) {
-                                              final plans = ref.watch(dataPlansNotifierProvider).data ?? [];
+                                              final plans = ref.watch(dataProvidersNotifierProvider).data ?? [];
                                               final selectedBillerId = ref.watch(dataSelectedBillerIdProvider);
                                               
                                               String? iconUrl;
@@ -511,11 +602,6 @@ class _DataScreenState extends ConsumerState<DataScreen> {
              
              if (bundle.operatorId != null && bundle.operatorId! > 0) {
                 ref.read(dataSelectedOperatorIdProvider.notifier).state = bundle.operatorId!;
-             } else {
-                final numericId = int.tryParse(bundle.id);
-                if (numericId != null && numericId > 0) {
-                   ref.read(dataSelectedOperatorIdProvider.notifier).state = numericId;
-                }
              }
 
              setState(() {
@@ -599,7 +685,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       isScrollControlled: true,
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final providersState = ref.watch(dataPlansNotifierProvider);
+        final providersState = ref.watch(dataProvidersNotifierProvider);
         final providers = providersState.data ?? [];
         final selectedNetwork = ref.watch(dataSelectedNetworkProvider);
 
@@ -650,11 +736,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                          onTap: () async {
                            ref.read(dataSelectedNetworkProvider.notifier).state = p.network;
                            ref.read(dataSelectedBillerIdProvider.notifier).state = p.billerId;
-                           if (p.id is int) {
-                             ref.read(dataSelectedOperatorIdProvider.notifier).state = p.id;
-                           } else {
-                             ref.read(dataSelectedOperatorIdProvider.notifier).state = 0;
-                           }
+                           ref.read(dataSelectedOperatorIdProvider.notifier).state = p.operatorId;
                            ref.read(dataSelectedPlanProvider.notifier).state = '';
                            
                            // Close modal immediately to avoid context issues and show immediate response
@@ -665,7 +747,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                            ref.read(dataVariationNotifierProvider.notifier)
                                 .getVariation(
                                   network: p.network,
-                                  operatorId: p.id is int ? p.id : null,
+                                  operatorId: p.operatorId,
                                   billerId: p.billerId,
                                   filterCategory: currentCategory,
                                 );
@@ -697,7 +779,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                   ),
                                  const SizedBox(width: 16),
                                  Text(
-                                   p.name, 
+                                   p.planName, 
                                    style: TextStyle(
                                      color: isDark ? Colors.white : Colors.black,
                                      fontSize: 18,
@@ -896,57 +978,6 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     );
   }
 
-  void _detectNetworkProvider(String phoneNumber) {
-    final formatted = _formatTo11(phoneNumber);
-    if (formatted.length >= 10) {
-      ref
-          .read(dataPlansNotifierProvider.notifier)
-          .getPlans() // PalmPay get-plan takes no params
-          .then((_) {
-            final state = ref.read(dataPlansNotifierProvider);
-            if (state.isDataAvailable && state.data!.isNotEmpty) {
-              // Try to detect network from phone prefix
-              final prefix = formatted.substring(0, 4);
-              final providers = state.data!;
-              
-              // Simple detection logic (can be improved)
-              String detectedBillerId = 'MTN';
-              if (prefix.contains('0803') || prefix.contains('0703') || prefix.contains('0806') || prefix.contains('0813') || prefix.contains('0810') || prefix.contains('0816') || prefix.contains('0903') || prefix.contains('0906')) {
-                detectedBillerId = 'MTN';
-              } else if (prefix.contains('0802') || prefix.contains('0808') || prefix.contains('0812') || prefix.contains('0701') || prefix.contains('0708') || prefix.contains('0902') || prefix.contains('0907') || prefix.contains('0901')) {
-                detectedBillerId = 'AIRTEL';
-              } else if (prefix.contains('0805') || prefix.contains('0807') || prefix.contains('0811') || prefix.contains('0815') || prefix.contains('0705') || prefix.contains('0905')) {
-                detectedBillerId = 'GLO';
-              } else if (prefix.contains('0809') || prefix.contains('0817') || prefix.contains('0818') || prefix.contains('0909') || prefix.contains('0908')) {
-                detectedBillerId = '9MOBILE';
-              }
-
-              final plan = providers.firstWhere(
-                (p) => p.billerId == detectedBillerId || p.network.toUpperCase().contains(detectedBillerId),
-                orElse: () => providers.first,
-              );
-
-              ref.read(dataSelectedNetworkProvider.notifier).state = plan.network;
-              ref.read(dataSelectedBillerIdProvider.notifier).state = plan.billerId;
-              
-              if (plan.id is int) {
-                 ref.read(dataSelectedOperatorIdProvider.notifier).state = plan.id;
-              }
-
-              // Auto-fetch variations with billerId and current category
-              final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
-              ref.read(dataVariationNotifierProvider.notifier)
-                  .getVariation(
-                    network: plan.network,
-                    operatorId: plan.id is int ? plan.id : null,
-                    billerId: plan.billerId,
-                    filterCategory: currentCategory,
-                  );
-            }
-          });
-    }
-    setState(() {});
-  }
 
   Future<void> _pickContact() async {
     try {
@@ -1145,27 +1176,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     }
   }
 
-  String _formatTo11(String raw) {
-    if (raw.isEmpty) return raw;
-    var digits = raw.replaceAll(RegExp(r'\D'), '');
 
-    // If starts with country code '234', strip it
-    if (digits.startsWith('234')) {
-      final rest = digits.substring(3);
-      if (rest.length == 10) return '0$rest';
-      if (rest.length == 11 && rest.startsWith('0')) return rest;
-      // fallback to last 10 digits
-      if (rest.length > 10) return '0' + rest.substring(rest.length - 10);
-    }
-
-    // If starts with leading '+' (already stripped) or other
-    if (digits.length == 11 && digits.startsWith('0')) return digits;
-    if (digits.length == 10) return '0$digits';
-    if (digits.length > 11) return '0' + digits.substring(digits.length - 10);
-
-    // otherwise return as-is
-    return digits;
-  }
 
 
 
@@ -1260,7 +1271,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         amount: amount,
         operatorId: selectedOperatorId > 0 ? selectedOperatorId : null,
         billerId: selectedBillerId,
-        itemId: selectedPlanId,
+        itemId: selectedPlanId.isNotEmpty ? selectedPlanId : null,
         phone: _phoneController.text,
         currency: 'NGN',
         addBeneficiary: _saveBeneficiary,

@@ -37,6 +37,7 @@ class ApiEndpoints {
   static const String getUserProfile = '/api/v1/user/me';
   static const String createPasscode = '/api/v1/user/create-passcode';
   static const String editProfile = '/api/v1/user/edit-profile';
+  static const String uploadDocument = '/api/v1/user/upload-document';
 
   static const String getAllTransactions = '/api/v1/wallet/transaction';
 
@@ -48,15 +49,16 @@ class ApiEndpoints {
   // Bill payment endpoints
   static const String getAirtimeNetworkProviders =
       '/api/v1/bill/airtime/network-providers';
-  static const String getAirtimePlan = '/api/v1/bill/airtime/palmpay/get-plan';
+  static const String getAirtimePlan = '/api/v1/bill/airtime/get-plan';
   static const String getAirtimeVariation =
       '/api/v1/bill/airtime/palmpay/get-items';
-  static const String payAirtime = '/api/v1/bill/airtime/palmpay/pay';
+  static const String payAirtime = '/api/v1/bill/airtime/pay';
   static const String getDataNetworkProviders =
       '/api/v1/bill/data/network-providers';
-  static const String getDataPlan = '/api/v1/bill/data/palmpay/get-plan';
+  static const String getDataPlan = '/api/v1/bill/data/get-plan';
+  static String getDataPlanByNetwork(String network) => '/api/v1/bill/data/get-plan/$network';
   static const String getDataVariation = '/api/v1/bill/data/palmpay/get-items';
-  static const String purchaseData = '/api/v1/bill/data/palmpay/pay';
+  static const String purchaseData = '/api/v1/bill/data/pay';
 
   // Cable TV endpoints
   static const String getCablePlan = '/api/v1/bill/cable/get-plan';
@@ -118,6 +120,18 @@ class ApiEndpoints {
   static const String convertCurrency = '/api/v1/currency/convert';
   static const String getCurrencyRates = '/api/v1/currency/rates';
   static const String getSupportedCurrencies = '/api/v1/currency/supported';
+  static const String createCurrencyAccount = '/api/v1/currency/accounts';
+  static const String getUserAccounts = '/api/v1/currency/accounts';
+  static String getAccountByCurrency(String currency) => '/api/v1/currency/accounts/$currency';
+  static String updateAccount(String currency) => '/api/v1/currency/accounts/$currency';
+  static String closeAccount(String currency) => '/api/v1/currency/accounts/$currency';
+  static String getAccountTransactions(String currency) => '/api/v1/currency/accounts/$currency/transactions';
+  static String getAccountDeposits(String currency) => '/api/v1/currency/accounts/$currency/deposits';
+  static String createMockDeposit(String currency) => '/api/v1/currency/accounts/$currency/deposits/mock';
+  static String createPayoutDestination(String currency) => '/api/v1/currency/accounts/$currency/payout-destinations';
+  static String getPayoutDestinations(String currency) => '/api/v1/currency/accounts/$currency/payout-destinations';
+  static String createPayout(String currency) => '/api/v1/currency/accounts/$currency/payouts';
+  static String getPayouts(String currency) => '/api/v1/currency/accounts/$currency/payouts';
 
   // Notification endpoints
   static const String getNotifications = '/api/v1/notification';

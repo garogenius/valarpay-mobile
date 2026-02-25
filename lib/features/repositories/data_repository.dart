@@ -10,11 +10,10 @@ class DataRepository {
   DataRepository(this.apiClient);
 
   /// Get available network providers for data
-  /// Uses airtime network providers endpoint since data providers endpoint doesn't exist
   Future<NetworkProvidersResponse> getDataNetworkProviders() async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getAirtimeNetworkProviders,
+        ApiEndpoints.getDataNetworkProviders,
       );
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -48,7 +47,6 @@ class DataRepository {
   }
 
   /// Get data plans for a specific network
-  /// Note: PalmPay API doesn't support category filtering - filter client-side by validityDate
   Future<DataVariationResponse> getDataPlansByNetwork({
     String? network,
     int? operatorId,
@@ -56,14 +54,7 @@ class DataRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getDataVariation,
-        query: {
-          if (billerId != null) 'billerId': billerId,
-          // PalmPay doesn't use these but keeping for potential fallback
-          if (network != null) 'network': network.toLowerCase(),
-          if (operatorId != null && operatorId > 0)
-            'operatorId': operatorId.toString(),
-        },
+        ApiEndpoints.getDataPlanByNetwork(network ?? ''),
       );
       return DataVariationResponse.fromJson(response.data);
     } on DioException catch (e) {

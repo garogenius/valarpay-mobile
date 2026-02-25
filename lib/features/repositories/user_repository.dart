@@ -232,6 +232,15 @@ class UserRepository {
     num? expectedMonthlyInflow,
     String? passportNumber,
     String? passportCountry,
+    String? passportIssueDate,
+    String? passportExpiryDate,
+    String? passportDocumentUrl,
+    String? bankStatementUrl,
+    String? bankStatementIssueDate,
+    String? bankStatementExpiryDate,
+    String? utilityBillUrl,
+    String? utilityBillIssueDate,
+    String? utilityBillExpiryDate,
     String? profileImagePath,
     String? documentPath,
     String? documentType,
@@ -253,6 +262,15 @@ class UserRepository {
           'expectedMonthlyInflow': expectedMonthlyInflow,
         if (passportNumber != null) 'passportNumber': passportNumber,
         if (passportCountry != null) 'passportCountry': passportCountry,
+        if (passportIssueDate != null) 'passportIssueDate': passportIssueDate,
+        if (passportExpiryDate != null) 'passportExpiryDate': passportExpiryDate,
+        if (passportDocumentUrl != null) 'passportDocumentUrl': passportDocumentUrl,
+        if (bankStatementUrl != null) 'bankStatementUrl': bankStatementUrl,
+        if (bankStatementIssueDate != null) 'bankStatementIssueDate': bankStatementIssueDate,
+        if (bankStatementExpiryDate != null) 'bankStatementExpiryDate': bankStatementExpiryDate,
+        if (utilityBillUrl != null) 'utilityBillUrl': utilityBillUrl,
+        if (utilityBillIssueDate != null) 'utilityBillIssueDate': utilityBillIssueDate,
+        if (utilityBillExpiryDate != null) 'utilityBillExpiryDate': utilityBillExpiryDate,
         if (documentType != null) 'documentType': documentType,
       };
 
@@ -387,6 +405,48 @@ class UserRepository {
       throw Exception(errorMessage);
     } catch (e) {
       throw Exception('Failed to submit address verification: $e');
+    }
+  }
+
+  /// Upload document for identity verification
+  Future<ApiResponse> uploadDocument({
+    required String documentType,
+    required String documentPath,
+    String? documentNumber,
+    String? documentCountry,
+    String? issueDate,
+    String? expiryDate,
+  }) async {
+    try {
+      final file = File(documentPath);
+      final fileName = file.path.split(Platform.pathSeparator).last;
+
+      final Map<String, dynamic> data = {
+        'documentType': documentType,
+        'document': await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        ),
+        if (documentNumber != null) 'documentNumber': documentNumber,
+        if (documentCountry != null) 'documentCountry': documentCountry,
+        if (issueDate != null) 'issueDate': issueDate,
+        if (expiryDate != null) 'expiryDate': expiryDate,
+      };
+
+      final formData = FormData.fromMap(data);
+
+      final response = await apiClient.postFormData(
+        ApiEndpoints.uploadDocument,
+        data: formData,
+      );
+
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Document upload failed',
+      );
+    } catch (e) {
+      throw Exception('Failed to upload document: $e');
     }
   }
 }

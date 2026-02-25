@@ -17,6 +17,8 @@ import '../../../../core/providers/dashboard_provider.dart';
 import '../../../../core/services/dashboard_service.dart';
 import '../../widgets/home_widgets/dashboard_customize_widgets.dart';
 import '../../../notifiers/transaction_notifier.dart';
+import 'package:valarpay/features/providers/wallet_providers.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../core/services/local_storage_service.dart';
 
 class Homescreen extends ConsumerStatefulWidget {
@@ -31,6 +33,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
   static const String _balanceVisibilityKey = 'is_balance_visible';
   int _currentImageIndex = 0;
   Timer? _timer;
+  late PageController _pageController;
 
   final List<String> _bannerImages = const [
     'assets/images/valar_ban1.png',
@@ -42,6 +45,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _startBannerRotation();
     _loadBalanceVisibility();
 

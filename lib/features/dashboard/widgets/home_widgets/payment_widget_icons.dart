@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:valarpay/features/providers/wallet_providers.dart';
 
-class PaymentWidget extends StatelessWidget {
+class PaymentWidget extends ConsumerWidget {
   const PaymentWidget({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeWallet = ref.watch(activeWalletProvider);
+    final currency = activeWallet?.currency ?? 'NGN';
+    final isNgn = currency == 'NGN';
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).cardColor, // adaptive for light/dark
+        color: Theme.of(context).cardColor,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -19,26 +25,44 @@ class PaymentWidget extends StatelessWidget {
           _buildActionItem(
             context,
             svgAssetPath: 'assets/images/payment_wid/valarpay.svg',
-            label: 'To ValarPay',
-            onTap: () => context.push("/transfer-to-valarpay"),
+            label: isNgn ? 'To ValarPay' : 'Deposit',
+            onTap: () {
+              if (isNgn) {
+                context.push("/transfer-to-valarpay");
+              } else {
+                context.push("/account/$currency/deposit");
+              }
+            },
           ),
           _buildActionItem(
             context,
             svgAssetPath: 'assets/images/payment_wid/Bank.svg',
-            label: 'To Bank',
-            onTap: () => context.push("/transfer-to-bank"),
+            label: isNgn ? 'To Bank' : '$currency Transfer',
+            onTap: () {
+              if (isNgn) {
+                context.push("/transfer-to-bank");
+              } else {
+                context.push("/account/$currency/transfer");
+              }
+            },
           ),
           _buildActionItem(
             context,
             svgAssetPath: 'assets/images/payment_wid/withdraw.svg',
-            label: 'Withdraw',
-            onTap: () => context.push("/withdraw"),
+            label: isNgn ? 'Withdraw' : 'Destination',
+            onTap: () {
+              if (isNgn) {
+                context.push("/withdraw");
+              } else {
+                context.push("/account/$currency/destinations");
+              }
+            },
           ),
           _buildActionItem(
             context,
             svgAssetPath: 'assets/images/payment_wid/Account.svg',
             label: 'Account',
-                 onTap: () => context.push("/account"),
+            onTap: () => context.push("/account"),
           ),
         ],
       ),

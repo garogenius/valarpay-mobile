@@ -9,8 +9,8 @@ import 'package:valarpay/core/network/data_state.dart';
 final apiClientProvider = Provider((ref) => ApiClient());
 
 class ApiClient {
-  static const String baseUrl = 'https://valarpay.nattycore.com';
-    // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
+  // static const String baseUrl = 'https://valarpay.nattycore.com';
+    static const String baseUrl = 'https://valar-pay-api.up.railway.app';
   // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
   static const String apiKey = '5821039487621507';
 
@@ -113,12 +113,12 @@ class ApiClient {
     return await dio.patch(path, data: data, queryParameters: queryParameters, options: options);
   }
 
-  Future<Response> delete(String path, {bool useAuth = true}) async {
+  Future<Response> delete(String path, {Map<String, dynamic>? data, bool useAuth = true}) async {
     final options = Options();
     if (useAuth) {
       await _withAuth(options);
     }
-    return await dio.delete(path, options: options);
+    return await dio.delete(path, data: data, options: options);
   }
 
   Future<Response> postFormData(String path, {required FormData data}) async {

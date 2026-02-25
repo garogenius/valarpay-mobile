@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
+import 'package:valarpay/features/models/api_response.dart';
 import 'package:valarpay/features/models/nin_verification_request.dart';
 import 'package:valarpay/features/models/nin_verification_response.dart';
 import 'package:valarpay/features/models/email_request.dart';
@@ -340,6 +341,15 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     num? expectedMonthlyInflow,
     String? passportNumber,
     String? passportCountry,
+    String? passportIssueDate,
+    String? passportExpiryDate,
+    String? passportDocumentUrl,
+    String? bankStatementUrl,
+    String? bankStatementIssueDate,
+    String? bankStatementExpiryDate,
+    String? utilityBillUrl,
+    String? utilityBillIssueDate,
+    String? utilityBillExpiryDate,
     String? profileImagePath,
     String? documentPath,
     String? documentType,
@@ -361,6 +371,15 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
         expectedMonthlyInflow: expectedMonthlyInflow,
         passportNumber: passportNumber,
         passportCountry: passportCountry,
+        passportIssueDate: passportIssueDate,
+        passportExpiryDate: passportExpiryDate,
+        passportDocumentUrl: passportDocumentUrl,
+        bankStatementUrl: bankStatementUrl,
+        bankStatementIssueDate: bankStatementIssueDate,
+        bankStatementExpiryDate: bankStatementExpiryDate,
+        utilityBillUrl: utilityBillUrl,
+        utilityBillIssueDate: utilityBillIssueDate,
+        utilityBillExpiryDate: utilityBillExpiryDate,
         profileImagePath: profileImagePath,
         documentPath: documentPath,
         documentType: documentType,
@@ -377,8 +396,44 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
         message: 'Profile updated successfully',
       );
     } catch (e, stack) {
-      log('[UserNotifier editProfile Error] $e\n$stack');
       this.state = this.state.copyWith(
+        isInitialLoading: false,
+        message: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  /// Upload document for identity verification
+  Future<ApiResponse?> uploadDocument({
+    required String documentType,
+    required String documentPath,
+    String? documentNumber,
+    String? documentCountry,
+    String? issueDate,
+    String? expiryDate,
+  }) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.uploadDocument(
+        documentType: documentType,
+        documentPath: documentPath,
+        documentNumber: documentNumber,
+        documentCountry: documentCountry,
+        issueDate: issueDate,
+        expiryDate: expiryDate,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        message: res.message,
+      );
+      // Refresh profile after upload to update verification status if needed
+      await refreshUserProfile();
+      return res;
+    } catch (e, stack) {
+      log('[UserNotifier uploadDocument Error] $e\n$stack');
+      state = state.copyWith(
         isInitialLoading: false,
         message: e.toString(),
       );

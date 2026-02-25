@@ -316,7 +316,13 @@ class DataPlanBundle {
 
     // Handle various possible keys for each field
     final dynamic rawId = json['id'] ?? json['itemId'] ?? json['variation_code'] ?? json['variationCode'] ?? '';
-    final String id = rawId.toString();
+    String id = rawId.toString();
+    
+    if (id.isEmpty) {
+      final opId = json['operatorId'] ?? 0;
+      final amt = json['localAmount'] ?? json['amount'] ?? 0;
+      id = '$opId-$amt';
+    }
     
     String name = json['name'] ?? 
                        json['itemName'] ??
@@ -324,6 +330,7 @@ class DataPlanBundle {
                        json['variationName'] ?? 
                        json['planName'] ?? 
                        json['billerName'] ?? 
+                       json['description'] ??
                        '';
     
     DataExtInfo? extInfo;
@@ -343,8 +350,8 @@ class DataPlanBundle {
       json['fixedAmount']
     );
 
-    // PalmPay items return amount in common units * 100 (e.g. 150000 for 1500)
-    final double amount = (json.containsKey('itemId')) ? rawAmount / 100 : rawAmount;
+    // Removed PalmPay / 100 logic since we migrated to new biller endpoint
+    final double amount = rawAmount;
     
     String validity = json['validity'] ?? 
                           json['variation_validity'] ?? 
@@ -353,6 +360,58 @@ class DataPlanBundle {
     
     if (validity.isEmpty && json['extInfo'] != null && json['extInfo'] is Map) {
       validity = json['extInfo']['validity'] ?? '';
+    }
+
+    if (validity.isEmpty && name.toLowerCase().contains('valid for')) {
+      final parts = name.toLowerCase().split('valid for');
+      if (parts.length > 1) {
+        validity = parts.last.trim();
+      }
+    }
+
+    // Extract cleaner names from the raw description/name (e.g. 2GB 30days)
+    String rawName = name;
+    final lowerName = rawName.toLowerCase();
+    
+    final dataMatch = RegExp(r'(\d+(?:\.\d+)?\s*(?:MB|GB|TB))', caseSensitive: false).firstMatch(rawName);
+    String extractedData = dataMatch != null ? dataMatch.group(1)!.toUpperCase().replaceAll(' ', '') : '';
+    
+    String extractedValidity = '';
+    if (lowerName.contains('daily') || lowerName.contains('1 day') || lowerName.contains('1-day') || lowerName.contains('1days')) {
+      extractedValidity = 'Daily';
+    } else if (lowerName.contains('2 day') || lowerName.contains('2-day') || lowerName.contains('2days')) {
+      extractedValidity = '2 Days';
+    } else if (lowerName.contains('weekly') || lowerName.contains('7 day') || lowerName.contains('7-day') || lowerName.contains('7days')) {
+      extractedValidity = 'Weekly';
+    } else if (lowerName.contains('30 day') || lowerName.contains('monthly') || lowerName.contains('1 month') || lowerName.contains('30days')) {
+      extractedValidity = '30 Days';
+    } else if (lowerName.contains('60 day') || lowerName.contains('2 month') || lowerName.contains('60days')) {
+      extractedValidity = '60 Days';
+    } else if (lowerName.contains('yearly') || lowerName.contains('365 day') || lowerName.contains('1 year')) {
+      extractedValidity = 'Yearly';
+    } else {
+      final validMatch = RegExp(r'valid(?:ity)?(?: for)?(?::)?\s*(\d+\s*days?)', caseSensitive: false).firstMatch(rawName);
+      if (validMatch != null) {
+        extractedValidity = validMatch.group(1)!;
+      } else {
+        final daysMatch = RegExp(r'(\d+)\s*days?', caseSensitive: false).firstMatch(rawName);
+        if (daysMatch != null) {
+          extractedValidity = daysMatch.group(1)!;
+        }
+      }
+    }
+
+    if (extractedValidity.isEmpty && validity.isNotEmpty) {
+      extractedValidity = validity;
+    }
+
+    if (extractedData.isNotEmpty) {
+      name = extractedData;
+      validity = extractedValidity.isNotEmpty ? extractedValidity : '';
+    } else {
+      if (extractedValidity.isNotEmpty) {
+         validity = extractedValidity;
+      }
     }
 
     return DataPlanBundle(
@@ -387,12 +446,33 @@ class DataVariationResponse {
     if (dataJson is List) {
       plans = dataJson.map((p) => DataPlanBundle.fromJson(p)).toList();
     } else if (dataJson is Map) {
-       // CASE 1: Response has a nested list
-       final List<dynamic>? list = (dataJson['plans'] ?? dataJson['variations'] ?? dataJson['data'] ?? dataJson['items']) as List<dynamic>?;
-       if (list != null) {
+       // CASE 1: Response has an 'operators' list
+       if (dataJson.containsKey('operators') && dataJson['operators'] is List) {
+         final operators = dataJson['operators'] as List<dynamic>;
+         for (var op in operators) {
+            if (op is Map && op.containsKey('plans') && op['plans'] is List) {
+               final opPlans = op['plans'] as List<dynamic>;
+               final networkName = op['network']?.toString() ?? op['name']?.toString();
+               final int opId = op['operatorId'] ?? 0;
+               
+               for (var p in opPlans) {
+                  if (p is Map<String, dynamic>) {
+                    p['network'] ??= networkName;
+                    if (!p.containsKey('operatorId')) {
+                      p['operatorId'] = opId;
+                    }
+                  }
+                  plans.add(DataPlanBundle.fromJson(p as Map<String, dynamic>));
+               }
+            }
+         }
+       }
+       // CASE 2: Response has a nested list
+       else if ((dataJson['plans'] ?? dataJson['variations'] ?? dataJson['data'] ?? dataJson['items']) is List) {
+         final List<dynamic> list = (dataJson['plans'] ?? dataJson['variations'] ?? dataJson['data'] ?? dataJson['items']) as List<dynamic>;
          plans = list.map((p) => DataPlanBundle.fromJson(p)).toList();
        } 
-       // CASE 2: Response is the operator object itself with fixedAmountsDescriptions (Log 1)
+       // CASE 3: Response is the operator object itself with fixedAmountsDescriptions (Log 1)
        else if (dataJson.containsKey('fixedAmounts') || dataJson.containsKey('localFixedAmounts')) {
          final List<dynamic> amounts = (dataJson['localFixedAmounts'] ?? dataJson['fixedAmounts']) as List<dynamic>;
          final Map<String, dynamic> descriptions = Map<String, dynamic>.from(
@@ -472,6 +552,8 @@ class DataPurchaseRequest {
     'walletPin': walletPin,
     'amount': amount,
     if (operatorId != null) 'operatorId': operatorId,
+    if (billerId != null) 'billerId': billerId,
+    if (itemId != null) 'itemId': itemId,
     'phone': phone,
     'currency': currency,
     if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,

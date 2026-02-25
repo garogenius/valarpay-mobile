@@ -25,10 +25,10 @@ class NetworkProvider {
       NetworkProvider(
         id: json['id']?.toString() ?? json['billerId'] ?? '',
         planName: json['name'] ?? json['planName'] ?? json['billerName'] ?? '',
-        network: json['network'] ?? json['billerName'] ?? '',
+        network: json['network'] ?? json['code'] ?? json['name'] ?? json['billerName'] ?? '',
         countryISOCode: json['countryISOCode'] ?? '',
         operatorId: json['operatorId'] ?? 0,
-        billerId: json['billerId']?.toString(),
+        billerId: json['billerId']?.toString() ?? json['code']?.toString(),
         billerIcon: json['billerIcon']?.toString(),
         createdAt: json['createdAt'] != null
             ? DateTime.parse(json['createdAt'])

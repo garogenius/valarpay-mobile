@@ -1,4 +1,4 @@
-package com.business.valarpay
+package com.valarglobal.valarpay
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

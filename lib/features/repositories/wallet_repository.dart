@@ -200,4 +200,203 @@ class WalletRepository {
       );
     }
   }
+
+  /// 🏦 Create multi-currency account
+  Future<ApiResponse> createMultiCurrencyAccount({
+    required String currency,
+    required String label,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.createCurrencyAccount,
+        data: {
+          'currency': currency,
+          'label': label,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to create multi-currency account',
+      );
+    } catch (e) {
+      throw Exception('Failed to create multi-currency account: $e');
+    }
+  }
+
+  /// 🏦 Get all user multi-currency accounts
+  Future<Map<String, dynamic>> getUserAccounts() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.getUserAccounts);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch accounts');
+    }
+  }
+
+  /// 🏦 Get account by currency
+  Future<Map<String, dynamic>> getAccountByCurrency(String currency) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.getAccountByCurrency(currency));
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch account');
+    }
+  }
+
+  /// 🏦 Update account label
+  Future<Map<String, dynamic>> updateAccountLabel({
+    required String currency,
+    required String label,
+  }) async {
+    try {
+      final response = await apiClient.patch(
+        ApiEndpoints.updateAccount(currency),
+        data: {'label': label},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to update account');
+    }
+  }
+
+  /// 🏦 Close auto-currency account
+  Future<ApiResponse> closeCurrencyAccount({
+    required String currency,
+    required String walletPin,
+  }) async {
+    try {
+      final response = await apiClient.delete(
+        ApiEndpoints.closeAccount(currency),
+        data: {'walletPin': walletPin},
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to close account');
+    }
+  }
+
+  /// 🏦 Get account transactions
+  Future<Map<String, dynamic>> getAccountTransactions({
+    required String currency,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getAccountTransactions(currency),
+        queryParameters: {
+          if (limit != null) 'limit': limit,
+          if (offset != null) 'offset': offset,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch transactions');
+    }
+  }
+
+  /// 🏦 Get account deposits
+  Future<Map<String, dynamic>> getAccountDeposits({
+    required String currency,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getAccountDeposits(currency),
+        queryParameters: {
+          if (limit != null) 'limit': limit,
+          if (offset != null) 'offset': offset,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch deposits');
+    }
+  }
+
+  /// 🏦 Create mock deposit (Sandbox)
+  Future<ApiResponse> createMockDeposit({
+    required String currency,
+    required double amount,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.createMockDeposit(currency),
+        data: {'amount': amount},
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to create mock deposit');
+    }
+  }
+
+  /// 🏦 Create payout destination
+  Future<Map<String, dynamic>> createPayoutDestination({
+    required String currency,
+    required Map<String, dynamic> destinationData,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.createPayoutDestination(currency),
+        data: destinationData,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to create payout destination');
+    }
+  }
+
+  /// 🏦 Get payout destinations
+  Future<Map<String, dynamic>> getPayoutDestinations(String currency) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.getPayoutDestinations(currency));
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch payout destinations');
+    }
+  }
+
+  /// 🏦 Create payout
+  Future<ApiResponse> createPayout({
+    required String currency,
+    required String destinationId,
+    required double amount,
+    String? description,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.createPayout(currency),
+        data: {
+          'destination_id': destinationId,
+          'amount': amount,
+          if (description != null) 'description': description,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to create payout');
+    }
+  }
+
+  /// 🏦 Get payouts
+  Future<Map<String, dynamic>> getPayouts({
+    required String currency,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getPayouts(currency),
+        queryParameters: {
+          if (limit != null) 'limit': limit,
+          if (offset != null) 'offset': offset,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch payouts');
+    }
+  }
 }
