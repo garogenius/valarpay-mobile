@@ -50,7 +50,7 @@ class _MyAppState extends ConsumerState<MyApp> {
             onTap: () => SessionTimeoutService.recordActivity(),
 
             child: MaterialApp.router(
-              title: 'ValarPay - Beyond Banking',
+              title: 'ValarPay',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
