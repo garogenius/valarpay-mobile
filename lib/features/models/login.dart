@@ -64,11 +64,23 @@ class LoginResponse {
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map ? json['data'] : json;
+    final userJson = json['user'] ?? data['user'] ?? data;
+    final token = json['accessToken'] ?? json['token'] ?? data['accessToken'] ?? data['token'];
+
+    final rawMessage = json['message'];
+    String message;
+    if (rawMessage is List) {
+      message = rawMessage.join(', ');
+    } else {
+      message = rawMessage?.toString() ?? '';
+    }
+
     return LoginResponse(
-      message: json['message'] ?? '',
-      user: UserModel.fromJson(json['user']),
-      accessToken: json['accessToken'],
-      statusCode: json['statusCode'] ?? 0,
+      message: message,
+      user: UserModel.fromJson(userJson),
+      accessToken: token?.toString(),
+      statusCode: json['statusCode'] ?? 200,
     );
   }
 

@@ -98,9 +98,9 @@ class CableVariationInfo {
       CableVariationInfo(
         id: json['id'] ?? json['itemId'] ?? 0,
         billerCode: json['biller_code'] ?? json['billerCode'] ?? json['billerId'] ?? '',
-        name: json['name'] ?? json['itemName'] ?? '',
+        name: json['name'] ?? json['itemName'] ?? json['billPaymentProductName'] ?? '',
         fee: (json['fee'] ?? 0).toDouble(),
-        itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId'] ?? '',
+        itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId']?.toString() ?? json['billPaymentProductId']?.toString() ?? '',
         labelName: json['label_name'] ?? json['labelName'] ?? json['itemName'] ?? '',
         amount: (json['amount'] ?? 0).toDouble(),
         isResolvable: json['is_resolvable'] ?? json['isResolvable'] ?? true,
@@ -172,20 +172,23 @@ class CableVariationResponse {
 }
 
 class VerifyCableRequest {
-  final String itemCode;
+  final String billPaymentProductId; // itemCode from biller products
+  final String customerId;           // smart card number
   final String billerCode;
-  final String billerNumber;
 
   VerifyCableRequest({
-    required this.itemCode,
+    required this.billPaymentProductId,
+    required this.customerId,
     required this.billerCode,
-    required this.billerNumber,
+    // Legacy fields kept for backward compat but not sent
+    String itemCode = '',
+    String billerNumber = '',
   });
 
   Map<String, dynamic> toJson() => {
-    'itemCode': itemCode,
+    'billPaymentProductId': billPaymentProductId,
+    'customerId': customerId,
     'billerCode': billerCode,
-    'billerNumber': billerNumber,
   };
 }
 
@@ -201,6 +204,8 @@ class VerifyCableData {
   final double fee;
   final double maximum;
   final double minimum;
+  final String? smartCardNumber;
+  final double? amount;
 
   VerifyCableData({
     required this.responseCode,
@@ -214,6 +219,8 @@ class VerifyCableData {
     required this.fee,
     required this.maximum,
     required this.minimum,
+    this.smartCardNumber,
+    this.amount,
   });
 
   factory VerifyCableData.fromJson(Map<String, dynamic> json) {
@@ -224,29 +231,23 @@ class VerifyCableData {
     }
 
     return VerifyCableData(
-      responseCode:
-          json['response_code']?.toString() ??
-          json['responseCode']?.toString() ??
-          '',
+      responseCode: json['responseCode']?.toString() ?? json['response_code']?.toString() ?? '00',
       address: json['address']?.toString(),
       responseMessage:
-          json['response_message']?.toString() ??
           json['responseMessage']?.toString() ??
+          json['response_message']?.toString() ??
+          json['message']?.toString() ??
           '',
-      name: json['name']?.toString() ?? '',
-      billerCode:
-          json['biller_code']?.toString() ??
-          json['billerCode']?.toString() ??
-          '',
-      customer: json['customer']?.toString() ?? '',
-      productCode:
-          json['product_code']?.toString() ??
-          json['productCode']?.toString() ??
-          '',
+      name: json['name']?.toString() ?? json['customerName']?.toString() ?? '',
+      billerCode: json['customerId']?.toString() ?? json['biller_code']?.toString() ?? '',
+      customer: json['customerId']?.toString() ?? json['customer']?.toString() ?? '',
+      productCode: json['billPaymentProductId']?.toString() ?? json['product_code']?.toString() ?? '',
       email: json['email']?.toString(),
       fee: parseDouble(json['fee']),
-      maximum: parseDouble(json['maximum']),
-      minimum: parseDouble(json['minimum']),
+      maximum: parseDouble(json['maximum'] ?? json['maximumAmount']),
+      minimum: parseDouble(json['minimumAmount'] ?? json['minimum']),
+      smartCardNumber: json['customerId']?.toString() ?? json['smartCardNumber']?.toString() ?? json['billerNumber']?.toString(),
+      amount: parseDouble(json['minimumAmount'] ?? json['amount'] ?? json['fee']),
     );
   }
 }

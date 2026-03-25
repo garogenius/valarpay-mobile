@@ -31,7 +31,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
   UserNotifier(this._repository, this._ref) : super(DataState<UserModel>.initial());
 
   Future<void> register(SignUpRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.register(request);
       state = state.copyWith(
@@ -45,13 +45,13 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
 
   Future<void> registerBusiness(SignUpRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.registerBusiness(request);
       state = state.copyWith(
@@ -65,7 +65,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
@@ -84,13 +84,13 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
 
   Future<void> validateEmail(EmailRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.validateEmail(request);
       state = state.copyWith(
@@ -103,13 +103,13 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
 
   Future<void> verifyEmail(VerifyEmailRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.verifyEmail(request);
       state = state.copyWith(
@@ -122,13 +122,13 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
 
-  Future<void> validatePhone(PhoneNumberRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+  Future<ApiResponse?> validatePhone(PhoneNumberRequest request) async {
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.validatePhone(request);
       state = state.copyWith(
@@ -136,21 +136,23 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
         isDataAvailable: true,
         message: res.message,
       );
+      return res;
     } catch (e, stack) {
       log('[UserNotifier Resend Code Error] $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
+      return null;
     }
   }
 
-  Future<void> verifyPhone(VerifyPhoneOtpRequest request) async {
+  Future<ApiResponse?> verifyPhone(VerifyPhoneOtpRequest request) async {
     log(request.phoneNumber.toString());
     log(request.otpCode.toString());
 
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.verifyPhone(request);
       state = state.copyWith(
@@ -158,14 +160,16 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
         isDataAvailable: true,
         message: res.message,
       );
+      return res;
     } catch (e, stack) {
       log('[UserNotifier Verify Phone Number Error] $e\n$stack');
       log(e.toString());
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
+      return null;
     }
   }
 
@@ -183,7 +187,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
@@ -202,7 +206,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
@@ -221,7 +225,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
@@ -243,7 +247,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
       return null;
     }
@@ -252,8 +256,51 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
   Future<UserModel?> refreshUserProfile() async {
     try {
       final user = await _repository.getUserProfile();
-      state = state.copyWith(data: [user], isDataAvailable: true);
-      return user;
+      
+      // Mitigate backend replication lag by preserving local 'true' states
+      final currentUser = _ref.read(userProvider);
+      UserModel finalUser = user;
+      
+      if (currentUser != null) {
+        bool needsOverride = false;
+        final jsonMap = user.toJson();
+        
+        if (currentUser.isWalletPinSet == true && !user.isWalletPinSet) {
+          jsonMap['isWalletPinSet'] = true;
+          jsonMap['pin_set'] = true;
+          jsonMap['is_wallet_pin_set'] = true;
+          needsOverride = true;
+        }
+        
+        if (currentUser.isPasscodeSet == true && !user.isPasscodeSet) {
+          jsonMap['isPasscodeSet'] = true;
+          jsonMap['is_passcode_set'] = true;
+          needsOverride = true;
+        }
+
+        if (currentUser.isBvnVerified == true && !user.isBvnVerified) {
+          jsonMap['isBvnVerified'] = true;
+          jsonMap['is_bvn_verified'] = true;
+          needsOverride = true;
+        }
+
+        if (currentUser.isNinVerified == true && !user.isNinVerified) {
+          jsonMap['isNinVerified'] = true;
+          jsonMap['is_nin_verified'] = true;
+          needsOverride = true;
+        }
+
+        if (needsOverride) {
+           finalUser = UserModel.fromJson(jsonMap);
+        }
+      }
+
+      // Persist user data
+      await SessionService.saveUser(finalUser);
+      // Sync with userProvider
+      _ref.read(userProvider.notifier).setUser(finalUser);
+      state = state.copyWith(data: [finalUser], isDataAvailable: true);
+      return finalUser;
     } catch (e, stack) {
       log('[UserNotifier Refresh Profile Error] $e\n$stack');
       return null;
@@ -278,12 +325,17 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
   ) async {
     try {
       final response = await _repository.verifyNinTier2(request);
+      
+      if (response.isSuccess) {
+        log('[UserNotifier] Tier 2 verification successful, refreshing profile...');
+        await refreshUserProfile();
+      }
 
       return response;
     } catch (e, stack) {
       log('[UserNotifier NIN Verification Error] $e\n$stack');
       return NinVerificationResponse(
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
         error: 'Verification failed',
         statusCode: 500,
       );
@@ -398,8 +450,68 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     } catch (e, stack) {
       this.state = this.state.copyWith(
         isInitialLoading: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
+      rethrow;
+    }
+  }
+
+  Future<ApiResponse?> submitBasicKyc({
+    required String idType,
+    required String idNumber,
+    required String idDob,
+    String? idPhoneNumber, // optional
+  }) async {
+    try {
+      final res = await _repository.submitBasicKyc(
+        idType: idType,
+        idNumber: idNumber,
+        dob: idDob,
+        phoneNumber: idPhoneNumber,
+      );
+      return res;
+    } catch (e) {
+      log('Basic KYC Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<ApiResponse?> submitSmartSelfieRegister({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    try {
+      final res = await _repository.submitSmartSelfieRegister(
+        selfieImage: selfieImage,
+        livenessImages: livenessImages,
+      );
+      return res;
+    } catch (e) {
+      log('Smart Selfie Register Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<ApiResponse?> submitSmartSelfieAuth({
+    required String selfieImage,
+  }) async {
+    try {
+      final res = await _repository.submitSmartSelfieAuth(
+        selfieImage: selfieImage,
+      );
+      return res;
+    } catch (e) {
+      log('Smart Selfie Auth Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<ApiResponse?> getSmileIdJobStatus(String jobId) async {
+    try {
+      final res = await _repository.getSmileIdJobStatus(jobId);
+      return res;
+    } catch (e) {
+      log('Job Status Error: $e');
       rethrow;
     }
   }
@@ -435,7 +547,7 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       log('[UserNotifier uploadDocument Error] $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
       rethrow;
     }

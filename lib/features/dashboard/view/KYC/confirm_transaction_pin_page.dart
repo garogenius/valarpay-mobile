@@ -10,6 +10,7 @@ import 'package:valarpay/features/models/login.dart';
 import 'package:valarpay/features/models/set_wallet_pin_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
+import 'package:valarpay/features/models/user.dart';
 import '../../../../controller/pin_controller.dart';
 import '../../widgets/Kyc/Dialog/passcode_success.dart';
 
@@ -176,20 +177,40 @@ class _ConfirmTransactionPinPageState
               // Step 1: Clear pins from memory
               ref.read(pinControllerProvider.notifier).clearAllPins();
 
-              // Step 2: Refresh user profile and update state
-              final updatedUser =
-                  await ref
-                      .read(userNotifierProvider.notifier)
-                      .refreshUserProfile();
+              // Step 2: Update local state IMMEDIATELY to prevent DashboardWrapper from re-triggering modal
+              final currentUser = ref.read(userProvider);
+              if (currentUser != null) {
+                final jsonMap = currentUser.toJson();
+                jsonMap['isWalletPinSet'] = true;
+                jsonMap['pin_set'] = true;
+                jsonMap['is_wallet_pin_set'] = true;
+                final overrideUser = UserModel.fromJson(jsonMap);
+                ref.read(userProvider.notifier).setUser(overrideUser);
+              }
+
+              // Step 3: Refresh user profile and update state properly
+              // Let backend replica catch up briefly
+              await Future.delayed(const Duration(milliseconds: 1500));
+              final updatedUser = await ref.read(userNotifierProvider.notifier).refreshUserProfile();
 
               if (updatedUser != null) {
-                ref.read(userProvider.notifier).setUser(updatedUser);
+                // If backend lag means it still reports false, forcefully override it locally!
+                UserModel finalUser = updatedUser;
+                if (!updatedUser.isWalletPinSet) {
+                   final jsonMap = updatedUser.toJson();
+                   jsonMap['isWalletPinSet'] = true;
+                   jsonMap['pin_set'] = true;
+                   jsonMap['is_wallet_pin_set'] = true;
+                   finalUser = UserModel.fromJson(jsonMap);
+                }
+
+                ref.read(userProvider.notifier).setUser(finalUser);
 
                 final currentToken = await SessionService.getAccessToken();
                 if (currentToken != null) {
                   await SessionService.saveSession(
                     LoginResponse(
-                      user: updatedUser,
+                      user: finalUser,
                       accessToken: currentToken,
                       message: 'Success',
                       statusCode: 200,
@@ -204,7 +225,7 @@ class _ConfirmTransactionPinPageState
 
                 // Step 4: Navigate to home immediately after closing dialog
                 // Use the parent context (from the widget state, not dialog)
-                context.pushReplacement('/');
+                context.go('/');
               }
             } catch (e) {
               if (mounted) {

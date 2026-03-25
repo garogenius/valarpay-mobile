@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/biometric_transaction_pin_modal.dart';
+import 'package:valarpay/core/widgets/reusable_transaction_pin_modal.dart';
 import 'package:valarpay/core/widgets/reuseable_text_field_with_country.dart';
 import 'package:valarpay/core/widgets/transaction_details_screen.dart';
 import 'package:valarpay/core/widgets/transaction_receipt_widget.dart';
+import 'package:valarpay/features/models/remita_models.dart';
+import 'package:valarpay/features/notifiers/remita_notifier.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
 import '../../../widgets/services_widgets/flight_widgets/gender_selector_modal.dart';
 
-class PassengerDetailsScreen extends StatefulWidget {
+class PassengerDetailsScreen extends ConsumerStatefulWidget {
   final Map<String, String> flightData;
 
   const PassengerDetailsScreen({super.key, required this.flightData});
 
   @override
-  State<PassengerDetailsScreen> createState() => _PassengerDetailsScreenState();
+  ConsumerState<PassengerDetailsScreen> createState() => _PassengerDetailsScreenState();
 }
 
-class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
+class _PassengerDetailsScreenState extends ConsumerState<PassengerDetailsScreen> {
   final List<Map<String, dynamic>> passengers = [];
   String serviceFee = '500';
   bool saveBeneficiary = false;
@@ -30,6 +37,7 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
   void _initializePassengers() {
     final adults = int.parse(widget.flightData['adults'] ?? '0');
     final children = int.parse(widget.flightData['children'] ?? '0');
+    final infants = int.parse(widget.flightData['infants'] ?? '0');
 
     // Add adults
     for (int i = 0; i < adults; i++) {
@@ -44,12 +52,134 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
     // Add children
     for (int i = 0; i < children; i++) {
       passengers.add({
-        'type': 'Child ${i + 1} (2-11years)',
+        'type': 'Child ${i + 1} (2-11 years)',
         'fullName': TextEditingController(),
         'dateOfBirth': null,
         'gender': 'Male',
       });
     }
+
+    // Add infants
+    for (int i = 0; i < infants; i++) {
+      passengers.add({
+        'type': 'Infant ${i + 1} (under 2 years)',
+        'fullName': TextEditingController(),
+        'dateOfBirth': null,
+        'gender': 'Male',
+      });
+    }
+  }
+
+  Future<void> _handlePayment() async {
+    // Basic validation
+    for (var p in passengers) {
+      if (p['fullName'].text.isEmpty) {
+        AppMessenger.show(context, message: 'Please enter all passenger names', type: MessageType.error);
+        return;
+      }
+    }
+
+    final user = ref.read(userProvider);
+    final productId = widget.flightData['productId']!;
+    
+    // We don't have a real amount from products yet, so we'll use a placeholder or let user enter it?
+    // Actually, FlightScreen should have selected a product with an amount.
+    // For now, let's assume a default amount or 0 if not found.
+    double amount = 0.0;
+    final products = ref.read(remitaProductsProvider).data;
+    if (products != null && products.isNotEmpty) {
+      final product = products.firstWhere((p) => p.billPaymentProductId == productId, orElse: () => products.first);
+      amount = product.amount ?? 0.0;
+    }
+
+    if (amount <= 0) {
+      // If amount is 0, we might need to ask the user or show an error
+      AppMessenger.show(context, message: 'Invalid flight amount. Please go back and try again.', type: MessageType.error);
+      return;
+    }
+
+    final metadata = {
+      'departure': widget.flightData['departure'],
+      'destination': widget.flightData['destination'],
+      'class': widget.flightData['class'],
+      'departureDate': widget.flightData['departureDate'],
+      'bookingRef': widget.flightData['bookingRef'],
+      'passengers': passengers.map((p) => {
+        'name': p['fullName'].text,
+        'dob': p['dateOfBirth']?.toString(),
+        'gender': p['gender'],
+      }).toList(),
+    };
+
+    final initiateRequest = RemitaInitiateRequest(
+      billPaymentProductId: productId,
+      amount: amount,
+      name: user?.fullName ?? 'ValarPay User',
+      paymentIdentifier: DateTime.now().millisecondsSinceEpoch.toString(),
+      email: widget.flightData['email'] ?? user?.email ?? '',
+      phoneNumber: widget.flightData['phone'] ?? user?.phoneNumber ?? '',
+      customerId: widget.flightData['bookingRef']!, // Using booking ref as customer ID for flights
+      metadata: metadata,
+    );
+
+    final initiation = await ref.read(remitaPaymentProvider.notifier).initiate(initiateRequest);
+
+    if (initiation != null) {
+      _showPinModal(initiation);
+    } else {
+      final state = ref.read(remitaPaymentProvider);
+      AppMessenger.show(context, message: state.message ?? 'Failed to initiate payment', type: MessageType.error);
+    }
+  }
+
+  Future<void> _showPinModal(RemitaInitiationResponse initiation) async {
+    final pin = await TransactionPinModal.show(context);
+    if (pin != null && pin.length == 4) {
+      _completePayment(initiation, pin);
+    }
+  }
+
+  Future<void> _completePayment(RemitaInitiationResponse initiation, String pin) async {
+    final paymentRequest = RemitaPaymentRequest(
+      rrr: initiation.rrr,
+      paymentIdentifier: initiation.paymentIdentifier,
+      amount: initiation.amount,
+      walletPin: pin,
+    );
+
+    await ref.read(remitaPaymentProvider.notifier).pay(paymentRequest);
+
+    final state = ref.read(remitaPaymentProvider);
+    if (state.isDataAvailable && state.singleData != null) {
+      _navigateToReceipt(state.singleData!);
+    } else {
+      AppMessenger.show(context, message: state.message ?? 'Payment failed', type: MessageType.error);
+    }
+  }
+
+  void _navigateToReceipt(RemitaPaymentResponse response) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionReceiptWidget(
+          headerText: 'Payment Successful',
+          amount: response.amount.toString(),
+          topDetails: [
+            TransactionDetail(label: 'RRR', value: response.rrr, showCopyIcon: true),
+            TransactionDetail(label: 'Amount', value: currencyFormatter(response.amount.toString())),
+            TransactionDetail(label: 'Airline', value: widget.flightData['flightName']!),
+            TransactionDetail(label: 'Booking Ref', value: widget.flightData['bookingRef']!, showCopyIcon: true),
+          ],
+          bottomDetails: [
+            TransactionDetail(label: 'Route', value: '${widget.flightData['departure']} → ${widget.flightData['destination']}'),
+            TransactionDetail(label: 'Class', value: widget.flightData['class'] ?? 'Economy'),
+            TransactionDetail(label: 'Passengers', value: '${passengers.length}'),
+            TransactionDetail(label: 'Transaction ID', value: response.transactionRef, showCopyIcon: true),
+            TransactionDetail(label: 'Date', value: DateFormat('dd MMM yyyy, HH:mm').format(DateTime.now())),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -102,21 +232,27 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
 
           // Continue button\
           FullWidthButton(
-            text: 'Continue',
+            text: 'Continue to Review',
             onPressed: () {
+              // Basic validation
+              for (var p in passengers) {
+                if (p['fullName'].text.isEmpty) {
+                  AppMessenger.show(context, message: 'Please enter all passenger names', type: MessageType.error);
+                  return;
+                }
+              }
+
+              final products = ref.read(remitaProductsProvider).data;
+              final productId = widget.flightData['productId'];
+              final product = products?.firstWhere((p) => p.billPaymentProductId == productId, orElse: () => products!.first);
+              final amount = product?.amount ?? 0.0;
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder:
                       (context) => ReuseableTransactionDetailsScreen(
-                        totalAmount: double.parse(
-                          (int.parse('45000') +
-                                  int.parse(serviceFee) +
-                                  int.parse(serviceFee) +
-                                  int.parse('35000') +
-                                  int.parse('25000'))
-                              .toString(),
-                        ),
+                        totalAmount: amount,
                         saveBeneficiary: saveBeneficiary,
                         onSaveBeneficiaryChanged: (value) {
                           setState(() {
@@ -124,7 +260,7 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
                           });
                         },
                         topTitleText: 'Flight',
-                        bottomTitleText: 'Fare Breakdown',
+                        bottomTitleText: 'Flight Details',
                         hasBottom: true,
                         topTransactionsDetailsList: [
                           buildDetailRow(
@@ -148,148 +284,42 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
                             isDark,
                           ),
                           buildDetailRow(
-                            'Phone Number',
-                            widget.flightData['phone'] ?? '0000000000000',
+                            'Booking Reference',
+                            widget.flightData['bookingRef'] ?? '',
                             isDark,
                           ),
                           buildDetailRow(
-                            'Email Address',
-                            widget.flightData['email'] ?? 'email@valarpay.com',
+                            'Phone Number',
+                            widget.flightData['phone'] ?? '',
                             isDark,
                           ),
                           buildDetailRow(
                             'Depature Date',
-                            '10 Oct 2025, 9:00 AM',
+                            widget.flightData['departureDate']?.split(' ')[0] ?? '',
                             isDark,
                           ),
                         ],
                         bottomTransactionsDetailsList: [
-                          buildDetailRow('Adults Fare', '₦45,000', isDark),
-                          buildDetailRow('Children Fare', '₦35,000', isDark),
-                          buildDetailRow('Infants Fare', '₦25,000', isDark),
-                          buildDetailRow(
-                            'Taxes and Fees',
-                            currencyFormatter(serviceFee),
-                            isDark,
-                          ),
+                          buildDetailRow('Ticket Fare', currencyFormatter(amount.toString()), isDark),
                           buildDetailRow(
                             'Service Charges',
-                            currencyFormatter(serviceFee),
+                            '₦0.00',
                             isDark,
                           ),
                           buildDetailRow(
                             'Total Amount',
-                            currencyFormatter(
-                              '${int.parse('45000') + int.parse(serviceFee) + int.parse(serviceFee) + int.parse('35000') + int.parse('25000')}',
-                            ),
+                            currencyFormatter(amount.toString()),
                             isDark,
                             isTotal: true,
                           ),
                         ],
-                        onButtonPressed: () async {
-                          final pin = await BiometricTransactionPinModal.show(
-                            context,
-                          );
-                          if (pin != null && pin.length == 4 && mounted) {
-                            if (mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => TransactionReceiptWidget(
-                                        headerText: 'Transaction',
-                                        amount:
-                                            '${int.parse('45000') + int.parse(serviceFee) + int.parse(serviceFee) + int.parse('35000') + int.parse('25000')}',
-                                        topDetails: [
-                                          TransactionDetail(
-                                            label: passengers[0]['fullName'],
-                                            value:
-                                                'TXN${DateTime.now().millisecondsSinceEpoch}',
-                                            showCopyIcon: true,
-                                          ),
-                                          TransactionDetail(
-                                            label:
-                                                passengers[1]['fullName'] ?? '',
-                                            value:
-                                                'TXN${DateTime.now().millisecondsSinceEpoch}',
-                                            showCopyIcon: true,
-                                          ),
-                                          TransactionDetail(
-                                            label:
-                                                passengers[2]['fullName'] ?? '',
-                                            value:
-                                                'TXN${DateTime.now().millisecondsSinceEpoch}',
-                                            showCopyIcon: true,
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Route',
-                                            value:
-                                                '${widget.flightData['departure']} → ${widget.flightData['destination']}',
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Class Type',
-                                            value:
-                                                widget.flightData['class'] ??
-                                                'Economy',
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Total Amount',
-                                            value: currencyFormatter('50000'),
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Fee',
-                                            value: currencyFormatter(
-                                              serviceFee,
-                                            ),
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Total Debit',
-                                            value: currencyFormatter(
-                                              '${int.parse('50000') + int.parse(serviceFee)}',
-                                            ),
-                                          ),
-                                        ],
-                                        bottomDetails: [
-                                          TransactionDetail(
-                                            label: 'Booking Reference',
-                                            value:
-                                                'TXN${DateTime.now().millisecondsSinceEpoch}',
-                                            showCopyIcon: true,
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Transaction ID',
-                                            value:
-                                                'TXN${DateTime.now().millisecondsSinceEpoch}',
-                                            showCopyIcon: true,
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Contact Information',
-                                            value:
-                                                '${widget.flightData['phone']} | ${widget.flightData['email']}',
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Airline',
-                                            value:
-                                                widget
-                                                    .flightData['flightName']!,
-                                          ),
-
-                                          TransactionDetail(
-                                            label: 'Payment Source',
-                                            value: 'ValarPay Account',
-                                          ),
-                                          TransactionDetail(
-                                            label: 'Date & Time',
-                                            value: '29 Sep 2025 | 8:15 pm',
-                                          ),
-                                        ],
-                                        // onShareReceipt: () {
-                                        //   // TODO: Implement share receipt functionality
-                                        // },
-                                      ),
-                                ),
-                              );
-                            }
+                        onButtonPressed: () => _handlePayment(),
+                        onBiometricButtonPressed: () async {
+                          final pin = await BiometricTransactionPinModal.show(context);
+                          if (pin != null && pin.length == 4) {
+                            // Initiation is needed first
+                            _handlePayment(); 
+                            // Note: We might need to refactor _handlePayment to take optional pin
                           }
                         },
                       ),

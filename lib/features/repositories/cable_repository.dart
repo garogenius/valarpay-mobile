@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:valarpay/features/models/cable_models.dart';
 import 'package:valarpay/core/network/api_client.dart';
@@ -11,10 +12,21 @@ class CableRepository {
   Future<CablePlanResponse> getCablePlans({required String currency}) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getCablePlan,
-        queryParameters: {'currency': currency},
+        ApiEndpoints.getFlutterwaveBillers('CABLEBILLS'),
+        queryParameters: {'country': 'NG'},
       );
-      return CablePlanResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
+      return CablePlanResponse(
+        data: data.map((json) => CablePlanInfo.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to get plans');
     }
@@ -25,10 +37,24 @@ class CableRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getCableVariation,
-        queryParameters: {'billerCode': billerCode},
+        ApiEndpoints.getFlutterwaveBillInfo,
+        queryParameters: {
+          'billerCode': billerCode,
+          'billType': 'cable',
+        },
       );
-      return CableVariationResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['products'] ?? rawData['items'] ?? rawData['content'] ?? [];
+      }
+      return CableVariationResponse(
+        data: data.map((json) => CableVariationInfo.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to get variations',
@@ -38,25 +64,17 @@ class CableRepository {
 
   Future<VerifyCableResponse> verifyCableNumber(
     VerifyCableRequest request,
-  ) async {
+   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.verifyCableNumber,
-        data: request.toJson(),
+        ApiEndpoints.verifyFlutterwaveCable,
+        data: {
+          'itemCode': request.billPaymentProductId,
+          'billerCode': request.billerCode,
+          'billerNumber': request.customerId,
+        },
       );
-
-      if (response.data != null && response.data is Map<String, dynamic>) {
-        return VerifyCableResponse.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      }
-
-      // If API returned non-map data, return response without typed data
-      return VerifyCableResponse(
-        data: null,
-        message: response.statusMessage ?? 'Verification completed',
-        statusCode: response.statusCode ?? 200,
-      );
+      return VerifyCableResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Verification failed');
     }
@@ -65,8 +83,11 @@ class CableRepository {
   Future<CablePaymentResponse> payCable(CablePayRequest request) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.payCable,
-        data: request.toJson(),
+        ApiEndpoints.payFlutterwaveBill('cable'),
+        data: {
+          ...request.toJson(),
+          'addBeneficiary': false,
+        },
       );
       if (response.data != null && response.data is Map<String, dynamic>) {
         return CablePaymentResponse.fromJson(response.data);

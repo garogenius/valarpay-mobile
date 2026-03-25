@@ -10,6 +10,7 @@ import 'package:valarpay/features/models/phone_number_request.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/models/verify_phone_number.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
 
 class VerifyPhoneScreen extends ConsumerStatefulWidget {
   final SignUpRequest request;
@@ -58,7 +59,11 @@ class _VerifyPhoneScreenState extends ConsumerState<VerifyPhoneScreen>
     }
     try {
       await ref.read(userNotifierProvider.notifier).verifyPhone(
-            VerifyPhoneOtpRequest(phoneNumber: phone, otpCode: _otp),
+            VerifyPhoneOtpRequest(
+              phoneNumber: phone,
+              otpCode: _otp,
+              userId: ref.read(userProvider)?.id,
+            ),
           );
       final userState = ref.read(userNotifierProvider);
 
@@ -88,7 +93,7 @@ class _VerifyPhoneScreenState extends ConsumerState<VerifyPhoneScreen>
       AppMessenger.show(
         context,
         type: MessageType.success,
-        message: 'Verification code sent to your phone number.',
+        message: ref.read(userNotifierProvider).message ?? 'Verification code sent to your phone number.',
       );
       _startResendTimer();
     } catch (e) {

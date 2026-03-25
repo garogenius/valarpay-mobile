@@ -13,7 +13,9 @@ class GiftCardNotifier extends StateNotifier<DataState<GiftCardProduct>> {
     : super(DataState<GiftCardProduct>.initial());
 
   Future<void> getCategories() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       await _repository.getCategories();
       state = state.copyWith(
@@ -32,7 +34,9 @@ class GiftCardNotifier extends StateNotifier<DataState<GiftCardProduct>> {
   }
 
   Future<void> getProducts({required String currency}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final response = await _repository.getProducts(currency: currency);
       state = state.copyWith(
@@ -109,7 +113,9 @@ class GiftCardCategoriesNotifier
     : super(DataState<GiftCardCategory>.initial());
 
   Future<void> getCategories() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final categories = await _repository.getCategories();
       state = state.copyWith(
@@ -171,7 +177,9 @@ class GiftcardBeneficiaryNotifier
     : super(DataState<GiftcardBeneficiary>.initial());
 
   Future<void> getGiftcardBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getGiftcardBeneficiaries();
       state = state.copyWith(

@@ -13,7 +13,9 @@ class CablePlansNotifier extends StateNotifier<DataState<CablePlanInfo>> {
     : super(DataState<CablePlanInfo>.initial());
 
   Future<void> getPlans({required String currency}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getCablePlans(currency: currency);
       state = state.copyWith(
@@ -43,7 +45,9 @@ class CableVariationNotifier
     : super(DataState<CableVariationInfo>.initial());
 
   Future<void> getVariations({required String billerCode}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getCableVariation(billerCode: billerCode);
       state = state.copyWith(
@@ -146,7 +150,9 @@ class CableBeneficiaryNotifier
     : super(DataState<CableBeneficiary>.initial());
 
   Future<void> getCableBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getCableBeneficiaries();
       state = state.copyWith(

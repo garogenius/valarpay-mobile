@@ -12,9 +12,14 @@ class NinVerificationResponse {
   });
 
   factory NinVerificationResponse.fromJson(Map<String, dynamic> json) {
+    String? parseMessage(dynamic val) {
+      if (val is List) return val.join(', ');
+      return val?.toString();
+    }
+
     return NinVerificationResponse(
-      message: json['message'],
-      error: json['error'],
+      message: parseMessage(json['message']),
+      error: parseMessage(json['error']),
       statusCode: json['statusCode'],
       user: json['user'],
     );

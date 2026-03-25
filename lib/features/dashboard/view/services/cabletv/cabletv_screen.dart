@@ -37,7 +37,6 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
   bool _isVerifying = false;
   bool _hasError = false;
   String _planAmount = ' Amount';
-  bool _loadingShown = false;
 
   @override
   void initState() {
@@ -109,29 +108,6 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
           isSuccessful: true,
         ),
       ];
-    }
-
-    void _showLoading() {
-      if (_loadingShown) return;
-      _loadingShown = true;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (_) => WillPopScope(
-              onWillPop: () async => false,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-      );
-    }
-
-    void _hideLoading() {
-      if (!_loadingShown) return;
-      _loadingShown = false;
-
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
     }
 
     void _navigateToReceipt() {
@@ -215,8 +191,6 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
         orElse: () => variations.first,
       );
 
-      _showLoading();
-
       try {
         await ref
             .read(cablePaymentNotifierProvider.notifier)
@@ -230,8 +204,6 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                 walletPin: pin,
               ),
             );
-
-        _hideLoading();
 
         if (!mounted) return;
 
@@ -259,8 +231,6 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
           );
         }
       } catch (e) {
-        _hideLoading();
-
         if (!mounted) return;
 
         final errorMessage = e.toString();
@@ -317,14 +287,13 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
         ),
         actions: null,
       ),
-      body:
-          !isBvnVerified
-              ? const KycNotSetWidget(
-                title: 'KYC Not Completed',
-                subtitle:
-                    'Complete your KYC verification to pay for cable TV subscriptions',
-              )
-              : Padding(
+      body: !isBvnVerified
+          ? const KycNotSetWidget(
+              title: 'KYC Not Completed',
+              subtitle: 'Complete your KYC verification to pay for cable TV subscriptions',
+            )
+          : SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,11 +478,9 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                                           )
                                           .verifyNumber(
                                             VerifyCableRequest(
-                                              itemCode: selectedVar.itemCode,
-                                              billerCode:
-                                                  selectedVar.billerCode,
-                                              billerNumber:
-                                                  _smartcardController.text,
+                                              billPaymentProductId: selectedVar.itemCode,
+                                              customerId: _smartcardController.text,
+                                              billerCode: selectedVar.billerCode,
                                             ),
                                           );
 
@@ -778,6 +745,7 @@ class _CableTvScreenState extends ConsumerState<CableTvScreen> {
                   ],
                 ),
               ),
+            ),
     );
   }
 

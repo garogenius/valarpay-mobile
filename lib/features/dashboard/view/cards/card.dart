@@ -3,6 +3,7 @@ import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/features/dashboard/view/cards/get_physical_card.dart';
 import 'package:valarpay/features/dashboard/view/cards/virtual_card_tab.dart';
+import 'package:valarpay/features/dashboard/view/cards/linked_card_tab.dart';
 
 class CardsScreen extends StatefulWidget {
   const CardsScreen({super.key});
@@ -12,7 +13,7 @@ class CardsScreen extends StatefulWidget {
 }
 
 class _CardsScreenState extends State<CardsScreen> {
-  bool isPhysicalCardSelected = false; // Defaulting to false to show Virtual Card as requested
+  int _currentTabIndex = 1; // Defaulting to Virtual Card tab index as requested previously
 
   @override
   Widget build(BuildContext context) {
@@ -45,18 +46,21 @@ class _CardsScreenState extends State<CardsScreen> {
                 ),
                 child: Row(
                   children: [
-                    _buildCardToggle("Physical Card", true),
-                    _buildCardToggle("Virtual Card", false),
+                    _buildCardToggle("Physical", 0),
+                    _buildCardToggle("Virtual", 1),
+                    _buildCardToggle("Linked", 2),
                   ],
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              if (isPhysicalCardSelected)
+              if (_currentTabIndex == 0)
                 _buildPhysicalCardIntro(context, isDark)
+              else if (_currentTabIndex == 1)
+                const VirtualCardTab()
               else
-                const VirtualCardTab(),
+                const LinkedCardTab(),
             ],
           ),
         ),
@@ -68,7 +72,6 @@ class _CardsScreenState extends State<CardsScreen> {
     return Column(
       children: [
         const SizedBox(height: 20),
-        // Card image
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.asset(
@@ -82,15 +85,12 @@ class _CardsScreenState extends State<CardsScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 40),
-
         _buildFeatureRow(Icons.card_giftcard, "Free Application and Usage", "Free application, Zero maintenance"),
         const SizedBox(height: 16),
         _buildFeatureRow(Icons.attach_money, "Accepted Globally", "Flexible spending with 10% annual interest"),
         const SizedBox(height: 16),
         _buildFeatureRow(Icons.verified_user, "Secure & Licensed", "Manage your card effortlessly in ValarPay App"),
-        
         const SizedBox(height: 24),
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
@@ -102,7 +102,6 @@ class _CardsScreenState extends State<CardsScreen> {
           ),
         ),
         const SizedBox(height: 48),
-
         FullWidthButton(
           text: "Get Card Now",
           onPressed: () {
@@ -143,12 +142,12 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
-  Expanded _buildCardToggle(String label, bool isPhysical) {
-    final bool isActive = isPhysicalCardSelected == isPhysical;
+  Expanded _buildCardToggle(String label, int index) {
+    final bool isActive = _currentTabIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => isPhysicalCardSelected = isPhysical),
+        onTap: () => setState(() => _currentTabIndex = index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(

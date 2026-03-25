@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/setup_pin.dart';
+import 'package:valarpay/features/dashboard/view/settings/create_passcode.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/core/services/session_timeout_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
@@ -21,10 +24,16 @@ class DashboardWrapper extends ConsumerStatefulWidget {
 
 class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     with WidgetsBindingObserver {
-  bool _hasShownPasscodePrompt = false;
+  // _hasShownPasscodePrompt is no longer used as we use _isShowingPrompt instead.
   DateTime? _lastPausedTime;
   static const _biometricGracePeriod = Duration(seconds: 5);
   static bool _isBiometricInProgress = false;
+
+  // Track if we've shown specific session-level prompts
+  static bool _hasShownKycInSession = false;
+  static bool _hasShownPasscodeInSession = false;
+  static bool _hasShownBiometricInSession = false;
+  static bool _justCompletedPinSetup = false;
 
   @override
   void initState() {
@@ -89,77 +98,134 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     }
   }
 
+  bool _isShowingPrompt = false;
+
   void _checkAndShowModals() async {
-    if (_hasShownPasscodePrompt) return;
-
     final user = ref.read(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
-    final hasPasscode = user?.isPasscodeSet ?? false;
+    if (user == null || _isShowingPrompt) return;
 
-    // Check if biometric is already enabled
-    final hasBiometric =
-        await LocalStorageService.getBool('pref_biometric_fingerprint') ??
-        false;
-    final hasFaceId =
-        await LocalStorageService.getBool('pref_biometric_faceid') ?? false;
-    final biometricEnabled = hasBiometric || hasFaceId;
+    // IMPORTANT: Check if we are actually on a dashboard root page
+    // We don't want to show modals while the user is on a setup page (like PIN setup)
+    final routerState = GoRouter.of(context).routeInformationProvider.value;
+    final currentPath = routerState.uri.path;
+    
+    // Only show these modals on the main dashboard screens
+    final isRootPage = ['/', '/finance', '/cards', '/me'].contains(currentPath);
+    if (!isRootPage) return;
 
-    // Check if user skipped biometric setup and if 1 month has passed
-    final biometricSkippedTime = await LocalStorageService.get(
-      'biometric_skipped_timestamp',
-    );
-    final shouldShowBiometric = _shouldShowBiometricPrompt(
-      biometricSkippedTime,
-    );
+    final isKycVerified = user.isBvnVerified || user.isNinVerified;
+    final isPasscodeSet = user.isPasscodeSet;
+    final isPinSet = user.isWalletPinSet;
 
-    // Check if device actually supports biometrics
+    // Device capability for biometrics
     bool deviceSupportsBiometrics = false;
     try {
       final localAuth = LocalAuthentication();
       final canCheck = await localAuth.canCheckBiometrics;
       final availableBiometrics = await localAuth.getAvailableBiometrics();
-
-      debugPrint('🔐 Biometric Check:');
-      debugPrint('   canCheckBiometrics: $canCheck');
-      debugPrint('   availableBiometrics: $availableBiometrics');
-      debugPrint('   isEmpty: ${availableBiometrics.isEmpty}');
-
       deviceSupportsBiometrics = canCheck && availableBiometrics.isNotEmpty;
-      debugPrint('   deviceSupportsBiometrics: $deviceSupportsBiometrics');
-    } catch (e) {
-      debugPrint('⚠️ Biometric check failed: $e');
-      // If check fails, assume no biometric support
-      deviceSupportsBiometrics = false;
+    } catch (_) {}
+
+    _isShowingPrompt = true;
+
+    // Priority 1: Login Passcode (Highest priority for security)
+    if (!isPasscodeSet) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showPasscodeSetupModal();
+        _isShowingPrompt = false;
+      });
+      return;
     }
 
-    _hasShownPasscodePrompt = true;
-
-    // Priority 1: Show KYC modal if BVN not verified
-    if (!isBvnVerified) {
-      Future.delayed(const Duration(milliseconds: 800), () {
+    // Priority 2: Identity Verification (BVN/NIN) - Moved up as per user request
+    if (!isKycVerified && !_hasShownKycInSession && !_justCompletedPinSetup) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
+          _hasShownKycInSession = true;
           _showKycVerificationModal();
         }
+        _isShowingPrompt = false;
       });
+      return;
     }
-    // Priority 2: Show Passcode modal if BVN verified but no passcode
-    else if (!hasPasscode) {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          _showPasscodeSetupModal();
-        }
+
+    // Priority 3: Transaction PIN - Only show if KYC is verified or if user opted to skip KYC for now
+    // Actually, per user request: "the transaction pin setup will only comes after the liveness check"
+    if (!isPinSet && isKycVerified) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showPinSetupModal();
+        _isShowingPrompt = false;
       });
+      return;
     }
-    // Priority 3: Show Biometric modal ONLY if device supports it
-    else if (!biometricEnabled &&
-        shouldShowBiometric &&
-        deviceSupportsBiometrics) {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          _showBiometricSetupModal();
-        }
-      });
+
+    // Priority 4: Biometric nudging
+    if (_hasShownBiometricInSession) {
+      _isShowingPrompt = false;
+      return;
     }
+    final hasBiometric = await LocalStorageService.getBool('pref_biometric_fingerprint') ?? false;
+    final hasFaceId = await LocalStorageService.getBool('pref_biometric_faceid') ?? false;
+    final biometricEnabled = hasBiometric || hasFaceId;
+    
+    if (!biometricEnabled && deviceSupportsBiometrics) {
+      final biometricSkippedTime = await LocalStorageService.get('biometric_skipped_timestamp');
+      if (_shouldShowBiometricPrompt(biometricSkippedTime)) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _hasShownBiometricInSession = true;
+            _showBiometricSetupModal();
+          }
+          _isShowingPrompt = false;
+        });
+        return;
+      }
+    }
+    
+    _isShowingPrompt = false;
+  }
+
+  void _showPinSetupModal() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_person_rounded, size: 48, color: Color(0xFFF76301)),
+            const SizedBox(height: 16),
+            const Text('Set Transaction PIN', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            const Text('Create a 4-digit PIN for authorizing transfers and payments.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/setup-pin'); // Use the new GoRouter path
+                },
+                style: ElevatedButton.styleFrom(
+                   backgroundColor: const Color(0xFFF76301),
+                   padding: const EdgeInsets.symmetric(vertical: 16),
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Setup PIN Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Check if biometric prompt should be shown (1 month since last skip)
@@ -270,6 +336,28 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
 
   @override
   Widget build(BuildContext context) {
+    // Listen for user updates to re-trigger security checks if something is still missing
+    ref.listen(userProvider, (previous, next) {
+      if (next != null) {
+        final pinChanged = previous?.isWalletPinSet != next.isWalletPinSet;
+        final passcodeChanged = previous?.isPasscodeSet != next.isPasscodeSet;
+        final kycChanged = (previous?.isBvnVerified != next.isBvnVerified) || 
+                          (previous?.isNinVerified != next.isNinVerified);
+                          
+        if (pinChanged || passcodeChanged || kycChanged) {
+          if (pinChanged && next.isWalletPinSet) {
+            // Set flag to prevent immediate KYC prompt after PIN setup
+            _DashboardWrapperState._justCompletedPinSetup = true;
+            // Reset this flag after a few minutes or after next page load
+            Future.delayed(const Duration(minutes: 5), () {
+              _DashboardWrapperState._justCompletedPinSetup = false;
+            });
+          }
+          _checkAndShowModals();
+        }
+      }
+    });
+
     return GestureDetector(
       // onTap: () => SessionTimeoutService.recordActivity(), // Disabled session timeout
       // onPanDown: (_) => SessionTimeoutService.recordActivity(), // Disabled session timeout
@@ -368,30 +456,44 @@ class _KycVerificationModal extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Verify Now Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const BVNPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: appTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Verification Option Buttons (Equal Prominence)
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/bvn-verification');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: appTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text('Verify with BVN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  child: const Text(
-                    'Verify Now',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NINPage()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: appTheme.primaryColor.withOpacity(0.1),
+                        foregroundColor: appTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text('Verify with NIN', style: TextStyle(color: appTheme.primaryColor, fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 12),
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:valarpay/features/dashboard/view/home/widgets/balance_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,11 @@ import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/payment_widget_icons.dart';
 import '../../widgets/home_widgets/kyc_widget.dart';
 import '../../widgets/home_widgets/ourservice.dart';
+import '../KYC/BVN.dart';
+import '../KYC/NIN.dart';
+import '../KYC/setup_pin.dart';
+import '../settings/create_passcode.dart';
+
 import '../../../../core/providers/dashboard_provider.dart';
 import '../../../../core/services/dashboard_service.dart';
 import '../../widgets/home_widgets/dashboard_customize_widgets.dart';
@@ -118,8 +124,13 @@ class _HomescreenState extends ConsumerState<Homescreen> {
           type: MessageType.error,
         );
       }
+    } finally {
+      // Logic handled by DashboardWrapper
     }
   }
+
+  // Consolidated security and registration checks into DashboardWrapper
+  void _checkSecurityAndKycStatus() {}
 
   @override
   Widget build(BuildContext context) {
@@ -158,12 +169,15 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     children: [
-                      _BalanceCard(
+                      user == null 
+                      ? const BalanceSkeleton() 
+                      : _BalanceCard(
                         balance: balance,
                         accountNumber: accountNumber,
                         isBalanceVisible: _isBalanceVisible,
                         onToggleVisibility: _toggleBalanceVisibility,
                       ),
+// Security tips card removed as requested
                       const SizedBox(height: 16),
                       const PaymentWidget(),
                       Consumer(

@@ -9,9 +9,9 @@ import 'package:valarpay/core/network/data_state.dart';
 final apiClientProvider = Provider((ref) => ApiClient());
 
 class ApiClient {
-  // static const String baseUrl = 'https://valarpay.nattycore.com';
-    static const String baseUrl = 'https://valar-pay-api.up.railway.app';
-  // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
+  static const String baseUrl = 'https://valarpay.nattycore.com';
+    // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
+  // static const String baseUrl = 'https://valar-pay-backend-staging.up.railway.app';
   static const String apiKey = '5821039487621507';
 
   late final Dio dio;
@@ -20,12 +20,12 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 120),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'x-api-key': apiKey,
+          'X-API-KEY': apiKey,
         },
       ),
     );

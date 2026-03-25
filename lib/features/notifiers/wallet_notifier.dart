@@ -11,23 +11,81 @@ class WalletNotifier extends StateNotifier<DataState<ApiResponse>> {
 
   WalletNotifier(this._repository) : super(DataState<ApiResponse>.initial());
 
-  Future<void> verifyBvnAndSetupWallet(BvnVerificationRequest request) async {
+  Future<bool> submitBasicKyc(BvnVerificationRequest request) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      final res = await _repository.verifyBVN(request);
+      final res = await _repository.verifyKyc(request);
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: true,
         data: [res],
         message: res.message,
       );
+      return true;
     } catch (e, stack) {
-      log('[WalletNotifier] error: $e\n$stack');
+      log('[WalletNotifier submitBasicKyc] error: $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
         message: e.toString(),
       );
+      return false;
+    }
+  }
+
+  Future<bool> submitBiometricKyc({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.submitBiometricKyc(
+        selfieImage: selfieImage,
+        livenessImages: livenessImages,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        data: [res],
+        message: res.message,
+      );
+      return true;
+    } catch (e, stack) {
+      log('[WalletNotifier biometricKyc] error: $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> submitSmartSelfieAuth({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.submitSmartSelfieAuth(
+        selfieImage: selfieImage,
+        livenessImages: livenessImages,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        data: [res],
+        message: res.message,
+      );
+      return true;
+    } catch (e, stack) {
+      log('[WalletNotifier smartSelfieAuth] error: $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: e.toString(),
+      );
+      return false;
     }
   }
 

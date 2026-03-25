@@ -32,11 +32,8 @@ class _ProfileHeaderCardState extends ConsumerState<ProfileHeaderCard> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(userNotifierProvider.notifier).refreshUserProfile();
 
-      final bool isLoggedIn = await SessionService.isLoggedIn();
-      if (!isLoggedIn) {
-        SessionService(context).logout();
-        ref.read(userIdleProvider.notifier).stopMonitoring();
-      }
+      // The session is handled globally by DashboardWrapper so we don't log out here
+      // to avoid buggy logouts when navigating to the Me screen
     });
   }
 

@@ -39,7 +39,6 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     text: '0',
   );
   bool _saveBeneficiary = false;
-  bool _loadingShown = false;
   DataBeneficiary? _selectedBeneficiary;
   bool _showRecentBeneficiaries = false;
   int _selectedTabIndex = 0; // 0: HOT, 1: Daily, 2: Weekly, 3: Monthly
@@ -61,10 +60,11 @@ class _DataScreenState extends ConsumerState<DataScreen> {
            
            NetworkProvider? currentPlan;
            try {
-             currentPlan = providers.firstWhere((p) => p.network.toLowerCase() == selectedNetwork.toLowerCase());
-           } catch (_) {
-             currentPlan = providers.first;
-           }
+             currentPlan = providers.firstWhere((p) => 
+               p.network.toLowerCase().contains(selectedNetwork.toLowerCase()) || 
+               selectedNetwork.toLowerCase().contains(p.network.toLowerCase())
+             );
+           } catch (_) {}
 
            if (currentPlan != null) {
               ref.read(dataSelectedNetworkProvider.notifier).state = currentPlan.network;
@@ -101,27 +101,6 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     return 'assets/images/default.png';
   }
 
-  void _showLoading() {
-    if (_loadingShown) return;
-    _loadingShown = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => WillPopScope(
-            onWillPop: () async => false,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-    );
-  }
-
-  void _hideLoading() {
-    if (!_loadingShown) return;
-    _loadingShown = false;
-    if (mounted && Navigator.canPop(context)) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-  }
 
   bool _isFormValid() {
     final selectedNetwork = ref.read(dataSelectedNetworkProvider);
@@ -156,7 +135,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final formatted = _formatTo11(phoneNumber);
     final cleanedPhone = formatted.replaceAll(RegExp(r'\D'), '');
 
-    if (cleanedPhone.length >= 10) {
+    if (cleanedPhone.length >= 4) {
       final providers = ref.read(dataProvidersNotifierProvider).data ?? [];
       if (providers.isNotEmpty) {
         final prefix = formatted.substring(0, 4);
@@ -180,17 +159,20 @@ class _DataScreenState extends ConsumerState<DataScreen> {
 
         if (detectedBillerId != null) {
           try {
-            final p = providers.firstWhere(
+            final p = providers.cast<NetworkProvider?>().firstWhere(
               (provider) =>
+                  provider != null && (
                   provider.billerId == detectedBillerId ||
                   provider.network.toUpperCase().contains(detectedBillerId!) ||
-                  provider.id.toString() == detectedBillerId,
-              orElse: () => providers.first,
+                  provider.id.toString() == detectedBillerId),
+              orElse: () => null,
             );
             
-            ref.read(dataSelectedNetworkProvider.notifier).state = p.network;
-            ref.read(dataSelectedOperatorIdProvider.notifier).state = p.operatorId;
-            ref.read(dataSelectedBillerIdProvider.notifier).state = p.billerId;
+            if (p != null) {
+              ref.read(dataSelectedNetworkProvider.notifier).state = p.network;
+              ref.read(dataSelectedOperatorIdProvider.notifier).state = p.operatorId;
+              ref.read(dataSelectedBillerIdProvider.notifier).state = p.billerId;
+            }
             
             if (mounted) setState(() {});
           } catch (e) {
@@ -295,9 +277,14 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                               final selectedBillerId = ref.watch(dataSelectedBillerIdProvider);
                                               
                                               String? iconUrl;
-                                              try {
-                                                iconUrl = plans.firstWhere((p) => p.billerId == selectedBillerId || p.network == selectedNetwork).billerIcon;
-                                              } catch (_) {}
+                                                try {
+                                                  iconUrl = plans.firstWhere((p) {
+                                                    // Ensure we are matching on non-empty, meaningful values
+                                                    if (selectedBillerId != null && selectedBillerId != '' && p.billerId == selectedBillerId) return true;
+                                                    if (selectedNetwork != '' && p.network.toLowerCase() == selectedNetwork.toLowerCase()) return true;
+                                                    return false;
+                                                  }).billerIcon;
+                                                } catch (_) {}
 
                                               if (iconUrl != null && iconUrl.isNotEmpty) {
                                                 return Image.network(
@@ -555,7 +542,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final bundles = variationState.data ?? <DataPlanBundle>[];
     
     if (variationState.isInitialLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SizedBox.shrink();
     }
 
     if (bundles.isEmpty) {
@@ -1261,7 +1248,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final selectedBillerId = ref.read(dataSelectedBillerIdProvider);
     final selectedPlanId = ref.read(dataSelectedPlanProvider);
     
-    _showLoading();
+      // manual loader removed
 
     try {
       final amount = double.tryParse(_amountController.text) ?? 0;
@@ -1278,7 +1265,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       );
 
       await ref.read(dataPurchaseNotifierProvider.notifier).purchase(request);
-      _hideLoading();
+        // manual loader removed
 
       if (!mounted) return;
 
@@ -1308,7 +1295,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         );
       }
     } catch (e) {
-      _hideLoading();
+        // manual loader removed
 
       if (!mounted) return;
 

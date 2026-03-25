@@ -8,6 +8,7 @@ import 'package:valarpay/core/widgets/terms_and_conditions_widget.dart';
 import 'package:valarpay/features/models/phone_number_request.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/services/session_service.dart';
 
 class ValidatePhoneScreen extends ConsumerStatefulWidget {
   final SignUpRequest request;
@@ -26,18 +27,41 @@ class _ValidatePhoneScreenState extends ConsumerState<ValidatePhoneScreen> {
   final _phoneController = TextEditingController();
   final String _selectedCountryCode = '+234';
 
+  @override
+  void initState() {
+    super.initState();
+    String storedPhone = widget.request.phoneNumber ?? '';
+    if (storedPhone.startsWith(_selectedCountryCode)) {
+      storedPhone = storedPhone.substring(_selectedCountryCode.length);
+    }
+    _phoneController.text = storedPhone;
+  }
+
   Future<void> _validatePhone() async {
     if (_formKey.currentState!.validate()) {
       try {
+        String inputPhone = _phoneController.text.trim();
+        // Remove leading zero if user typed it
+        if (inputPhone.startsWith('0')) {
+          inputPhone = inputPhone.substring(1);
+        }
+        final formattedPhone = '$_selectedCountryCode$inputPhone';
+
         await ref.read(userNotifierProvider.notifier).validatePhone(
-            PhoneNumberRequest(phoneNumber: _phoneController.text));
+            PhoneNumberRequest(phoneNumber: formattedPhone));
 
         final userState = ref.read(userNotifierProvider);
 
         if (userState.isDataAvailable && mounted) {
           final updatedRequest =
-              widget.request.copyWith(phoneNumber: _phoneController.text);
-          context.push('/verify-phone', extra: updatedRequest);
+              widget.request.copyWith(phoneNumber: formattedPhone);
+          
+          // Save draft locally
+          await SessionService.saveSignUpDraft(updatedRequest);
+          
+          if (mounted) {
+            context.push('/verify-phone', extra: updatedRequest);
+          }
         } else if (mounted) {
           AppMessenger.show(
             context,

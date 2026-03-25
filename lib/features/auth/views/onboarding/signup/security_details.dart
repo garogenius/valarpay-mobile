@@ -9,6 +9,7 @@ import 'package:valarpay/features/auth/widgets/need_help_modal.dart';
 import 'package:valarpay/features/models/email_request.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/services/session_service.dart';
 
 class SecurityDetailsScreen extends ConsumerStatefulWidget {
   final SignUpRequest request;
@@ -30,6 +31,14 @@ class _SecurityDetailsScreenState extends ConsumerState<SecurityDetailsScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.text = widget.request.email ?? '';
+    _passwordController.text = widget.request.password ?? '';
+    _confirmPasswordController.text = widget.request.password ?? '';
+  }
 
   Future<void> _validateEmail() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -54,7 +63,13 @@ class _SecurityDetailsScreenState extends ConsumerState<SecurityDetailsScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        context.push('/verify-email', extra: updatedRequest);
+        
+        // Save draft locally
+        await SessionService.saveSignUpDraft(updatedRequest);
+        
+        if (mounted) {
+          context.push('/verify-email', extra: updatedRequest);
+        }
       } else if (mounted) {
         AppMessenger.show(
           context,
@@ -150,6 +165,25 @@ class _SecurityDetailsScreenState extends ConsumerState<SecurityDetailsScreen> {
                     if (value.length < 8 || value.length > 32) {
                       return 'Password must be between 8 and 32 characters';
                     }
+                    
+                    bool hasUppercase = value.contains(RegExp(r'[A-Z]'));
+                    bool hasDigits = value.contains(RegExp(r'[0-9]'));
+                    bool hasLowercase = value.contains(RegExp(r'[a-z]'));
+                    bool hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+                    if (!hasUppercase) {
+                      return 'Password must contain at least one uppercase letter';
+                    }
+                    if (!hasLowercase) {
+                      return 'Password must contain at least one lowercase letter';
+                    }
+                    if (!hasDigits) {
+                      return 'Password must contain at least one number';
+                    }
+                    if (!hasSpecialCharacters) {
+                      return 'Password must contain at least one special character';
+                    }
+                    
                     final pattern = RegExp(r'^[ -~]+$'); // printable ASCII
                     if (!pattern.hasMatch(value)) {
                       return 'Password contains invalid characters';

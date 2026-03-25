@@ -11,7 +11,13 @@ class EducationRepository {
   Future<List<EducationBiller>> getSchoolBillers() async {
     try {
       final response = await apiClient.get(ApiEndpoints.getSchoolBillers);
-      final List data = response.data['data'] ?? [];
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
       return data.map((json) => EducationBiller.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch school billers');
@@ -20,8 +26,14 @@ class EducationRepository {
 
   Future<List<EducationBiller>> getRemitaSchoolBillers() async {
     try {
-      final response = await apiClient.get(ApiEndpoints.getRemitaSchoolBillers);
-      final List data = response.data['data'] ?? [];
+      final response = await apiClient.get(ApiEndpoints.getRemitaPlan('education'));
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
       return data.map((json) => EducationBiller.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch Remita school billers');
@@ -30,8 +42,14 @@ class EducationRepository {
 
   Future<List<EducationBiller>> getVendingProviders() async {
     try {
-      final response = await apiClient.get(ApiEndpoints.getVendingProviders);
-      final List data = response.data['data'] ?? [];
+      final response = await apiClient.get(ApiEndpoints.getRemitaPlan('vending'));
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
       return data.map((json) => EducationBiller.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch vending providers');
@@ -44,7 +62,13 @@ class EducationRepository {
         ApiEndpoints.getEducationBillerItems,
         query: {'billerCode': billerCode},
       );
-      final List data = response.data['data'] ?? [];
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['products'] ?? rawData['content'] ?? [];
+      }
       return data.map((json) => EducationProduct.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch biller items');
@@ -53,18 +77,25 @@ class EducationRepository {
 
   Future<List<EducationProduct>> getVendingProducts({
     required String provider,
-    String categoryCode = 'educations',
+    String categoryCode = 'education',
   }) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getVendingProducts,
         query: {
           'categoryCode': categoryCode,
-          'provider': provider.toLowerCase(),
         },
       );
-      final List data = response.data['data'] ?? [];
-      return data.map((json) => EducationProduct.fromJson(json)).toList();
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['products'] ?? rawData['content'] ?? [];
+      }
+      return data.map((json) => EducationProduct.fromJson(json))
+                 .where((p) => p.name.toLowerCase().contains(provider.toLowerCase()))
+                 .toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch vending products');
     }
@@ -81,7 +112,7 @@ class EducationRepository {
         data: {
           'itemCode': itemCode,
           'billerCode': billerCode,
-          'billerNumber': billerNumber,
+          'customerId': billerNumber,
         },
       );
       return EducationVerificationResponse.fromJson(response.data);
@@ -100,7 +131,7 @@ class EducationRepository {
         data: {
           'itemCode': itemCode,
           'billerCode': 'WAEC',
-          'billerNumber': billerNumber,
+          'customerId': billerNumber,
         },
       );
       return EducationVerificationResponse.fromJson(response.data);
@@ -119,7 +150,7 @@ class EducationRepository {
         data: {
           'itemCode': itemCode,
           'billerCode': 'JAMB',
-          'billerNumber': billerNumber,
+          'customerId': billerNumber,
         },
       );
       return EducationVerificationResponse.fromJson(response.data);

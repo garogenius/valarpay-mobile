@@ -19,7 +19,9 @@ class AirtimeProvidersNotifier
     : super(DataState<NetworkProvider>.initial());
 
   Future<void> fetchProviders() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getAirtimeNetworkProviders();
       state = state.copyWith(
@@ -51,7 +53,9 @@ class AirtimePlanNotifier extends StateNotifier<DataState<AirtimePlan>> {
     required String phone,
     required String currency,
   }) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getAirtimePlan(phone: phone, currency: currency);
       state = state.copyWith(
@@ -71,7 +75,9 @@ class AirtimePlanNotifier extends StateNotifier<DataState<AirtimePlan>> {
   }
 
   Future<void> getVariation({required String billerId}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getAirtimeVariation(billerId: billerId);
       state = state.copyWith(
@@ -250,7 +256,9 @@ class AirtimeBeneficiaryNotifier
     : super(DataState<AirtimeBeneficiary>.initial());
 
   Future<void> getAirtimeBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final user = _ref.read(userNotifierProvider).data?.first;
       final userId = user?.id ?? '';

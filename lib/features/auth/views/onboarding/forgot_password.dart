@@ -66,35 +66,39 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(userNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Forgot Password',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Enter your email or phone number to reset your password',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  color: isDark ? Colors.white70 : Colors.grey,
                 ),
               ),
               const SizedBox(height: 40),
@@ -102,30 +106,36 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Email/Phone Number',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _usernameController,
                     keyboardType: TextInputType.text,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
                     decoration: InputDecoration(
                       hintText: 'Enter your email or phone number',
                       hintStyle: TextStyle(
-                        color: Colors.grey.shade400,
+                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                         fontSize: 14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -134,6 +144,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 16),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -188,6 +200,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

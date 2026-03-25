@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
+import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/features/dashboard/view/KYC/nin_identity_verification.dart';
 
@@ -26,13 +27,7 @@ class _NinCameraPermissionPageState
       final status = await Permission.camera.request();
 
       if (status.isGranted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                NinIdentityVerificationPage(nin: widget.nin),
-          ),
-        );
+        context.push('/nin-identity-verification/${widget.nin}');
       } else if (status.isDenied) {
         AppMessenger.show(
           context,

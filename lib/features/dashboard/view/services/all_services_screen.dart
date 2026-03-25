@@ -86,6 +86,18 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             label: 'Education',
             onTap: () => context.push('/education'),
           );
+        } else if (billType.contains('TAX')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Pay Tax',
+            onTap: () => context.push('/flutterwave-billing/TAX/Pay Tax'),
+          );
+        } else if (billType.contains('GOVERNMENT') || billType.contains('GOV')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Gov Fees',
+            onTap: () => context.push('/flutterwave-billing/GOVERNMENT_PAYMENT/Government Fees'),
+          );
         }
 
         if (item != null) {
@@ -143,11 +155,11 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             label: 'Easylife Savings',
             onTap: () => context.push('/finance/easylife/intro'),
           ),
-          // ServiceItem(
-          //   icon: 'assets/images/service_icon/cable.svg',
-          //   label: 'Fixed Savings',
-          //   onTap: () => context.push('/finance/savings/fixed/plans'),
-          // ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/cable.svg',
+            label: 'Fixed Savings',
+            onTap: () => context.push('/finance/savings/fixed/plans'),
+          ),
           ServiceItem(
             icon: 'assets/images/service_icon/light.svg',
             label: 'Target Saving',
@@ -169,6 +181,11 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
       ServiceCategory(
         title: 'Bill Payments',
         items: [
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'All Bills',
+            onTap: () => context.push('/remita-categories'),
+          ),
           ServiceItem(
             icon: 'assets/images/service_icon/airtime.svg',
             label: 'Airtime',
@@ -207,27 +224,17 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'Education',
-            onTap: () => context.push('/education'),
+            onTap: () => context.push('/remita-billing/education/Education'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/Education.svg',
+            label: 'School Fees',
+            onTap: () => context.push('/remita-billing/education/School Fees'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/int.svg',
             label: 'Intl Airtime',
             onTap: () => context.push('/international-airtime'),
-          ),
-          // ServiceItem(
-          //   icon: 'assets/images/service_icon/Education.svg',
-          //   label: 'WAEC',
-          //   onTap: () => context.push('/coming-soon'),
-          // ),
-          ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
-            label: 'Shopping',
-            onTap: () => context.push('/coming-soon'),
-          ),
-          ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
-            label: 'Cowry Card',
-            onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/flight.svg',
@@ -237,11 +244,32 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/flight.svg',
             label: 'Transport',
+            onTap: () => context.push('/remita-billing/transportation/Transport'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Pay Tax',
+            onTap: () => context.push('/flutterwave-billing/TAX/Pay Tax'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Gov Fees',
+            onTap: () =>
+                context.push('/flutterwave-billing/GOVERNMENT_PAYMENT/Government Fees'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'TSA/State',
             onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/light.svg',
-            label: 'Water',
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Hospital',
+            onTap: () => context.push('/coming-soon'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Water Bill',
             onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
@@ -249,6 +277,16 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             label: 'Swap',
             onTap: () => context.push('/swap-currency'),
           ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/shoping.svg',
+            label: 'Shopping',
+            onTap: () => context.push('/shopping'),
+          ),
+          // ServiceItem(
+          //   icon: 'assets/images/service_icon/Insurance.svg',
+          //   label: 'Insurance',
+          //   onTap: () => context.push('/coming-soon'),
+          // ),
         ],
       ),
     ];

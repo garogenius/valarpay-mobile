@@ -9,7 +9,9 @@ import 'package:valarpay/core/widgets/terms_and_conditions_widget.dart';
 import 'package:valarpay/features/auth/widgets/need_help_modal.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/utils/input_sanitizer.dart';
 
+import 'package:valarpay/core/services/session_service.dart';
 import '../../../../models/user_availablity_request.dart';
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
@@ -29,6 +31,21 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _dobController = TextEditingController();
   final _referralController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill if resuming from a draft
+    if (widget.request.fullname != null &&
+        widget.request.fullname!.contains(' ')) {
+      final names = widget.request.fullname!.split(' ');
+      _firstNameController.text = names[0];
+      _lastNameController.text = names.sublist(1).join(' ');
+    }
+    _usernameController.text = widget.request.username ?? '';
+    _dobController.text = widget.request.dateOfBirth ?? '';
+    _referralController.text = widget.request.referralCode ?? '';
+  }
+
   Future<void> _checkUserAvailablity() async {
     try {
       if (_formKey.currentState!.validate()) {
@@ -47,12 +64,18 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         } else {
           final updatedRequest = widget.request.copyWith(
             fullname:
-                '${_firstNameController.text.toString().trim()} ${_lastNameController.text.toString().trim()}',
-            username: _usernameController.text,
+                '${InputSanitizer.sanitize(_firstNameController.text)} ${InputSanitizer.sanitize(_lastNameController.text)}',
+            username: InputSanitizer.sanitize(_usernameController.text),
             dateOfBirth: _dobController.text,
-            referralCode: _referralController.text,
+            referralCode: InputSanitizer.sanitize(_referralController.text),
           );
-          context.push('/security-details', extra: updatedRequest);
+          
+          // Save draft locally
+          await SessionService.saveSignUpDraft(updatedRequest);
+          
+          if (mounted) {
+            context.push('/security-details', extra: updatedRequest);
+          }
         }
       }
     } catch (e) {
@@ -239,7 +262,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      _dobController.text = DateFormat('d-MMM-y').format(picked);
+      _dobController.text = DateFormat('dd-MM-yyyy').format(picked);
     }
   }
 

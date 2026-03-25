@@ -16,6 +16,10 @@ import 'package:valarpay/core/widgets/transaction_receipt_widget.dart';
 import 'package:valarpay/features/models/transfer_models.dart';
 import 'package:valarpay/features/notifiers/transfer_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
+import 'package:valarpay/core/widgets/smart_selfie_widget.dart';
+import 'package:valarpay/core/services/smileid_socket_service.dart';
+import 'dart:async';
+import 'package:valarpay/features/notifiers/wallet_notifier.dart';
 
 class TransferAmountScreen extends ConsumerStatefulWidget {
   final Bank selectedBank;
@@ -89,12 +93,33 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
         });
       }
     });
+    SmileIdSocketService().connect();
+  }
+  
+  StreamSubscription? _smartSelfieSub;
+  bool _isLivenessVerifying = false;
+
+  void _listenToSmartSelfie(VoidCallback onVerified) {
+    _smartSelfieSub?.cancel();
+    _smartSelfieSub = SmileIdSocketService().smartSelfieStream.listen((data) {
+      if (!mounted || !_isLivenessVerifying) return;
+      
+      setState(() => _isLivenessVerifying = false);
+      
+      if (data['resultCode'] == '0' || data['resultCode'] == '1020' || data['resultCode'] == '1') {
+        onVerified();
+      } else {
+        AppMessenger.show(context, message: data['resultText'] ?? 'Liveness verification failed', type: MessageType.error);
+        if (Navigator.canPop(context)) Navigator.pop(context); // Pop back if on selfie screen 
+      }
+    });
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _smartSelfieSub?.cancel();
     super.dispose();
   }
 
@@ -337,11 +362,38 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     );
 
     if (!hasEnoughBalance) return;
+    
+    if (_amount >= 50000) {
+      _listenToSmartSelfie(() {
+        Navigator.pop(context); // Pop the selfie widget if pushed
+        _proceedToPinEntry(biometric);
+      });
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SmartSelfieWidget(
+            onComplete: (selfie, liveness) async {
+              setState(() => _isLivenessVerifying = true);
+              final ok = await ref.read(walletNotifierProvider.notifier).submitSmartSelfieAuth(
+                selfieImage: selfie,
+                livenessImages: liveness,
+              );
+              return ok;
+            },
+          ),
+        ),
+      );
+      return;
+    }
 
-    final pin =
-        biometric
-            ? await BiometricTransactionPinModal.show(context)
-            : await TransactionPinModal.show(context);
+    await _proceedToPinEntry(biometric);
+  }
+
+  Future<void> _proceedToPinEntry(bool biometric) async {
+    final pin = biometric
+        ? await BiometricTransactionPinModal.show(context)
+        : await TransactionPinModal.show(context);
 
     if (pin != null && pin.length == 4) {
       final pinString = pin.toString();

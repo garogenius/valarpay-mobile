@@ -15,7 +15,9 @@ class SchoolBillersNotifier extends StateNotifier<DataState<EducationBiller>> {
   SchoolBillersNotifier(this._repository) : super(DataState<EducationBiller>.initial());
 
   Future<void> fetchBillers({bool useRemita = false}) async {
-    state = state.copyWith(isInitialLoading: true, isOverlayHidden: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final billers = useRemita 
           ? await _repository.getRemitaSchoolBillers()
@@ -42,7 +44,9 @@ class VendingProvidersNotifier extends StateNotifier<DataState<EducationBiller>>
   VendingProvidersNotifier(this._repository) : super(DataState<EducationBiller>.initial());
 
   Future<void> fetchProviders() async {
-    state = state.copyWith(isInitialLoading: true, isOverlayHidden: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final providers = await _repository.getVendingProviders();
       state = state.copyWith(
@@ -67,7 +71,9 @@ class EducationProductsNotifier extends StateNotifier<DataState<EducationProduct
   EducationProductsNotifier(this._repository) : super(DataState<EducationProduct>.initial());
 
   Future<void> fetchBillerItems(String billerCode) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final items = await _repository.getEducationBillerItems(billerCode);
       state = state.copyWith(
@@ -86,7 +92,9 @@ class EducationProductsNotifier extends StateNotifier<DataState<EducationProduct
   }
 
   Future<void> fetchVendingProducts(String provider) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final items = await _repository.getVendingProducts(provider: provider);
       state = state.copyWith(

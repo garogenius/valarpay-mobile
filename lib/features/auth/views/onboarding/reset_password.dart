@@ -66,15 +66,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final userState = ref.watch(userNotifierProvider);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => GoRouter.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
         ),
       ),
       body: SafeArea(
@@ -85,12 +87,12 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Reset Password',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -98,7 +100,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   'Create a new password between 8 and 32 characters to keep your account secure.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
                     height: 1.4,
                   ),
                 ),
@@ -125,6 +127,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     }
                     return null;
                   },
+                  isDark: isDark,
                 ),
 
                 const SizedBox(height: 24),
@@ -147,6 +150,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     }
                     return null;
                   },
+                  isDark: isDark,
                 ),
 
                 const SizedBox(height: 40),
@@ -171,16 +175,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     required bool obscureText,
     required VoidCallback onToggleVisibility,
     required String? Function(String?) validator,
+    required bool isDark,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
         const SizedBox(height: 8),
@@ -188,9 +193,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           controller: controller,
           obscureText: obscureText,
           validator: validator,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            hintStyle: TextStyle(
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+              fontSize: 14,
+            ),
             suffixIcon: IconButton(
               onPressed: onToggleVisibility,
               icon: Icon(
@@ -200,20 +209,22 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: appTheme.primaryColor),
+              borderSide: const BorderSide(color: appTheme.primaryColor),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50,
           ),
         ),
       ],

@@ -11,6 +11,7 @@ import 'package:valarpay/features/models/email_request.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/models/verify_email_request.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/services/session_service.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
   final SignUpRequest request;
@@ -73,7 +74,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen>
       final userState = ref.read(userNotifierProvider);
 
       if (userState.isDataAvailable && mounted) {
-        context.push('/validate-phone', extra: widget.request);
+        _register();
       } else if (mounted) {
         AppMessenger.show(
           context,
@@ -98,7 +99,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen>
           .validateEmail(EmailRequest(email: widget.request.email));
       AppMessenger.show(
         context,
-        message: 'Verification code sent to your email.',
+        message: ref.read(userNotifierProvider).message ?? 'Verification code sent to your email.',
         type: MessageType.success,
       );
       _startResendTimer();
@@ -110,6 +111,30 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen>
       );
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _register() async {
+    FocusScope.of(context).unfocus();
+    final notifier = ref.read(userNotifierProvider.notifier);
+
+    widget.request.accountType == "BUSINESS"
+        ? await notifier.registerBusiness(widget.request)
+        : await notifier.register(widget.request);
+
+    final state = ref.read(userNotifierProvider);
+    if (state.isDataAvailable) {
+      if (mounted) {
+        context.pushReplacement('/signup-success', extra: widget.request);
+      }
+    } else {
+      if (mounted) {
+        AppMessenger.show(
+          context,
+          message: state.message ?? 'Registration failed',
+          type: MessageType.error,
+        );
+      }
     }
   }
 

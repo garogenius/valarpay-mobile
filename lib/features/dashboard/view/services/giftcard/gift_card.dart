@@ -43,7 +43,6 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
   List<GiftCardCategory> _categories = [];
   bool _isLoadingRate = false;
   bool _saveBeneficiary = false;
-  bool _loadingShown = false;
 
   @override
   void initState() {
@@ -668,7 +667,7 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
   }
 
   Future<void> _processPayment(String pin, double amount) async {
-    _showLoading();
+    // manual loader removed
 
     final paymentRequest = GiftCardPaymentRequest(
       productId: _selectedProduct!.productId,
@@ -684,7 +683,7 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
           .read(giftCardNotifierProvider.notifier)
           .payForGiftCard(paymentRequest);
 
-      _hideLoading();
+      // manual loader removed
 
       if (!mounted) return;
 
@@ -712,7 +711,7 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
         );
       }
     } catch (e) {
-      _hideLoading();
+      // manual loader removed
       if (!mounted) return;
       AppMessenger.show(
         context,
@@ -799,25 +798,5 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
     );
   }
 
-  void _showLoading() {
-    if (_loadingShown) return;
-    _loadingShown = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => WillPopScope(
-            onWillPop: () async => false,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-    );
-  }
-
-  void _hideLoading() {
-    if (!_loadingShown) return;
-    _loadingShown = false;
-    if (mounted && Navigator.canPop(context)) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-  }
+  // Manual loader methods removed
 }

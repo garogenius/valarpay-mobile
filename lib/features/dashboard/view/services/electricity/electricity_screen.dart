@@ -170,9 +170,9 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
       final selectedDisco = ref.read(electricitySelectedDiscoProvider)!;
 
       final request = VerifyMeterNumberRequest(
-        itemCode: selectedMeterType.itemCode,
-        billerCode: selectedDisco.billerCode, // Use billerCode
-        billerNumber: _meterNumberController.text,
+        billPaymentProductId: selectedMeterType.itemCode ?? '',
+        customerId: _meterNumberController.text,
+        billerCode: selectedDisco.billerCode,
       );
 
       final response = await ref
@@ -180,54 +180,31 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
           .verifyMeterNumber(request);
 
       if (response != null && response.data != null) {
-        // API uses response_code '00' to indicate success
-        final success =
-            response.data!.responseCode == '00' ||
-            response.data!.responseMessage.toLowerCase().contains('success');
+        // validate-customer returns 200 with data.name when successful
+        final success = response.data!.name.isNotEmpty;
         if (success) {
           setState(() {
             _isMeterVerified = true;
-            // update service fee from API if provided
             _verifyMeterNumberData = response.data;
             _customerName = _verifyMeterNumberData?.name ?? '';
+            // set minimum amount as service fee baseline if provided
             try {
               final feeInt = response.data!.fee.toInt();
-              _serviceFee = feeInt.toString();
+              if (feeInt > 0) _serviceFee = feeInt.toString();
             } catch (_) {}
           });
           return;
         }
-      } else {
-        setState(() {
-          _hasError = true;
-          _isMeterVerified = false;
-          _customerName = '';
-        });
       }
+      // Fallthrough: no data or empty name = error
+      setState(() {
+        _hasError = true;
+        _isMeterVerified = false;
+        _customerName = '';
+      });
     }
 
-    void _showLoading() {
-      if (_loadingShown) return;
-      _loadingShown = true;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (_) => WillPopScope(
-              onWillPop: () async => false,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-      );
-    }
-
-    void _hideLoading() {
-      if (!_loadingShown) return;
-      _loadingShown = false;
-
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
+    // cable plans are read when needed (e.g. in modal builders)
 
     void _navigateToReceipt() {
       final paymentResponse =
@@ -316,14 +293,10 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
         amount: double.parse(_amountController.text.replaceAll(',', '')),
       );
 
-      _showLoading();
-
       try {
         await ref
             .read(electricityPaymentNotifierProvider.notifier)
             .payElectricity(request);
-
-        _hideLoading();
 
         if (!mounted) return;
 
@@ -352,8 +325,6 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
           );
         }
       } catch (e) {
-        _hideLoading();
-
         if (!mounted) return;
 
         final errorMessage = e.toString();
@@ -411,51 +382,20 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                   _isMeterVerified = false;
                   _customerName = '';
                 });
-                // We DO NOT call getBillInfo here anymore as the variations are in the plans list
+                // Call getBillInfo to fetch meter types for the newly selected Disco
+                ref.read(electricityBillInfoNotifierProvider.notifier).getBillInfo(billerId: disco.billerCode);
               },
             ),
       );
     }
 
     void _showMeterTypeModal(BuildContext context) {
-      final electricityState = ref.read(electricityNotifierProvider);
+      final billInfoState = ref.read(electricityBillInfoNotifierProvider);
       final selectedDisco = ref.read(electricitySelectedDiscoProvider);
       
-      if (!electricityState.isDataAvailable || electricityState.data == null || selectedDisco == null) return;
+      if (!billInfoState.isDataAvailable || billInfoState.data == null || selectedDisco == null) return;
 
-      // Filter all plans to find those belonging to the selected Disco
-      final discoBillerCode = selectedDisco.billerCode;
-      
-      final relevantPlans = electricityState.data!.where((plan) {
-         // Match by billerCode. fallback to billerName if needed
-         return plan.billerCode == discoBillerCode;
-      }).toList();
-
-      // Convert these plans to ElectricityBillInfo for the modal
-      // The modal expects ElectricityBillInfo but we have ElectricityPlan
-      // We'll create temporary bill info objects
-      final meterTypes = relevantPlans.map((plan) => ElectricityBillInfo(
-        id: int.tryParse(plan.id) ?? 0, 
-        billerCode: plan.billerCode, 
-        name: plan.planName, // This should be "Eko Prepaid" etc
-        defaultCommission: 0, 
-        dateAdded: plan.createdAt, 
-        country: plan.countryISOCode, 
-        isAirtime: false, 
-        billerName: plan.billerName ?? '', 
-        itemCode: plan.itemCode ?? '', 
-        shortName: plan.shortName, 
-        fee: plan.amount, 
-        commissionOnFee: false, 
-        regExpression: '', 
-        labelName: '', 
-        amount: plan.amount, 
-        isResolvable: true, 
-        groupName: '', 
-        categoryName: plan.planName, 
-        commissionOnFeeOrAmount: 0, 
-        payAmount: plan.amount
-      )).toList();
+      final meterTypes = billInfoState.data!;
 
       showModalBottomSheet(
         context: context,
@@ -524,11 +464,12 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                 subtitle:
                     'Complete your KYC verification to pay electricity bills',
               )
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     // Select Disco
                     Text(
                       'Select Disco',
@@ -954,6 +895,7 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
                   ],
                 ),
               ),
+            ),
     );
   }
 }

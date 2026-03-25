@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
 import 'package:valarpay/features/dashboard/view/KYC/setup_pin.dart';
+import 'package:go_router/go_router.dart';
 import 'package:valarpay/features/models/user.dart';
 
 class KYCWidget extends StatelessWidget {
@@ -72,31 +74,26 @@ class KYCWidget extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // Button
           ElevatedButton(
             onPressed: () {
               final isBvnVerified = user?.isBvnVerified ?? false;
+              final isNinVerified = user?.isNinVerified ?? false;
               final isWalletPinSet = user?.isWalletPinSet ?? false;
-              final shouldSkipBvnVerification =
-                  isBvnVerified && !isWalletPinSet;
 
-              if (shouldSkipBvnVerification) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SetupTransactionPinPage(),
-                  ),
-                );
+              if (isBvnVerified || isNinVerified) {
+                if (!isWalletPinSet) {
+                  context.push('/setup-pin');
+                } else {
+                  // Already fully verified
+                }
               } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BVNPage()),
-                );
+                // Show choice modal for BVN vs NIN
+                _showVerificationChoice(context);
               }
             },
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
-              backgroundColor: appTheme.primaryColor, // secondary blue
+              backgroundColor: appTheme.primaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -106,9 +103,55 @@ class KYCWidget extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            child: const Text('Setup'),
+            child: const Text('Verify Now'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showVerificationChoice(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Identity Verification',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Choose your preferred method to verify your identity',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/bvn-verification');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: appTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Use BVN', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

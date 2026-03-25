@@ -265,8 +265,7 @@ class _BettingScreenState extends ConsumerState<BettingScreen> {
       addBeneficiary: saveBeneficiary,
     );
 
-    // Show loading
-    AppMessenger.show(context, message: 'Processing payment...', type: MessageType.info);
+    // manual loader removed
 
     await ref.read(bettingPayNotifierProvider.notifier).payBetting(request);
     

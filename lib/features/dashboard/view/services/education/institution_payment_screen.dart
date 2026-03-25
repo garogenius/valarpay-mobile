@@ -39,10 +39,10 @@ class _InstitutionPaymentScreenState extends ConsumerState<InstitutionPaymentScr
 
   void _fetchProducts() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.biller.category == '6') {
-        ref.read(educationProductsProvider.notifier).fetchBillerItems(widget.biller.billerId);
-      } else {
+      if (widget.biller.category == 'vending') {
         ref.read(educationProductsProvider.notifier).fetchVendingProducts(widget.biller.billerId);
+      } else {
+        ref.read(educationProductsProvider.notifier).fetchBillerItems(widget.biller.billerId);
       }
     });
   }
@@ -234,9 +234,7 @@ class _InstitutionPaymentScreenState extends ConsumerState<InstitutionPaymentScr
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: productsState.isInitialLoading
-                          ? const Center(child: SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)))
-                          : Text(
+                      child: Text(
                               _selectedProduct == null 
                                   ? 'Choose product' 
                                   : '${_selectedProduct!.name} - ${currencyFormatter(_selectedProduct!.amount.toString())}',

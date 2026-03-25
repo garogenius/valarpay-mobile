@@ -34,7 +34,7 @@ class UserRepository {
       );
       return LoginResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Sign up failed');
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -46,9 +46,7 @@ class UserRepository {
       );
       return LoginResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Business registration failed',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -68,11 +66,7 @@ class UserRepository {
         throw Exception('Unexpected response: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      final serverMessage =
-          e.response?.data != null
-              ? e.response?.data['message'] ?? 'User existance check failed'
-              : 'User existance check failed';
-      throw Exception(serverMessage);
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     } catch (e) {
       throw Exception('User existance check failed');
     }
@@ -86,9 +80,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to resend verification code',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -100,9 +92,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Email verification failed',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -114,9 +104,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to resend verification code',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -128,9 +116,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Phone verification failed',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -142,9 +128,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to send reset link',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -156,7 +140,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Failed to verify OTP');
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -168,9 +152,7 @@ class UserRepository {
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to reset password',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -182,9 +164,7 @@ class UserRepository {
       );
       return SetWalletPinResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to set wallet PIN',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -194,9 +174,7 @@ class UserRepository {
       final user = UserModel.fromJson(response.data);
       return user;
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to fetch user profile',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -210,9 +188,7 @@ class UserRepository {
       );
       return VerifyWalletPinResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to verify wallet PIN',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
   }
 
@@ -326,11 +302,7 @@ class UserRepository {
 
       return UserModel.fromJson(userData);
     } on DioException catch (e) {
-       final message = e.response?.data?['message'];
-       if (message is List) {
-         throw Exception(message.join(', '));
-       }
-      throw Exception(message ?? 'Failed to update profile');
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     } catch (e) {
       throw Exception('Failed to update profile: $e');
     }
@@ -346,22 +318,143 @@ class UserRepository {
     }
   }
 
-  /// Verify NIN for Tier 2 KYC upgrade
+  String _normalizeDate(String rawDate) {
+    if (rawDate.isEmpty) return rawDate;
+
+    // Already in YYYY-MM-DD format
+    final isoPattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (isoPattern.hasMatch(rawDate)) return rawDate;
+
+    // Try DD-MM-YYYY or DD/MM/YYYY
+    final ddMmYyyyPattern = RegExp(r'^(\d{2})[-/](\d{2})[-/](\d{4})$');
+    final match = ddMmYyyyPattern.firstMatch(rawDate);
+    if (match != null) {
+      final day = match.group(1)!;
+      final month = match.group(2)!;
+      final year = match.group(3)!;
+      return '$year-$month-$day';
+    }
+
+    // Try standard parsing
+    try {
+      final date = DateTime.parse(rawDate);
+      return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    } catch (_) {}
+
+    // Fallback: return as-is and let server handle it
+    return rawDate;
+  }
+
+  /// Submit SmileID Basic KYC (BVN or NIN number verification)
+  Future<ApiResponse> submitBasicKyc({
+    required String idType,
+    required String idNumber,
+    required String dob,
+    String? phoneNumber, // optional
+  }) async {
+    try {
+      final Map<String, dynamic> payload = {
+        'idType': idType,
+        'idNumber': idNumber,
+        'dob': _normalizeDate(dob), // ensure YYYY-MM-DD format
+      };
+      // Only include phone if provided
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        payload['phoneNumber'] = phoneNumber;
+      }
+      final response = await apiClient.post(
+        ApiEndpoints.basicKyc,
+        data: payload,
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Basic KYC submission failed: $e');
+    }
+  }
+
+  /// Submit SmileID Smart Selfie Registration (Enrolling liveness)
+  Future<ApiResponse> submitSmartSelfieRegister({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.biometricKyc,
+        data: {
+          'selfieImage': selfieImage,
+          'livenessImages': livenessImages,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Smart Selfie Registration failed: $e');
+    }
+  }
+
+  /// Submit SmileID Smart Selfie Authentication (Biometric for 50k+ transfers)
+  Future<ApiResponse> submitSmartSelfieAuth({
+    required String selfieImage,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.smartSelfieAuth,
+        data: {
+          'selfieImage': selfieImage,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Smart Selfie Authentication failed: $e');
+    }
+  }
+
+  /// Poll SmileID job status
+  Future<ApiResponse> getSmileIdJobStatus(String jobId) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.smileIdJobStatus(jobId),
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Failed to get job status: $e');
+    }
+  }
+
+  /// Verify NIN for Tier 2 KYC upgrade (Legacy/Wrapper for NinVerificationRequest)
   Future<NinVerificationResponse> verifyNinTier2(
     NinVerificationRequest request,
   ) async {
     try {
-      final response = await apiClient.post(
-        ApiEndpoints.kycTier2,
-        data: request.toJson(),
-      );
-
-      return NinVerificationResponse.fromJson(response.data);
+       // If liveness is present, we call smart selfie register
+       if (request.selfieImage.isNotEmpty) {
+          final res = await submitSmartSelfieRegister(
+            selfieImage: request.selfieImage,
+            livenessImages: request.livenessImages ?? [],
+          );
+          return NinVerificationResponse(
+            message: res.message,
+            statusCode: res.statusCode,
+          );
+       } else {
+          // If no images, we call the old kycTier2 or basicKyc
+          final response = await apiClient.post(
+            ApiEndpoints.kycTier2,
+            data: request.toJson(),
+          );
+          return NinVerificationResponse.fromJson(response.data);
+       }
     } on DioException catch (e) {
-      // Return error response with proper structure
       return NinVerificationResponse(
-        message: e.response?.data['message'] ?? 'NIN verification failed',
-        error: e.response?.data['error'] ?? 'Bad Request',
+        message: ApiResponse.getErrorMessage(e.response?.data),
+        error: e.response?.data is Map? e.response?.data['error'] ?? 'Bad Request' : 'Bad Request',
         statusCode: e.response?.statusCode ?? 400,
       );
     } catch (e) {
@@ -389,20 +482,7 @@ class UserRepository {
         );
       }
     } on DioException catch (e) {
-      // Try to extract the error message from the response
-      String errorMessage = 'Failed to submit address verification';
-      if (e.response?.data != null) {
-        if (e.response!.data is Map) {
-          errorMessage =
-              e.response!.data['message'] ??
-              e.response!.data['error'] ??
-              errorMessage;
-        } else if (e.response!.data is String) {
-          errorMessage = e.response!.data;
-        }
-      }
-
-      throw Exception(errorMessage);
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     } catch (e) {
       throw Exception('Failed to submit address verification: $e');
     }
@@ -442,9 +522,7 @@ class UserRepository {
 
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'Document upload failed',
-      );
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     } catch (e) {
       throw Exception('Failed to upload document: $e');
     }

@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valarpay/core/routing/app_router.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/features/models/login.dart';
 import 'package:valarpay/features/models/user.dart';
+import 'package:valarpay/features/models/signup_request.dart';
 
 class SessionService {
   late BuildContext context;
@@ -13,12 +15,38 @@ class SessionService {
     context = incomingBuildContext;
   }
 
+  static const _secureStorage = FlutterSecureStorage();
   static const String _userDetailsKey = 'user_details';
   static const String _userAccessToken = 'user_access_token';
   static const String _usernameKey = 'username';
   static const String _userFullnameKey = 'user_fullname';
   static const String _userActualUsernameKey = 'user_actual_username';
   static const String _userPhoneNumberKey = 'user_phone_number';
+  static const String _signUpDraftKey = 'sign_up_draft';
+
+  // Save signup draft
+  static Future<void> saveSignUpDraft(SignUpRequest request) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_signUpDraftKey, jsonEncode(request.toJson()));
+  }
+
+  // Get signup draft
+  static Future<SignUpRequest?> getSignUpDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_signUpDraftKey);
+    if (jsonString == null) return null;
+    try {
+      return SignUpRequest.fromJson(jsonDecode(jsonString));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Clear signup draft
+  static Future<void> clearSignUpDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_signUpDraftKey);
+  }
 
   // Save login session
   static Future<void> saveSession(LoginResponse response) async {
@@ -28,17 +56,27 @@ class SessionService {
     await prefs.setString(_userFullnameKey, response.user.fullname);
     await prefs.setString(_userActualUsernameKey, response.user.username);
     await prefs.setString(_userPhoneNumberKey, response.user.phoneNumber ?? '');
-    //save token if any
+    
+    // Save token if any in secure storage and SharedPreferences as a fallback
     if (response.accessToken != null) {
+      try {
+        await _secureStorage.write(key: _userAccessToken, value: response.accessToken!);
+      } catch (e) {
+        debugPrint('Secure storage write failed: $e');
+      }
       await prefs.setString(_userAccessToken, response.accessToken!);
     }
   }
 
   static Future<String?> getAccessToken() async {
+    try {
+      final token = await _secureStorage.read(key: _userAccessToken);
+      if (token != null && token.isNotEmpty) return token;
+    } catch (e) {
+      debugPrint('Secure storage read failed: $e');
+    }
     final prefs = await SharedPreferences.getInstance();
-    final accessToken = prefs.getString(_userAccessToken);
-    if (accessToken == null) return null;
-    return accessToken;
+    return prefs.getString(_userAccessToken);
   }
 
   static Future<String?> getUsername() async {
@@ -84,7 +122,7 @@ class SessionService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userDetailsKey);
-    await prefs.remove(_userAccessToken);
+    await _secureStorage.delete(key: _userAccessToken);
 
     final fpEnabled = await LocalStorageService.getBool(
       'pref_biometric_fingerprint',
@@ -103,7 +141,7 @@ class SessionService {
   Future<void> logout2() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userDetailsKey);
-    await prefs.remove(_userAccessToken);
+    await _secureStorage.delete(key: _userAccessToken);
 
     final fpEnabled = await LocalStorageService.getBool(
       'pref_biometric_fingerprint',

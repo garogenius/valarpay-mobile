@@ -25,7 +25,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       context: context,
       builder:
           (ctx) => Dialog(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(ctx).cardColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -39,23 +39,34 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       IconButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.arrow_back),
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: Theme.of(ctx).colorScheme.onSurface,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(ctx).colorScheme.onSurface,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  ...options.map(
-                    (option) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildDialogOption(option, ctx),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: options.map(
+                          (option) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildDialogOption(option, ctx),
+                          ),
+                        ).toList(),
+                      ),
                     ),
                   ),
                 ],
@@ -67,6 +78,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Widget _buildDialogOption<T>(DialogOption<T> option, BuildContext ctx) {
     final isSelected = option.isSelected;
+    final isDark = Theme.of(ctx).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         if (option.disabled == false) {
@@ -75,15 +87,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(20), // increased padding for height
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: option.disabled == true ? Colors.grey.shade100 : Colors.white,
+          color: option.disabled == true
+              ? (isDark ? Colors.white10 : Colors.grey.shade100)
+              : Colors.transparent,
           border: Border.all(
             width: 1,
-            color:
-                isSelected
-                    ? (option.activeColor ?? appTheme.primaryColor)
-                    : Colors.grey.shade300,
+            color: isSelected
+                ? (option.activeColor ?? Theme.of(ctx).primaryColor)
+                : (isDark ? Colors.white12 : Colors.grey.shade300),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -94,10 +107,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? option.activeColor!.withOpacity(0.2)
-                          : Colors.grey.shade100,
+                  color: isSelected
+                      ? (option.activeColor?.withOpacity(0.2) ??
+                          Theme.of(ctx).primaryColor.withOpacity(0.2))
+                      : (isDark ? Colors.white10 : Colors.grey.shade100),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 alignment: Alignment.center,
@@ -110,9 +123,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   Text(
                     option.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: Theme.of(ctx).colorScheme.onSurface,
                     ),
                   ),
                   if (option.subtitle != null) const SizedBox(height: 6),
@@ -121,7 +135,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       option.subtitle!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(ctx)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                     ),
                 ],
@@ -150,17 +167,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         DialogOption(
           title: 'Personal',
           subtitle: 'For individuals and everyday needs',
-          value: 'PERSONAL',
+          value: 'Personal',
           groupValue: selectedAccountType,
-          activeColor: appTheme.primaryColor,
+          activeColor: Theme.of(context).primaryColor,
           onTap: () => {setState(() => selectedAccountType = 'Personal')},
         ),
         DialogOption(
           title: 'Business',
           subtitle: 'For organizations and corporate needs',
-          value: 'BUSINESS',
+          value: 'Business',
           groupValue: selectedAccountType,
-          activeColor: appTheme.primaryColor,
+          activeColor: Theme.of(context).primaryColor,
           onTap: () => setState(() => selectedAccountType = 'Business'),
         ),
       ],
@@ -226,9 +243,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         actions: [
           TextButton(
             onPressed: () => NeedHelpModal.show(context),
-            child: const Text(
+            child: Text(
               'Need Help?',
-              style: TextStyle(color: appTheme.primaryColor, fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -240,24 +260,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           children: [
             _buildLogoHeader(),
             const SizedBox(height: 40),
-            const Text(
+            Text(
               'Create account',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            Text(
               'Select the account type that best fits your needs',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 24),
 
             // Label + selection tile
-            const Text(
+            Text(
               'Account Type',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 8),
@@ -268,12 +294,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
             const SizedBox(height: 24),
 
-            const Text(
+            Text(
               'Currency',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 8),
@@ -324,38 +350,50 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        const Text(
+        Text(
           'Valarpay',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildSelectionTile(String value, VoidCallback onTap, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 60, // increased height for better touch target
+        height: 60,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          color: Theme.of(context).cardColor.withOpacity(0.5),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.grey.shade300,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(icon),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down),
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ],
         ),
       ),

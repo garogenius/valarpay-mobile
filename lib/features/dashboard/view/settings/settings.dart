@@ -51,6 +51,11 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Transaction PIN Settings',
                       onTap: () => context.push('/transaction-pin-settings'),
                     ),
+                    SettingsListTile(
+                      icon: Icons.history_outlined,
+                      title: 'Login Activity History',
+                      onTap: () => context.push('/login-history'),
+                    ),
                   ],
                 ),
               ),

@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:valarpay/core/constants/api_endpoints.dart';
 import 'package:valarpay/features/models/electricity.dart';
@@ -8,15 +9,38 @@ class ElectricityRepository {
 
   ElectricityRepository(this.apiClient);
 
+  Future<void> fetchFlutterwaveCategories() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.getFlutterwaveCategories);
+      log('Flutterwave Bill Categories: ${response.data}');
+    } catch (e) {
+      log('Error fetching Flutterwave Categories: $e');
+    }
+  }
+
   Future<ElectricityPlanResponse> getElectricityPlans({
     required String currency,
   }) async {
     try {
+      // First fetch categories to console as requested
+      await fetchFlutterwaveCategories();
+
       final response = await apiClient.get(
-        ApiEndpoints.getElectricityPlan,
-        queryParameters: {'currency': currency},
+        ApiEndpoints.getFlutterwaveBillers('UTILITYBILLS'),
+        queryParameters: {'country': 'NG'},
       );
-      return ElectricityPlanResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
+      return ElectricityPlanResponse(
+        data: data.map((json) => ElectricityPlan.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to get electricity plans',
@@ -29,10 +53,24 @@ class ElectricityRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getElectricityVariation,
-        queryParameters: {'billerId': billerId},
+        ApiEndpoints.getFlutterwaveBillInfo,
+        queryParameters: {
+          'billerCode': billerId,
+          'billType': 'electricity',
+        },
       );
-      return ElectricityBillInfoResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['products'] ?? rawData['items'] ?? rawData['content'] ?? [];
+      }
+      return ElectricityBillInfoResponse(
+        data: data.map((json) => ElectricityBillInfo.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to get bill information',
@@ -45,8 +83,12 @@ class ElectricityRepository {
   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.verifyMeterNumber,
-        data: request.toJson(),
+        ApiEndpoints.verifyFlutterwaveElectricity,
+        data: {
+          'itemCode': request.billPaymentProductId,
+          'billerCode': request.billerCode,
+          'billerNumber': request.customerId,
+        },
       );
       return VerifyMeterNumberResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -59,8 +101,11 @@ class ElectricityRepository {
   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.payElectricity,
-        data: request.toJson(),
+        ApiEndpoints.payFlutterwaveBill('electricity'),
+        data: {
+          ...request.toJson(),
+          'addBeneficiary': false,
+        },
       );
       return ElectricityPaymentResponse.fromJson(response.data);
     } on DioException catch (e) {

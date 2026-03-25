@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:valarpay/core/utils/input_sanitizer.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/session_service.dart';
+import 'package:valarpay/core/services/login_activity_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/device_utils.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
@@ -43,8 +45,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       final notifier = ref.read(authNotifierProvider.notifier);
 
       final request = LoginRequest(
-        username: _usernameController.text.trim(),
-        password: _passwordController.text.trim(),
+        username: InputSanitizer.sanitize(_usernameController.text),
+        password: _passwordController.text, // Don't sanitize password as it can contain any character
         ipAddress: ip,
         deviceName: deviceName,
         operatingSystem: deviceOs,
@@ -56,6 +58,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
       if (!mounted) return;
       if (state.isDataAvailable) {
+        await LoginActivityService.trackLogin('success');
         final loginResponse = state.data?.first;
         ref.read(userProvider.notifier).setUser(loginResponse!.user);
         await SessionService.saveSession(loginResponse);
@@ -74,6 +77,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           return;
         }
       } else {
+        await LoginActivityService.trackLogin('failed');
         if (!mounted) return;
         AppMessenger.show(
           context,

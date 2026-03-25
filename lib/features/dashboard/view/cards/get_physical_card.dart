@@ -39,165 +39,156 @@ class _GetPhysicalCardScreenState extends State<GetPhysicalCardScreen> {
         ),
         centerTitle: false,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 10),
+
+              // Preference selector
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _openPreferenceSelector,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isDark
+                            ? const Color(0xFF1F1F1F)
+                            : Theme.of(
+                              context,
+                            ).cardColor.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          isDark
+                              ? Colors.transparent
+                              : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 10),
-
-                      // Preference selector
-                      InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: _openPreferenceSelector,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? const Color(0xFF1F1F1F)
-                                    : Theme.of(
-                                      context,
-                                    ).cardColor.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color:
-                                  isDark
-                                      ? Colors.transparent
-                                      : Colors.grey.shade300,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedPreference,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Icon(Icons.keyboard_arrow_down_rounded),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 60),
-
-                      // Illustration
-                      Image.asset(
-                        'assets/images/card_branch.png', // change this to your illustration asset
-                        height: 250,
-                        fit: BoxFit.contain,
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // Title
-                      const Text(
-                        "Get Your ATM Card",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Subtitle
                       Text(
-                        "Order your ValarPay ATM card today and enjoy easy withdrawals and payments anywhere.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.4,
-                          color: isDark ? Colors.white38 : Colors.grey.shade700,
+                        selectedPreference,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-
-                      const Spacer(),
-
-                      // Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // navigate to branch map or next step
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: appTheme.primaryColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Locate Nearest Branch",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      FittedBox(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Licensed by CBN'),
-                                const SizedBox(width: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.asset(
-                                    'assets/images/cbn.png',
-                                    height: 30,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Deposit issued by NDIC'),
-                                const SizedBox(width: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.asset(
-                                    'assets/images/ndic.png',
-                                    height: 30,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
+                      const Icon(Icons.keyboard_arrow_down_rounded),
                     ],
                   ),
                 ),
               ),
-            ),
-          );
-        },
+
+              const SizedBox(height: 60),
+
+              // Illustration
+              Image.asset(
+                'assets/images/card_branch.png', // change this to your illustration asset
+                height: 250,
+                fit: BoxFit.contain,
+              ),
+
+              const SizedBox(height: 30),
+
+              // Title
+              const Text(
+                "Get Your ATM Card",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Subtitle
+              Text(
+                "Order your ValarPay ATM card today and enjoy easy withdrawals and payments anywhere.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: isDark ? Colors.white38 : Colors.grey.shade700,
+                ),
+              ),
+
+              Expanded(child: const SizedBox()),
+
+              // Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // navigate to branch map or next step
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: appTheme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    "Locate Nearest Branch",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              FittedBox(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Licensed by CBN'),
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            'assets/images/cbn.png',
+                            height: 30,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Deposit issued by NDIC'),
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            'assets/images/ndic.png',
+                            height: 30,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }

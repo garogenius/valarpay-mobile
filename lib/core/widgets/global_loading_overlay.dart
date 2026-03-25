@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:valarpay/core/utils/color_utils.dart';
+import 'package:valarpay/core/themes/color_utils.dart';
 import 'package:valarpay/features/notifiers/airtime_notifier.dart';
 import 'package:valarpay/features/notifiers/auth_notifier.dart';
 import 'package:valarpay/features/notifiers/cable_notifier.dart';
@@ -23,6 +23,8 @@ import 'package:valarpay/features/notifiers/savings_notifier.dart';
 import 'package:valarpay/features/notifiers/easylife_notifier.dart';
 import 'package:valarpay/features/notifiers/fixed_deposit_notifier.dart';
 import 'package:valarpay/features/notifiers/investment_notifier.dart';
+import 'package:valarpay/features/notifiers/remita_notifier.dart';
+import 'package:valarpay/features/notifiers/flutterwave_bill_notifier.dart';
 
 class GlobalLoadingOverlay extends ConsumerStatefulWidget {
   final Widget child;
@@ -43,7 +45,7 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 400),
     )..repeat();
   }
 
@@ -62,6 +64,9 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
 
     // Bill Payments & Purchases
     final airtimePurchaseState = ref.watch(airtimePurchaseNotifierProvider);
+    final airtimePlanState = ref.watch(airtimePlanNotifierProvider);
+    final airtimeProvidersState = ref.watch(airtimeProvidersNotifierProvider);
+    
     final electricityPaymentState = ref.watch(
       electricityPaymentNotifierProvider,
     );
@@ -112,30 +117,38 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
     final electricityBeneficiaryState = ref.watch(electricityBeneficiaryNotifierProvider);
     final cableBeneficiaryState = ref.watch(cableBeneficiaryNotifierProvider);
     final bettingBeneficiaryState = ref.watch(bettingBeneficiaryNotifierProvider);
+    
+    // Remita
+    final remitaCategoriesState = ref.watch(remitaCategoriesProvider);
+    final remitaBillersState = ref.watch(remitaBillersProvider);
+    final remitaProductsState = ref.watch(remitaProductsProvider);
+    final remitaValidationState = ref.watch(remitaValidationProvider);
+    final remitaPaymentState = ref.watch(remitaPaymentProvider);
+
+    // Flutterwave Bill
+    final flutterwaveBillersState = ref.watch(flutterwaveBillersProvider);
+    final flutterwaveProductsState = ref.watch(flutterwaveProductsProvider);
+    final flutterwaveValidationState = ref.watch(flutterwaveValidationProvider);
+    final flutterwavePaymentState = ref.watch(flutterwaveBillPaymentProvider);
+    final flutterwaveCategoriesState = ref.watch(flutterwaveCategoriesProvider);
 
     // Check if any of the critical notifiers are in initial loading state AND overlay is NOT hidden
     final isLoading =
         (authState.isInitialLoading && !authState.isOverlayHidden) ||
         (userState.isInitialLoading && !userState.isOverlayHidden) ||
         (transferState.isInitialLoading && !transferState.isOverlayHidden) ||
-        (airtimePurchaseState.isInitialLoading &&
-            !airtimePurchaseState.isOverlayHidden) ||
-        (electricityPaymentState.isInitialLoading &&
-            !electricityPaymentState.isOverlayHidden) ||
-        (cablePaymentState.isInitialLoading &&
-            !cablePaymentState.isOverlayHidden) ||
-        (dataPurchaseState.isInitialLoading &&
-            !dataPurchaseState.isOverlayHidden) ||
-        (internetPaymentState.isInitialLoading &&
-            !internetPaymentState.isOverlayHidden) ||
+        (airtimePurchaseState.isInitialLoading && !airtimePurchaseState.isOverlayHidden) ||
+        (airtimePlanState.isInitialLoading && !airtimePlanState.isOverlayHidden) ||
+        (airtimeProvidersState.isInitialLoading && !airtimeProvidersState.isOverlayHidden) ||
+        (electricityPaymentState.isInitialLoading && !electricityPaymentState.isOverlayHidden) ||
+        (cablePaymentState.isInitialLoading && !cablePaymentState.isOverlayHidden) ||
+        (dataPurchaseState.isInitialLoading && !dataPurchaseState.isOverlayHidden) ||
+        (internetPaymentState.isInitialLoading && !internetPaymentState.isOverlayHidden) ||
         (giftCardState.isInitialLoading && !giftCardState.isOverlayHidden) ||
-        (changePasswordState.isInitialLoading &&
-            !changePasswordState.isOverlayHidden) ||
-        (changePasscodeState.isInitialLoading &&
-            !changePasscodeState.isOverlayHidden) ||
+        (changePasswordState.isInitialLoading && !changePasswordState.isOverlayHidden) ||
+        (changePasscodeState.isInitialLoading && !changePasscodeState.isOverlayHidden) ||
         (resetPinState.isInitialLoading && !resetPinState.isOverlayHidden) ||
-        (updateDetailsState.isInitialLoading &&
-            !updateDetailsState.isOverlayHidden) ||
+        (updateDetailsState.isInitialLoading && !updateDetailsState.isOverlayHidden) ||
         (reportScamState.isInitialLoading && !reportScamState.isOverlayHidden) ||
         (educationPurchaseState.isInitialLoading && !educationPurchaseState.isOverlayHidden) ||
         (internationalPurchaseState.isInitialLoading && !internationalPurchaseState.isOverlayHidden) ||
@@ -159,14 +172,20 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
         (schoolBillersState.isInitialLoading && !schoolBillersState.isOverlayHidden) ||
         (vendingProvidersState.isInitialLoading && !vendingProvidersState.isOverlayHidden) ||
         (internationalCountriesState.isInitialLoading && !internationalCountriesState.isOverlayHidden) ||
-
         (internetVariationState.isInitialLoading && !internetVariationState.isOverlayHidden) ||
         (internetBeneficiaryState.isInitialLoading && !internetBeneficiaryState.isOverlayHidden) ||
-        (airtimeBeneficiaryState.isInitialLoading && !airtimeBeneficiaryState.isOverlayHidden) ||
-        (dataBeneficiaryState.isInitialLoading && !dataBeneficiaryState.isOverlayHidden) ||
-        (electricityBeneficiaryState.isInitialLoading && !electricityBeneficiaryState.isOverlayHidden) ||
         (cableBeneficiaryState.isInitialLoading && !cableBeneficiaryState.isOverlayHidden) ||
-        (bettingBeneficiaryState.isInitialLoading && !bettingBeneficiaryState.isOverlayHidden);
+        (bettingBeneficiaryState.isInitialLoading && !bettingBeneficiaryState.isOverlayHidden) ||
+        (remitaCategoriesState.isInitialLoading && !remitaCategoriesState.isOverlayHidden) ||
+        (remitaBillersState.isInitialLoading && !remitaBillersState.isOverlayHidden) ||
+        (remitaProductsState.isInitialLoading && !remitaProductsState.isOverlayHidden) ||
+        (remitaValidationState.isInitialLoading && !remitaValidationState.isOverlayHidden) ||
+        (remitaPaymentState.isInitialLoading && !remitaPaymentState.isOverlayHidden) ||
+        (flutterwaveBillersState.isInitialLoading && !flutterwaveBillersState.isOverlayHidden) ||
+        (flutterwaveProductsState.isInitialLoading && !flutterwaveProductsState.isOverlayHidden) ||
+        (flutterwaveValidationState.isInitialLoading && !flutterwaveValidationState.isOverlayHidden) ||
+        (flutterwavePaymentState.isInitialLoading && !flutterwavePaymentState.isOverlayHidden) ||
+        (flutterwaveCategoriesState.isInitialLoading && !flutterwaveCategoriesState.isOverlayHidden);
 
     return Stack(
       children: [
@@ -175,86 +194,75 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
           Container(
             width: double.infinity,
             height: double.infinity,
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.4),
             child: Center(
-              child: Image.asset(
-                'assets/gifs/valarpay.gif',
-                width: 85.w,
-                height: 85.h,
-                fit: BoxFit.contain,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer ring - rotates clockwise
+                      Transform.rotate(
+                        angle: _controller.value * 2 * 3.14159,
+                        child: SizedBox(
+                          width: 100.w,
+                          height: 100.w,
+                          child: CustomPaint(
+                            painter: _GradientArcPainter(
+                              progress: _controller.value,
+                              radius: 45.w,
+                              strokeWidth: 4.w,
+                              sweepAngle: 4.71239, // 270 degrees
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Inner ring - rotates counter-clockwise
+                      Transform.rotate(
+                        angle: -_controller.value * 2 * 3.14159,
+                        child: SizedBox(
+                          width: 75.w,
+                          height: 75.w,
+                          child: CustomPaint(
+                            painter: _GradientArcPainter(
+                              progress: _controller.value,
+                              radius: 35.w,
+                              strokeWidth: 3.w,
+                              sweepAngle: 4.71239, // 270 degrees
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Pulsing logo in center
+                      Transform.scale(
+                        scale: 1.0 + (0.05 * (0.5 - (_controller.value - 0.5).abs())),
+                        child: Container(
+                          width: 50.w,
+                          height: 50.w,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                              color: AppColors.primaryColor.withOpacity(0.2),
+                                blurRadius: 15,
+                                spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                          padding: EdgeInsets.all(8.w),
+                          child: Image.asset(
+                            'assets/images/logo.png', // Corrected logo path
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
-            // child:
-            // Center(
-            //   child: AnimatedBuilder(
-            //     animation: _controller,
-            //     builder: (context, child) {
-            //       return Stack(
-            //         alignment: Alignment.center,
-            //         children: [
-            //           // Outer ring - rotates clockwise
-            //           Transform.rotate(
-            //             angle: _controller.value * 2 * 3.14159,
-            //             child: SizedBox(
-            //               width: 120,
-            //               height: 120,
-            //               child: CustomPaint(
-            //                 painter: _GradientArcPainter(
-            //                   progress: _controller.value,
-            //                   radius: 60,
-            //                   strokeWidth: 6,
-            //                   sweepAngle: 4.71239, // 270 degrees
-            //                 ),
-            //               ),
-            //             ),
-            //           ),
-            //           // Inner ring - rotates counter-clockwise
-            //           Transform.rotate(
-            //             angle: -_controller.value * 2 * 3.14159,
-            //             child: SizedBox(
-            //               width: 90,
-            //               height: 90,
-            //               child: CustomPaint(
-            //                 painter: _GradientArcPainter(
-            //                   progress: _controller.value,
-            //                   radius: 45,
-            //                   strokeWidth: 5,
-            //                   sweepAngle: 4.71239, // 270 degrees
-            //                 ),
-            //               ),
-            //             ),
-            //           ),
-            //           // Pulsing logo in center
-            //           Transform.scale(
-            //             scale:
-            //                 1.0 +
-            //                 (0.05 * (0.5 - (_controller.value - 0.5).abs())),
-            //             child: Container(
-            //               width: 60,
-            //               height: 60,
-            //               decoration: BoxDecoration(
-            //                 shape: BoxShape.circle,
-            //                 color: Colors.white,
-            //                 boxShadow: [
-            //                   BoxShadow(
-            //                     color: appTheme.primaryColor.withOpacity(0.2),
-            //                     blurRadius: 15,
-            //                     spreadRadius: 3,
-            //                   ),
-            //                 ],
-            //               ),
-            //               padding: const EdgeInsets.all(10),
-            //               child: Image.asset(
-            //                 'assets/images/logo.png',
-            //                 fit: BoxFit.contain,
-            //               ),
-            //             ),
-            //           ),
-            //         ],
-            //       );
-            //     },
-            //   ),
-            // ),
           ),
       ],
     );
@@ -283,10 +291,10 @@ class _GradientArcPainter extends CustomPainter {
 
     final gradient = SweepGradient(
       colors: [
-        appTheme.primaryColor,
-        appTheme.primaryColor.withOpacity(0.7),
-        appTheme.primaryColor.withOpacity(0.3),
-        appTheme.primaryColor.withOpacity(0.0),
+        AppColors.primaryColor,
+        AppColors.primaryColor.withOpacity(0.7),
+        AppColors.primaryColor.withOpacity(0.3),
+        AppColors.primaryColor.withOpacity(0.0),
       ],
       stops: const [0.0, 0.3, 0.6, 1.0],
     );

@@ -259,12 +259,6 @@ class NotificationModel {
           final formattedAmountStr = formatter.format(amount);
           final formattedAmount = '$currency $formattedAmountStr';
 
-          String formattedBalance = '';
-          if (balance != null) {
-            final formattedBalanceStr = formatter.format(balance);
-            formattedBalance = ' Bal: $currency $formattedBalanceStr.';
-          }
-
           if (isCredit) {
             final senderName =
                 metadata?['senderName'] ??
@@ -272,9 +266,9 @@ class NotificationModel {
                 metadata?['sender'] ??
                 'Unknown';
 
-            // "Credit: NGN 5,000.00 from John Doe. Ref: 12345678. 17/02/2026 12:30. Bal: NGN 50,000.00."
+            // "Credit: NGN 5,000.00 from John Doe. Ref: 12345678. 17/02/2026 12:30."
             if (amount > 0) {
-              return 'Credit: $formattedAmount from $senderName. Ref: $reference. $formattedDate.$formattedBalance';
+              return 'Credit: $formattedAmount from $senderName. Ref: $reference. $formattedDate.';
             }
           } else if (isDebit) {
             final recipientName =
@@ -285,9 +279,9 @@ class NotificationModel {
                 metadata?['merchant'] ??
                 'Service Provider';
 
-            // "Debit: NGN 5,000.00 to John Doe. Ref: 12345678. 17/02/2026 12:30. Bal: NGN 50,000.00."
+            // "Debit: NGN 5,000.00 to John Doe. Ref: 12345678. 17/02/2026 12:30."
             if (amount > 0) {
-              return 'Debit: $formattedAmount to $recipientName. Ref: $reference. $formattedDate.$formattedBalance';
+              return 'Debit: $formattedAmount to $recipientName. Ref: $reference. $formattedDate.';
             }
           }
         } catch (e) {

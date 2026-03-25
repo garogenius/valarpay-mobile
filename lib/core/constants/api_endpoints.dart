@@ -17,10 +17,12 @@ class ApiEndpoints {
   static const String verifyForgotPassword =
       '/api/v1/user/verify-forgot-password';
 
-  // KYC - BVN Verification
-  static const String verifyBvn = '/api/v1/wallet/bvn-verification';
-
-  // KYC - NIN Verification (Tier 2)
+  // KYC - SmileID Verification
+  static const String verifyBvn = '/api/v1/user/smileid/basic-kyc'; // alias for old verifyBvn
+  static const String basicKyc = '/api/v1/user/smileid/basic-kyc';
+  static const String biometricKyc = '/api/v1/user/smileid/smart-selfie-register';
+  static const String smartSelfieAuth = '/api/v1/user/smileid/smart-selfie-auth';
+  static String smileIdJobStatus(String jobId) => '/api/v1/user/smileid/job-status/$jobId';
   static const String verifyNin = '/api/v1/user/verify-nin';
   static const String kycTier2 = '/api/v1/user/kyc-tier2';
 
@@ -54,25 +56,24 @@ class ApiEndpoints {
       '/api/v1/bill/airtime/palmpay/get-items';
   static const String payAirtime = '/api/v1/bill/airtime/pay';
   static const String getDataNetworkProviders =
-      '/api/v1/bill/data/network-providers';
+      '/api/v1/bill/airtime/network-providers';
   static const String getDataPlan = '/api/v1/bill/data/get-plan';
   static String getDataPlanByNetwork(String network) => '/api/v1/bill/data/get-plan/$network';
   static const String getDataVariation = '/api/v1/bill/data/palmpay/get-items';
   static const String purchaseData = '/api/v1/bill/data/pay';
 
   // Cable TV endpoints
-  static const String getCablePlan = '/api/v1/bill/cable/get-plan';
-  static const String getCableVariation = '/api/v1/bill/cable/get-bill-info';
-  static const String getCableBillInfo = '/api/v1/bill/cable/get-bill-info';
-  static const String verifyCableNumber =
-      '/api/v1/bill/cable/verify-cable-number';
-  static const String payCable = '/api/v1/bill/cable/pay';
+  static const String getCablePlan = '/api/v1/bill/remita/paytv/get-plan';
+  static const String getCableVariation = '/api/v1/bill/remita/paytv/get-bill-info';
+  static const String getCableBillInfo = '/api/v1/bill/remita/paytv/get-bill-info';
+  static const String verifyCableNumber = validateRemitaCustomer;
+  static const String payCable = '/api/v1/bill/remita/paytv/pay';
 
   // Internet endpoints
-  static const String getInternetPlan = '/api/v1/bill/internet/get-plan';
+  static const String getInternetPlan = '/api/v1/bill/remita/internet/get-plan';
   static const String getInternetBillInfo =
-      '/api/v1/bill/internet/get-bill-info';
-  static const String payInternet = '/api/v1/bill/internet/pay';
+      '/api/v1/bill/remita/internet/get-bill-info';
+  static const String payInternet = '/api/v1/bill/remita/internet/pay';
 
   // International airtime endpoints
   static const String getInternationalFxRate =
@@ -96,13 +97,12 @@ class ApiEndpoints {
   static const String getGiftCardFxRate = '/api/v1/bill/giftcard/get-fx-rate';
 
   // Electricity endpoints
-  static const String getElectricityPlan = '/api/v1/bill/electricity/get-plan';
-  static const String getElectricityVariation = '/api/v1/bill/electricity/get-variation';
+  static const String getElectricityPlan = '/api/v1/bill/remita/electricity/get-plan';
+  static const String getElectricityVariation = '/api/v1/bill/remita/electricity/get-variation';
   static const String getElectricityBillInfo =
-      '/api/v1/bill/electricity/get-bill-info';
-  static const String verifyMeterNumber =
-      '/api/v1/bill/electricity/verify-meter-number';
-  static const String payElectricity = '/api/v1/bill/electricity/pay';
+      '/api/v1/bill/remita/electricity/get-bill-info';
+  static const String verifyMeterNumber = validateRemitaCustomer;
+  static const String payElectricity = '/api/v1/bill/remita/electricity/pay';
 
   // Beneficiary endpoints
   static const String getUserBeneficiaries = '/api/v1/user/get-beneficiaries';
@@ -184,17 +184,45 @@ class ApiEndpoints {
   static const String getSchoolBillInfo = '/api/v1/bill/school/get-bill-info';
   static const String getEducationBillerItems = '/api/v1/bill/remita/education/biller-items';
   static const String verifySchoolCustomer = '/api/v1/bill/remita/education/verify-customer';
-  static const String verifyRemitaSchoolBillerNumber = '/api/v1/bill/remita/school/verify-biller-number';
-  static const String paySchoolFees = '/api/v1/bill/school/pay';
-  static const String payEducationSchoolFee = '/api/v1/bill/education/school-fee/pay';
+  static const String paySchoolFees = '/api/v1/bill/remita/vending/pay';
 
   // JAMB & WAEC endpoints
   static const String getVendingProviders = '/api/v1/bill/remita/vending/providers';
   static const String getVendingProducts = '/api/v1/bill/remita/vending/products';
-  static const String verifyWaecBillerNumber = '/api/v1/bill/remita/waec/verify-biller-number';
-  static const String payWaec = '/api/v1/bill/waec/pay';
-  static const String verifyJambBillerNumber = '/api/v1/bill/remita/jamb/verify-biller-number';
-  static const String payJamb = '/api/v1/bill/jamb/pay';
+  static const String verifyWaecBillerNumber = '/api/v1/bill/remita/education/verify-customer';
+  static const String payWaec = '/api/v1/bill/remita/vending/pay';
+  static const String verifyJambBillerNumber = '/api/v1/bill/remita/education/verify-customer';
+  static const String payJamb = '/api/v1/bill/remita/vending/pay';
+
+  // Remita Bill Payment endpoints
+  static const String getRemitaCategories = '/api/v1/bill/remita/categories';
+  static String getRemitaPlan(String categoryId) => '/api/v1/bill/remita/$categoryId/get-plan';
+  static String getRemitaBillerProducts(String billerId) => '/api/v1/bill/remita/biller/$billerId/products';
+  static const String validateRemitaCustomer = '/api/v1/bill/remita/biller/validate-customer';
+  static const String initiateRemitaPayment = '/api/v1/bill/remita/biller/initiate';
+  static const String payRemitaBill = '/api/v1/bill/remita/biller/pay';
+  static const String getRemitaVendingProducts = '/api/v1/bill/remita/vending/products';
+
+  // Card Linking endpoints
+  static const String getCardLinkProviders = '/api/v1/cards/link/providers';
+  static const String initiateCardLink = '/api/v1/cards/link/initiate';
+  static const String getLinkedCards = '/api/v1/cards';
+  static String chargeLinkedCard(String id) => '/api/v1/cards/$id/charge';
+  static String disableLinkedCard(String id) => '/api/v1/cards/$id/disable';
+
+  // Flutterwave Bill payment endpoints
+  static const String getFlutterwaveCategories = '/api/v1/bill/flutterwave/categories';
+  static String getFlutterwaveBillers(String categoryCode) =>
+      '/api/v1/bill/flutterwave/categories/$categoryCode/billers';
+  static const String getFlutterwaveBillInfo = '/api/v1/bill/get-bill-info';
+  static String payFlutterwaveBill(String category) =>
+      '/api/v1/bill/$category/pay';
+  static const String verifyFlutterwaveCable =
+      '/api/v1/bill/flutterwave/cable/verify-cable-number';
+  static const String verifyFlutterwaveElectricity =
+      '/api/v1/bill/flutterwave/electricity/verify-meter-number';
+  static const String validateFlutterwaveCustomer =
+      '/api/v1/bill/flutterwave/validate-customer';
 
   // future endpoints can go here
 }

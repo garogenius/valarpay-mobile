@@ -114,6 +114,8 @@ class _AddMoneyScreenState extends ConsumerState<AddMoneyScreen> {
                   // handle navigation to each option screen
                   if (option["id"] == 1 || option["id"] == 2) {
                     context.push("/add-money-via-transfer");
+                  } else if (option["id"] == 3) {
+                    context.push("/card-topup");
                   } else if (option["id"] == 4) {
                     context.push("/add-money-via-qrcode");
                   } else {

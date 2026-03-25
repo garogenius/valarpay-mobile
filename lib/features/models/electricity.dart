@@ -38,7 +38,7 @@ class ElectricityPlan {
       id: json['id']?.toString() ?? json['billerId'] ?? '',
       planName: json['planName'] ?? json['itemName'] ?? json['name'] ?? json['billerName'] ?? '',
       countryISOCode: json['countryISOCode'] ?? '',
-      billerCode: json['billerCode'] ?? json['billerId'] ?? '',
+      billerCode: json['billerCode'] ?? json['biller_code'] ?? json['billerId'] ?? '',
       description: json['description'] ?? '',
       shortName: json['shortName'] ?? json['itemName'] ?? json['billerName'] ?? '',
       createdAt: json['createdAt'] ?? '',
@@ -163,13 +163,13 @@ class ElectricityBillInfo {
     return ElectricityBillInfo(
       id: json['id'] ?? json['itemId'] ?? 0,
       billerCode: json['biller_code'] ?? json['billerCode'] ?? json['billerId'] ?? '',
-      name: json['name'] ?? json['itemName'] ?? '',
+      name: json['name'] ?? json['itemName'] ?? json['billPaymentProductName'] ?? '',
       defaultCommission: (json['default_commission'] ?? 0).toDouble(),
       dateAdded: json['date_added'] ?? '',
       country: json['country'] ?? '',
       isAirtime: json['is_airtime'] ?? false,
       billerName: json['biller_name'] ?? json['billerName'] ?? '',
-      itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId'] ?? '',
+      itemCode: json['item_code'] ?? json['itemCode'] ?? json['itemId']?.toString() ?? json['billPaymentProductId']?.toString() ?? '',
       shortName: json['short_name'] ?? json['itemName'] ?? '',
       fee: (json['fee'] ?? 0).toDouble(),
       commissionOnFee: json['commission_on_fee'] ?? false,
@@ -251,21 +251,24 @@ class ElectricityBillInfoResponse {
 }
 
 class VerifyMeterNumberRequest {
-  final String itemCode;
+  final String billPaymentProductId; // itemCode from biller products
+  final String customerId;           // meter number
   final String billerCode;
-  final String billerNumber;
 
   VerifyMeterNumberRequest({
-    required this.itemCode,
+    required this.billPaymentProductId,
+    required this.customerId,
     required this.billerCode,
-    required this.billerNumber,
+    // Legacy fields kept for backward compat but not sent
+    String itemCode = '',
+    String billerNumber = '',
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'itemCode': itemCode,
+      'billPaymentProductId': billPaymentProductId,
+      'customerId': customerId,
       'billerCode': billerCode,
-      'billerNumber': billerNumber,
     };
   }
 }
@@ -313,6 +316,8 @@ class VerifyMeterNumberData {
   final double fee;
   final double maximum;
   final double minimum;
+  final String? meterNumber;
+  final double? amount;
 
   VerifyMeterNumberData({
     required this.responseCode,
@@ -326,6 +331,8 @@ class VerifyMeterNumberData {
     required this.fee,
     required this.maximum,
     required this.minimum,
+    this.meterNumber,
+    this.amount,
   });
 
   factory VerifyMeterNumberData.fromJson(Map<String, dynamic> json) {
@@ -338,17 +345,23 @@ class VerifyMeterNumberData {
     }
 
     return VerifyMeterNumberData(
-      responseCode: json['response_code']?.toString() ?? '',
+      responseCode: json['responseCode']?.toString() ?? json['response_code']?.toString() ?? '00',
       address: json['address']?.toString() ?? '',
-      responseMessage: json['response_message']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      billerCode: json['biller_code']?.toString() ?? '',
-      customer: json['customer']?.toString() ?? '',
-      productCode: json['product_code']?.toString() ?? '',
+      responseMessage:
+          json['responseMessage']?.toString() ??
+          json['response_message']?.toString() ??
+          json['message']?.toString() ??
+          '',
+      name: json['name']?.toString() ?? json['customerName']?.toString() ?? '',
+      billerCode: json['customerId']?.toString() ?? json['biller_code']?.toString() ?? '',
+      customer: json['customerId']?.toString() ?? json['customer']?.toString() ?? '',
+      productCode: json['billPaymentProductId']?.toString() ?? json['product_code']?.toString() ?? '',
       email: json['email']?.toString(),
       fee: parseDouble(json['fee']),
-      maximum: parseDouble(json['maximum']),
-      minimum: parseDouble(json['minimum']),
+      maximum: parseDouble(json['maximum'] ?? json['maximumAmount']),
+      minimum: parseDouble(json['minimumAmount'] ?? json['minimum']),
+      meterNumber: json['customerId']?.toString() ?? json['meterNumber']?.toString() ?? json['billerNumber']?.toString(),
+      amount: parseDouble(json['minimumAmount'] ?? json['amount']),
     );
   }
 
@@ -365,6 +378,8 @@ class VerifyMeterNumberData {
       'fee': fee,
       'maximum': maximum,
       'minimum': minimum,
+      'meterNumber': meterNumber,
+      'amount': amount,
     };
   }
 }

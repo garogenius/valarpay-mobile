@@ -8,8 +8,15 @@ class VerifyWalletPinResponse {
   });
 
   factory VerifyWalletPinResponse.fromJson(Map<String, dynamic> json) {
+    final rawMessage = json['message'];
+    String message;
+    if (rawMessage is List) {
+      message = rawMessage.join(', ');
+    } else {
+      message = rawMessage?.toString() ?? '';
+    }
     return VerifyWalletPinResponse(
-      message: json['message'] as String? ?? '',
+      message: message,
       statusCode: json['statusCode'] as int? ?? 200,
     );
   }

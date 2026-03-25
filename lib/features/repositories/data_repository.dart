@@ -53,8 +53,11 @@ class DataRepository {
     String? billerId,
   }) async {
     try {
+      // Clean network name: e.g. "MTN Nigeria" -> "MTN"
+      final cleanNetwork = (network ?? '').split(' ').first;
+      
       final response = await apiClient.get(
-        ApiEndpoints.getDataPlanByNetwork(network ?? ''),
+        ApiEndpoints.getDataPlanByNetwork(cleanNetwork),
       );
       return DataVariationResponse.fromJson(response.data);
     } on DioException catch (e) {

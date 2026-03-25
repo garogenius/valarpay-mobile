@@ -106,7 +106,7 @@ class _VerifyNewEmailScreenState extends ConsumerState<VerifyNewEmailScreen>
       //     .read(userNotifierProvider.notifier)
       //     .validateEmail(EmailRequest(email: username));
       AppMessenger.show(context,
-          message: 'Verification code sent to your email.');
+          message: ref.read(userNotifierProvider).message ?? 'Verification code sent to your email.');
       _startResendTimer();
     } catch (e) {
       AppMessenger.show(context,

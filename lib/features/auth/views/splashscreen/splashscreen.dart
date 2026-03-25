@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
+import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/notifiers/notification_notifier.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _scaleController;
   late AnimationController _backgroundController;
@@ -28,15 +32,15 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Initialize animations
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     _backgroundController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     _textController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
 
@@ -65,11 +69,11 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startAnimationSequence() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 50));
     await _scaleController.forward();
     await _backgroundController.forward();
     await _textController.forward();
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 100));
     _checkSession();
   }
 
@@ -84,14 +88,28 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Check if Password Free Login is enabled and user is already logged in
     if (autoLogoutSetting == 'Password Free Log in' && isLoggedIn) {
+      // In background preload data
+      _preloadEssentialData();
       context.go('/');
       return;
+    }
+
+    // Check for pending signup draft
+    final signUpDraft = await SessionService.getSignUpDraft();
+    if (signUpDraft != null) {
+      if (!mounted) return;
+      
+      // Determine where the user left off
+      if (signUpDraft.email != null && signUpDraft.password != null) {
+        context.go('/verify-email', extra: signUpDraft);
+        return;
+      }
     }
 
     // On app restart, always require login
     // If user has saved credentials, go to biometric/passcode login
     // Otherwise, go to signin
-
+    
     if (savedUsername != null) {
       // Has saved username, go to biometric/passcode login
       final fpEnabled = await LocalStorageService.getBool(
@@ -114,6 +132,20 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       // No saved username, go to signin
       context.pushReplacement('/signin');
+    }
+  }
+
+  Future<void> _preloadEssentialData() async {
+    try {
+      final user = await SessionService.getUser();
+      if (user != null) {
+        ref.read(userProvider.notifier).setUser(user);
+        // Refresh token / profile
+        ref.read(userNotifierProvider.notifier).refreshUserProfile();
+        ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
+      }
+    } catch (e) {
+      // Silently fail
     }
   }
 

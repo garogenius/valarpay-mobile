@@ -10,23 +10,62 @@ class WalletRepository {
 
   WalletRepository(this.apiClient);
 
-  Future<ApiResponse> verifyBVN(BvnVerificationRequest request) async {
+  Future<ApiResponse> verifyKyc(BvnVerificationRequest request) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.verifyBvn,
+        ApiEndpoints.basicKyc,
         data: request.toJson(),
       );
-      print(response);
-      print(response.data);
-
       return ApiResponse.fromJson(response.data);
-
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data['message'] ?? 'BVN verification failed',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Identity verification failed');
     } catch (e) {
-      throw Exception('Unexpected error during bvn verification: $e');
+      throw Exception('Unexpected error during identity verification: $e');
+    }
+  }
+
+  Future<ApiResponse> submitBiometricKyc({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.biometricKyc,
+        data: {
+          "selfieImage": selfieImage,
+          "livenessImages": livenessImages,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Biometric KYC failed');
+    }
+  }
+
+  Future<ApiResponse> submitSmartSelfieAuth({
+    required String selfieImage,
+    required List<String> livenessImages,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.smartSelfieAuth,
+        data: {
+          "selfieImage": selfieImage,
+          "livenessImages": livenessImages,
+        },
+      );
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Smart Selfie Auth failed');
+    }
+  }
+
+  Future<Map<String, dynamic>> checkSmileIdJobStatus(String jobId) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.smileIdJobStatus(jobId));
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to poll job status');
     }
   }
 

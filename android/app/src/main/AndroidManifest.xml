@@ -16,6 +16,7 @@
         android:label="ValarPay"
         android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
+        android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher">
 
         <activity

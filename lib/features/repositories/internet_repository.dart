@@ -13,10 +13,21 @@ class InternetRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getInternetPlan,
-        queryParameters: {'currency': currency},
+        ApiEndpoints.getFlutterwaveBillers('INTSERVICE'),
+        queryParameters: {'country': 'NG'},
       );
-      return InternetPlanResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['billers'] ?? rawData['content'] ?? [];
+      }
+      return InternetPlanResponse(
+        data: data.map((json) => InternetPlanInfo.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to get internet plans',
@@ -29,10 +40,24 @@ class InternetRepository {
   }) async {
     try {
       final response = await apiClient.get(
-        ApiEndpoints.getInternetBillInfo,
-        queryParameters: {'billerCode': billerCode},
+        ApiEndpoints.getFlutterwaveBillInfo,
+        queryParameters: {
+          'billerCode': billerCode,
+          'billType': 'internet',
+        },
       );
-      return InternetVariationResponse.fromJson(response.data);
+      final dynamic rawData = response.data['data'];
+      List data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map) {
+        data = rawData['products'] ?? rawData['items'] ?? rawData['content'] ?? [];
+      }
+      return InternetVariationResponse(
+        data: data.map((json) => InternetVariationInfo.fromJson(json)).toList(),
+        message: response.data['message'] ?? 'Success',
+        statusCode: response.data['statusCode'] ?? 200,
+      );
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to get internet variations',
@@ -45,8 +70,11 @@ class InternetRepository {
   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.payInternet,
-        data: request.toJson(),
+        ApiEndpoints.payFlutterwaveBill('internet'),
+        data: {
+          ...request.toJson(),
+          'addBeneficiary': request.addBeneficiary ?? false,
+        },
       );
       if (response.data != null && response.data is Map<String, dynamic>) {
         return InternetPaymentResponse.fromJson(response.data);

@@ -12,6 +12,7 @@ import 'package:valarpay/core/constants/enums/enums.dart';
 import 'package:valarpay/core/services/biometric_auth_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/secure_storage_service.dart';
+import 'package:valarpay/core/services/login_activity_service.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/core/utils/platform_responsive.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
@@ -38,6 +39,7 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
   String? _profileImageUrl;
   BiometricType? _availableBiometricType;
   String _biometricLabel = 'Biometric';
+  bool _isLoading = true;
   @override
   void initState() {
     super.initState();
@@ -121,6 +123,7 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
       } else {
         _accountNumber = savedPhoneNumber;
       }
+      _isLoading = false;
     });
   }
 
@@ -205,8 +208,10 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
             message: 'Welcome back, ${loginResponse.user.fullname}',
             type: MessageType.success,
           );
+          await LoginActivityService.trackLogin('success');
           context.go('/');
         } else {
+          await LoginActivityService.trackLogin('failed');
           if (!context.mounted) return;
           AppMessenger.show(
             context,
@@ -576,6 +581,13 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
               ),
             ),
           ),
+          if (_isLoading)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(color: appTheme.primaryColor),
+              ),
+            ),
         ],
       ),
     );

@@ -36,7 +36,7 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       state = state.copyWith(isInitialLoading: false);
@@ -61,7 +61,7 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       state = state.copyWith(isInitialLoading: false);
@@ -96,7 +96,7 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       state = state.copyWith(isInitialLoading: false);
@@ -118,7 +118,7 @@ class AuthNotifier extends StateNotifier<DataState<LoginResponse>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       state = state.copyWith(isInitialLoading: false);

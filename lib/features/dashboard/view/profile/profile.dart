@@ -6,6 +6,7 @@ import 'personal_details_screen.dart';
 import 'contact_details_screen.dart';
 import 'address_screen.dart';
 import 'edit_profile_screen.dart';
+import '../KYC/upgrade_kyc.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -85,6 +86,18 @@ class ProfileScreen extends ConsumerWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const AddressScreen(),
+                  ),
+                );
+              },
+            ),
+            ProfileMenuItem(
+              icon: Icons.verified_user_outlined,
+              title: 'Account Verification',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UpgradeKycScreen(),
                   ),
                 );
               },

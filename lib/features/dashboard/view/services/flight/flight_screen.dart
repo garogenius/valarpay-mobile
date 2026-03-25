@@ -7,11 +7,14 @@ import 'package:valarpay/features/providers/user_provider.dart';
 import '../../../widgets/services_widgets/flight_widgets/destination_selector_modal.dart';
 import '../../../widgets/services_widgets/flight_widgets/class_selector_modal.dart';
 // import 'saved_beneficiary_screen.dart';
+import 'package:valarpay/features/models/remita_models.dart';
+import 'package:valarpay/features/notifiers/remita_notifier.dart';
 import 'passenger_details_screen.dart';
 
 class FlightScreen extends ConsumerStatefulWidget {
-  String flightName;
-  FlightScreen({required this.flightName, super.key});
+  final String flightName;
+  final String billerId;
+  const FlightScreen({required this.flightName, required this.billerId, super.key});
 
   @override
   ConsumerState<FlightScreen> createState() => _FlightScreenState();
@@ -24,10 +27,39 @@ class _FlightScreenState extends ConsumerState<FlightScreen> {
   DateTime? departureDate;
   final TextEditingController controller = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController bookingRefController = TextEditingController();
+  
+  RemitaProduct? selectedProduct;
+  bool isLoadingProducts = true;
 
   int adults = 1;
   int children = 0;
   int infants = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    try {
+      await ref.read(remitaProductsProvider.notifier).fetchProducts(widget.billerId, isOverlayHidden: true);
+      final products = ref.read(remitaProductsProvider).data;
+      if (products != null && products.isNotEmpty) {
+        setState(() {
+          selectedProduct = products.first;
+          isLoadingProducts = false;
+        });
+      } else {
+        setState(() => isLoadingProducts = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoadingProducts = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,10 +166,35 @@ class _FlightScreenState extends ConsumerState<FlightScreen> {
 
                     const SizedBox(height: 60),
 
+                    // Booking Reference
+                    _buildSectionTitle('Booking Reference', isDark),
+                    const SizedBox(height: 8),
+                    _buildTextField(
+                      bookingRefController,
+                      'Enter Booking Reference',
+                      isDark,
+                    ),
+
+                    const SizedBox(height: 24),
+
                     // Continue Button
                     FullWidthButton(
                       text: 'Continue',
+                      isLoading: isLoadingProducts,
                       onPressed: () {
+                        if (bookingRefController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter booking reference')),
+                          );
+                          return;
+                        }
+                        if (selectedProduct == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Product not found for this airline')),
+                          );
+                          return;
+                        }
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -155,6 +212,9 @@ class _FlightScreenState extends ConsumerState<FlightScreen> {
                                     'email': emailController.text,
                                     'phone': controller.text,
                                     'flightName': widget.flightName,
+                                    'billerId': widget.billerId,
+                                    'productId': selectedProduct!.billPaymentProductId,
+                                    'bookingRef': bookingRefController.text.trim(),
                                   },
                                 ),
                           ),

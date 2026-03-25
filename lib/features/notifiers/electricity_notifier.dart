@@ -13,7 +13,9 @@ class ElectricityNotifier extends StateNotifier<DataState<ElectricityPlan>> {
     : super(DataState<ElectricityPlan>.initial());
 
   Future<void> getElectricityPlans({required String currency}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final response = await _repository.getElectricityPlans(
         currency: currency,

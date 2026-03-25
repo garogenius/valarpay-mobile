@@ -14,25 +14,21 @@ class EducationScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<EducationScreen> createState() => _EducationScreenState();
 }
-
-class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _EducationScreenState extends ConsumerState<EducationScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(schoolBillersProvider.notifier).fetchBillers(useRemita: true);
+      ref.read(schoolBillersProvider.notifier).fetchBillers(useRemita: false);
       ref.read(vendingProvidersProvider.notifier).fetchProviders();
     });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -43,8 +39,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
     final isBvnVerified = user?.isBvnVerified ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final schoolState = ref.watch(schoolBillersProvider);
-    final examState = ref.watch(vendingProvidersProvider);
+    final vendingState = ref.watch(vendingProvidersProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : const Color(0xFFF5F5F5),
@@ -56,7 +51,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Education Payment',
+          'Education Services',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontSize: 18,
@@ -72,16 +67,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
             child: const Text('Saved Beneficiary', style: TextStyle(color: Color(0xFFF76301))),
           ),
         ] : null,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFFF76301),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFFF76301),
-          tabs: const [
-            Tab(text: 'School Fees'),
-            Tab(text: 'Exam Pins'),
-          ],
-        ),
       ),
       body: !isBvnVerified
           ? const KycNotSetWidget(
@@ -96,7 +81,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
                     controller: _searchController,
                     onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
                     decoration: InputDecoration(
-                      hintText: 'Search institution or exam',
+                      hintText: 'Search exam pins',
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -108,47 +93,47 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
                   ),
                 ),
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildBillerList(schoolState, isDark, isSchool: true),
-                      _buildBillerList(examState, isDark, isSchool: false),
-                    ],
-                  ),
+                  child: vendingState.isInitialLoading && (vendingState.data == null || vendingState.data!.isEmpty)
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildExamPinsList(vendingState.data ?? [], isDark),
                 ),
               ],
             ),
     );
   }
 
-  Widget _buildBillerList(DataState<EducationBiller> state, bool isDark, {required bool isSchool}) {
-    if (state.isInitialLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (state.message != null && (state.data == null || state.data!.isEmpty)) {
-      return Center(child: Text(state.message!));
-    }
+  Widget _buildExamPinsList(List<EducationBiller> apiBillers, bool isDark) {
+    // Combine hardcoded defaults with API data if needed, or just use API data
+    // The user specifically mentioned WAEC and JAMB icon logos.
     
-    final billers = state.data?.where((b) => 
-      b.billerName.toLowerCase().contains(_searchQuery) || 
-      (b.billerShortName?.toLowerCase().contains(_searchQuery) ?? false)
-    ).toList() ?? [];
+    final filteredBillers = apiBillers.where((b) => 
+      b.billerName.toLowerCase().contains(_searchQuery)
+    ).toList();
 
-    if (billers.isEmpty) {
-      return const Center(child: Text('No institutions found'));
+    if (filteredBillers.isEmpty && !ref.watch(vendingProvidersProvider).isInitialLoading) {
+       return const Center(child: Text('No exam pins found'));
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: billers.length,
+      itemCount: filteredBillers.length,
       itemBuilder: (context, index) {
-        final biller = billers[index];
-        return _buildBillerTile(biller, isDark);
+        return _buildBillerTile(filteredBillers[index], isDark);
       },
     );
   }
 
+
   Widget _buildBillerTile(EducationBiller biller, bool isDark) {
+    String? logoUrl = biller.billerLogoUrl;
+    
+    // Add known logos for WAEC and JAMB if they are missing or if we want to ensure they look good
+    if (biller.billerName.toLowerCase().contains('waec')) {
+      logoUrl = 'https://vgg.ng/wp-content/uploads/2018/11/waec.png';
+    } else if (biller.billerName.toLowerCase().contains('jamb')) {
+      logoUrl = 'https://vgg.ng/wp-content/uploads/2018/11/jamb.png';
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -164,10 +149,14 @@ class _EducationScreenState extends ConsumerState<EducationScreen> with SingleTi
             color: const Color(0xFFF76301).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: biller.billerLogoUrl != null 
+          child: logoUrl != null 
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(biller.billerLogoUrl!, fit: BoxFit.cover),
+                  child: Image.network(
+                    logoUrl, 
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.school, color: Color(0xFFF76301)),
+                  ),
                 )
               : const Icon(Icons.school, color: Color(0xFFF76301)),
         ),

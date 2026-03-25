@@ -11,13 +11,12 @@ class InternetPlanInfo {
     required this.countryISOCode,
     required this.billerCode,
   });
-
   factory InternetPlanInfo.fromJson(Map<String, dynamic> json) =>
       InternetPlanInfo(
-        id: json['id']?.toString() ?? '',
+        id: json['id']?.toString() ?? json['billerId']?.toString() ?? '',
         planName: json['planName'] ?? json['name'] ?? json['billerName'] ?? '',
         countryISOCode: json['countryISOCode'] ?? '',
-        billerCode: json['billerCode'] ?? json['biller_code'] ?? '',
+        billerCode: json['billerCode'] ?? json['biller_code'] ?? json['billerId'] ?? '',
       );
 }
 
@@ -76,9 +75,9 @@ class InternetVariationInfo {
       InternetVariationInfo(
         id: json['id'] ?? 0,
         billerCode: json['biller_code'] ?? json['billerCode'] ?? '',
-        name: json['name'] ?? '',
+        name: json['name'] ?? json['billPaymentProductName'] ?? '',
         fee: (json['fee'] ?? 0).toDouble(),
-        itemCode: json['item_code'] ?? json['itemCode'] ?? '',
+        itemCode: json['item_code'] ?? json['itemCode'] ?? json['billPaymentProductId']?.toString() ?? '',
         labelName: json['label_name'] ?? json['labelName'] ?? '',
         amount: (json['amount'] ?? 0).toDouble(),
         isResolvable: json['is_resolvable'] ?? json['isResolvable'] ?? false,

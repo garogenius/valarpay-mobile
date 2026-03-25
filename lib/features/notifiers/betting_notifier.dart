@@ -16,7 +16,9 @@ class BettingPlatformsNotifier
     : super(DataState<BettingPlatformModel>.initial());
 
   Future<void> fetchPlatforms() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getBettingPlatforms();
       state = state.copyWith(
@@ -94,7 +96,9 @@ class BettingBeneficiaryNotifier extends StateNotifier<DataState<Beneficiary>> {
     : super(DataState<Beneficiary>.initial());
 
   Future<void> fetchBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final response = await _repository.getBeneficiaries(
         category: 'BILL',

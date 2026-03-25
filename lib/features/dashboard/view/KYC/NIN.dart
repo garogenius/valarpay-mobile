@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
+import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/nin_camera_permission.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
+import 'package:valarpay/core/services/smileid_socket_service.dart';
 
 final ninProvider = StateProvider<String>((ref) => '');
 
@@ -14,6 +20,7 @@ class NINPage extends ConsumerStatefulWidget {
 
 class _NINPageState extends ConsumerState<NINPage> {
   late TextEditingController _ninController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -21,6 +28,8 @@ class _NINPageState extends ConsumerState<NINPage> {
     _ninController = TextEditingController(
       text: ref.read(ninProvider),
     );
+    // Connect to SmileID socket
+    SmileIdSocketService().connect();
   }
 
   @override
@@ -29,125 +38,98 @@ class _NINPageState extends ConsumerState<NINPage> {
     super.dispose();
   }
 
-  Future<void> _verifyNin(String nin) async {
-    try {
-      // Show loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+  Future<void> _proceedWithNIN(String nin) async {
+    if (_isSubmitting) return;
+
+    final user = ref.read(userProvider);
+    if (user == null) return;
+
+    // Auto-fetch DOB from profile (required)
+    final dob = user.dateOfBirth ?? '';
+    // Phone is optional
+    final phone = user.phoneNumber;
+
+    if (dob.isEmpty) {
+      AppMessenger.show(
+        context,
+        message: 'Your Date of Birth is required. Please update your profile first.',
+        type: MessageType.warning,
       );
+      return;
+    }
 
-      // Call API to verify NIN (without selfie)
-      final response = await ref.read(userNotifierProvider.notifier).verifyNinOnly(nin);
+    setState(() => _isSubmitting = true);
+    
+    // Ensure socket is connected before proceeding
+    await SmileIdSocketService().connect();
+    
+    try {
+      // Step 1: Basic KYC — verify NIN details
+      final res = await ref
+          .read(userNotifierProvider.notifier)
+          .submitBasicKyc(
+            idType: 'NIN_V2',
+            idNumber: nin,
+            idDob: dob,
+            idPhoneNumber: phone,
+          );
 
-      if (mounted) {
-        Navigator.pop(context); // Close loading
+      if (!mounted) return;
 
-        if (response?.isSuccess ?? false) {
-          // Show success modal
-          _showSuccessModal();
-        } else {
-          throw Exception(response?.message ?? 'NIN verification failed');
+      if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
+        final lowerMsg = (res.message ?? '').toLowerCase();
+        
+        // If Basic KYC is already done, just proceed to liveness check
+        if (lowerMsg.contains('exist') || lowerMsg.contains('already')) {
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NinCameraPermissionPage(nin: nin),
+            ),
+          );
+          return;
         }
+
+        if (res.isSuccess == false || 
+            lowerMsg.contains('invalid') || 
+            lowerMsg.contains('fail')) {
+          AppMessenger.show(
+            context,
+            message: res.message.isNotEmpty ? res.message : 'NIN verification failed. Please try again.',
+            type: MessageType.error,
+          );
+          return;
+        }
+
+        if (!mounted) return;
+
+        // Success: Proceed directly to liveness check without waiting for socket
+        AppMessenger.show(context, message: 'ID details submitted. Proceeding to liveness check...', type: MessageType.success);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NinCameraPermissionPage(nin: nin),
+          ),
+        );
+      } else {
+        AppMessenger.show(
+          context,
+          message: res?.message ?? 'NIN verification failed. Please try again.',
+          type: MessageType.error,
+        );
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
+        AppMessenger.show(
+          context,
+          message: 'Verification error: ${e.toString()}',
+          type: MessageType.error,
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  void _showSuccessModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Close button
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, size: 24),
-                  onPressed: () {
-                    Navigator.pop(context); // Close modal
-                    Navigator.pop(context); // Go back to previous screen
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Success icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF10B981),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Title
-              const Text(
-                'Upgrade Successfully',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Subtitle
-              const Text(
-                'Your account upgrade to Tier 2 is now complete',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Done button
-              SizedBox(
-                width: double.infinity,
-                child: FullWidthButton(
-                  text: 'Done',
-                  isEnabled: true,
-                  onPressed: () {
-                    Navigator.pop(context); // Close modal
-                    Navigator.pop(context); // Go back to previous screen
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -186,7 +168,7 @@ class _NINPageState extends ConsumerState<NINPage> {
 
               // Subtitle
               const Text(
-                'Enter your NIN to upgrade to Tier 2',
+                'Enter your 11-digit NIN to verify your identity',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(0xFF9CA3AF),
@@ -214,9 +196,8 @@ class _NINPageState extends ConsumerState<NINPage> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    height: 40,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(8),
@@ -244,7 +225,7 @@ class _NINPageState extends ConsumerState<NINPage> {
                         ),
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
-                        counterText: '', // Hide counter
+                        counterText: '',
                       ),
                     ),
                   ),
@@ -267,7 +248,7 @@ class _NINPageState extends ConsumerState<NINPage> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'We need your NIN to verify your identity and upgrade your account to Tier 2. This allows you to enjoy higher transaction limits and more features.',
+                    'We need your NIN to verify your identity and upgrade your account. This allows you to enjoy higher transaction limits and more features.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF6B7280),
@@ -297,7 +278,23 @@ class _NINPageState extends ConsumerState<NINPage> {
               FullWidthButton(
                 text: 'Continue',
                 isEnabled: isFormValid,
-                onPressed: () => _verifyNin(nin),
+                isLoading: _isSubmitting,
+                onPressed: _isSubmitting ? null : () => _proceedWithNIN(nin),
+              ),
+              const SizedBox(height: 16),
+
+              // Switch to BVN option
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BVNPage()),
+                  );
+                },
+                child: const Text(
+                  'Prefer to use BVN instead?',
+                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                ),
               ),
             ],
           ),
@@ -306,3 +303,5 @@ class _NINPageState extends ConsumerState<NINPage> {
     );
   }
 }
+
+

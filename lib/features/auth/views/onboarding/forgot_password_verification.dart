@@ -90,7 +90,7 @@ class _ForgotPasswordVerificationScreenState
           .forgotPassword(ForgotPasswordRequest(username: username));
       AppMessenger.show(
         context,
-        message: 'Verification code sent to your email.',
+        message: ref.read(userNotifierProvider).message ?? 'Verification code sent to your email.',
         type: MessageType.success,
       );
       _startResendTimer();

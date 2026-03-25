@@ -51,6 +51,7 @@ class SessionTimeoutService {
     '/sign-up-three',
     '/verify-email',
     '/verify-phone',
+    '/verify-2fa',
     '/create-account',
     '/account-created',
   ];

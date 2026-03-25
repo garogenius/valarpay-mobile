@@ -12,7 +12,7 @@ class ResetPinNotifier extends StateNotifier<DataState<ResetPinRequest>> {
   ResetPinNotifier(this._repository) : super(DataState<ResetPinRequest>.initial());
 
   Future<void> forgotPin() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.forgotPin();
       state = state.copyWith(
@@ -25,13 +25,13 @@ class ResetPinNotifier extends StateNotifier<DataState<ResetPinRequest>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }
 
    Future<void> resetPin(ResetPinRequest request) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
       final res = await _repository.resetPin(request);
       state = state.copyWith(
@@ -44,7 +44,7 @@ class ResetPinNotifier extends StateNotifier<DataState<ResetPinRequest>> {
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,
-        message: e.toString(),
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     }
   }

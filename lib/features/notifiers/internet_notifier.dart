@@ -13,7 +13,9 @@ class InternetPlansNotifier extends StateNotifier<DataState<InternetPlanInfo>> {
     : super(DataState<InternetPlanInfo>.initial());
 
   Future<void> getPlans({required String currency}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getInternetPlans(currency: currency);
       state = state.copyWith(
@@ -43,7 +45,9 @@ class InternetVariationNotifier
     : super(DataState<InternetVariationInfo>.initial());
 
   Future<void> getVariations({required String billerCode}) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getInternetVariation(
         billerCode: billerCode,
@@ -132,7 +136,9 @@ class InternetBeneficiaryNotifier
     : super(DataState<InternetBeneficiary>.initial());
 
   Future<void> getInternetBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getInternetBeneficiaries();
 

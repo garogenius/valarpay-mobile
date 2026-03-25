@@ -96,7 +96,7 @@ class _ForgotPinScreenState extends ConsumerState<ForgotPinScreen>
       AppMessenger.show(
         context,
         type: MessageType.success,
-        message: 'Verification code sent to your phone number/email.',
+        message: ref.read(resetPinNotifierProvider).message ?? 'Verification code sent to your phone number/email.',
       );
       _startResendTimer();
     } catch (e) {

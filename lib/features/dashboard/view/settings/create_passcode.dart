@@ -187,78 +187,94 @@ class _CreatePasscodeScreenState extends ConsumerState<CreatePasscodeScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Text(
-              _isConfirming ? 'Confirm Passcode' : 'Create Passcode',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _isConfirming
-                  ? 'Re-enter your 6-digit passcode'
-                  : 'Create a 6-digit passcode to login',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 40),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Text(
+                _isConfirming ? 'Confirm Passcode' : 'Create Passcode',
+                style: TextStyle(
+                  fontSize: 24, 
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isConfirming
+                    ? 'Re-enter your 6-digit passcode'
+                    : 'Create a 6-digit passcode to login',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
 
-            // Passcode dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_passcodeLength, (index) {
-                final currentPasscode =
-                    _isConfirming
-                        ? passcodeState.confirmPasscode
-                        : passcodeState.passcode;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color:
-                        index < currentPasscode.length
-                            ? appTheme.primaryColor
-                            : Colors.grey.shade300,
-                    shape: BoxShape.circle,
-                  ),
-                );
-              }),
-            ),
-
-            const Spacer(),
-
-            if (_isSaving)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
+              // Passcode dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_passcodeLength, (index) {
+                  final currentPasscode =
+                      _isConfirming
+                          ? passcodeState.confirmPasscode
+                          : passcodeState.passcode;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color:
+                          index < currentPasscode.length
+                              ? appTheme.primaryColor
+                              : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
               ),
 
-            if (_isSaving) const SizedBox(height: 30),
-            _buildNumberPad(),
+              const SizedBox(height: 24),
 
-            if (_isConfirming)
-              TextButton(
-                onPressed: () {
-                  final passcodeNotifier = ref.read(
-                    passcodeControllerProvider.notifier,
-                  );
-                  passcodeNotifier.clearAllPasscodes();
-                  setState(() {
-                    _isConfirming = false;
-                  });
-                },
-                child: const Text(
-                  'Start Over',
-                  style: TextStyle(
-                    color: appTheme.primaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+              if (_isSaving)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+
+              Expanded(
+                 child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _buildNumberPad(),
+                 ),
+              ),
+
+              if (_isConfirming)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: TextButton(
+                    onPressed: () {
+                      final passcodeNotifier = ref.read(
+                        passcodeControllerProvider.notifier,
+                      );
+                      passcodeNotifier.clearAllPasscodes();
+                      setState(() {
+                        _isConfirming = false;
+                      });
+                    },
+                    child: const Text(
+                      'Start Over',
+                      style: TextStyle(
+                        color: appTheme.primaryColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            const SizedBox(height: 50),
-          ],
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );

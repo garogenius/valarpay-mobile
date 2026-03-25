@@ -108,7 +108,7 @@ class _Verify2faScreenState extends ConsumerState<Verify2faScreen>
       AppMessenger.show(
         context,
         type: MessageType.success,
-        message: 'Verification code sent to your phone number and email.',
+        message: ref.read(authNotifierProvider).message ?? 'Verification code sent to your phone number and email.',
       );
       _startResendTimer();
     } catch (e) {

@@ -37,7 +37,6 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
   final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
   bool _saveBeneficiary = false;
-  bool _loadingShown = false;
   AirtimeBeneficiary? _selectedBeneficiary;
   bool _showRecentBeneficiaries = false;
 
@@ -92,28 +91,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     return digits;
   }
 
-  void _showLoading() {
-    if (_loadingShown) return;
-    _loadingShown = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => WillPopScope(
-            onWillPop: () async => false,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-    );
-  }
-
-  void _hideLoading() {
-    if (!_loadingShown) return;
-    _loadingShown = false;
-
-    if (mounted && Navigator.canPop(context)) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-  }
+    // Removal of manual loader usage
 
   bool _isFormValid(String network, int operatorId) {
     return _phoneController.text.isNotEmpty &&
@@ -125,7 +103,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     final formatted = _formatTo11(phoneNumber);
     final cleanedPhone = formatted.replaceAll(RegExp(r'\D'), '');
 
-    if (cleanedPhone.length >= 10) {
+    if (cleanedPhone.length >= 4) {
       final providers = ref.read(airtimeProvidersNotifierProvider).data ?? [];
       if (providers.isNotEmpty) {
         final prefix = formatted.substring(0, 4);
@@ -150,28 +128,31 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
 
         if (detectedBillerId != null) {
           try {
-            final p = providers.firstWhere(
+            final p = providers.cast<NetworkProvider?>().firstWhere(
               (provider) =>
+                  provider != null && (
                   provider.billerId == detectedBillerId ||
                   provider.network.toUpperCase().contains(detectedBillerId!) ||
-                  provider.id.toString() == detectedBillerId,
-              orElse: () => providers.first,
+                  provider.id.toString() == detectedBillerId),
+              orElse: () => null,
             );
             
-            // Manual OperatorID mapping for local PalmPay billers (since API doesn't return them)
-            int opId = p.operatorId;
-            if (opId == 0) {
-              final bId = p.billerId?.toUpperCase() ?? p.network.toUpperCase();
-              if (bId.contains('MTN')) opId = 341;
-              else if (bId.contains('AIRTEL')) opId = 342;
-              else if (bId.contains('GLO')) opId = 344;
-              else if (bId.contains('9MOBILE') || bId.contains('ETISALAT')) opId = 340;
-            }
+            if (p != null) {
+              // Manual OperatorID mapping for local PalmPay billers (since API doesn't return them)
+              int opId = p.operatorId;
+              if (opId == 0) {
+                final bId = p.billerId?.toUpperCase() ?? p.network.toUpperCase();
+                if (bId.contains('MTN')) opId = 341;
+                else if (bId.contains('AIRTEL')) opId = 342;
+                else if (bId.contains('GLO')) opId = 344;
+                else if (bId.contains('9MOBILE') || bId.contains('ETISALAT')) opId = 340;
+              }
 
-            // Set all relevant providers state
-            ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
-            ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
-            ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+              // Set all relevant providers state
+              ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
+              ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
+              ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+            }
             
             if (mounted) setState(() {});
           } catch (e) {
@@ -221,7 +202,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
     Navigator.pop(context);
     final operatorId = ref.read(airtimeSelectedOperatorIdProvider);
 
-    _showLoading();
+      // manual loader removed
 
     try {
       final billerId = ref.read(airtimeSelectedBillerIdProvider);
@@ -239,7 +220,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
           .read(airtimePurchaseNotifierProvider.notifier)
           .purchase(request);
 
-      _hideLoading();
+      // manual loader removed
 
       if (!mounted) return;
 
@@ -269,7 +250,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
         );
       }
     } catch (e) {
-      _hideLoading();
+      // manual loader removed
 
       if (!mounted) return;
 
@@ -424,9 +405,9 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
         return;
       }
 
-      _showLoading();
+        // manual loader removed
       final contacts = await FlutterContacts.getContacts(withProperties: true);
-      _hideLoading();
+      // manual loader removed
 
       final list = contacts.where((c) => c.phones.isNotEmpty).toList();
       if (list.isEmpty) {
@@ -539,7 +520,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
         },
       );
     } catch (e) {
-      _hideLoading();
+    // manual loader removed
       AppMessenger.show(
         context,
         message: 'Failed to load contacts',
@@ -621,9 +602,14 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                                               final providers = ref.watch(airtimeProvidersNotifierProvider).data ?? [];
                                               final selectedBillerId = ref.watch(airtimeSelectedBillerIdProvider);
                                               String? iconUrl;
-                                              try {
-                                                iconUrl = providers.firstWhere((p) => p.billerId == selectedBillerId || p.network == network).billerIcon;
-                                              } catch (_) {}
+                                                try {
+                                                  iconUrl = providers.firstWhere((p) {
+                                                    // Ensure we are matching on non-empty, meaningful values
+                                                    if (selectedBillerId != null && selectedBillerId != '' && p.billerId == selectedBillerId) return true;
+                                                    if (network != '' && p.network.toLowerCase() == network.toLowerCase()) return true;
+                                                    return false;
+                                                  }).billerIcon;
+                                                } catch (_) {}
 
                                               if (iconUrl != null && iconUrl.isNotEmpty) {
                                                 return Image.network(

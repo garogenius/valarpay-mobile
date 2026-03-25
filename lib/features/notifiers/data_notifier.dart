@@ -20,7 +20,9 @@ class DataProvidersNotifier extends StateNotifier<DataState<NetworkProvider>> {
     : super(DataState<NetworkProvider>.initial());
 
   Future<void> fetchProviders() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getDataNetworkProviders();
       state = state.copyWith(
@@ -54,7 +56,9 @@ class DataPlansNotifier extends StateNotifier<DataState<DataPlanInfo>> {
     String? currency,
     String? category,
   }) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getDataPlan(
         phone: phone,
@@ -93,7 +97,9 @@ class DataVariationNotifier extends StateNotifier<DataState<DataPlanBundle>> {
     String? billerId,
     String? filterCategory, // Used for client-side filtering only
   }) async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final res = await _repository.getDataPlansByNetwork(
         network: network,
@@ -249,7 +255,9 @@ class DataBeneficiaryNotifier
     : super(DataState<DataBeneficiary>.initial());
 
   Future<void> getDataBeneficiaries() async {
-    state = state.copyWith(isInitialLoading: true, message: null);
+    if (state.data == null || state.data!.isEmpty) {
+      state = state.copyWith(isInitialLoading: true, message: null);
+    }
     try {
       final user = _ref.read(userNotifierProvider).data?.first;
       final userId = user?.id ?? '';

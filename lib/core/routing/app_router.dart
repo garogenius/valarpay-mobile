@@ -1,4 +1,5 @@
 import 'package:valarpay/features/dashboard/view/home/support/terms_and_conditions.dart';
+import 'package:valarpay/features/dashboard/view/settings/login_activity_screen.dart';
 import 'package:valarpay/features/dashboard/view/home/support/privacy_policy.dart';
 import 'package:valarpay/features/dashboard/view/KYC/upgrade_kyc.dart';
 import 'package:valarpay/features/dashboard/view/KYC/proof_of_address.dart';
@@ -53,6 +54,9 @@ import 'package:valarpay/features/dashboard/view/cards/vcard_management_screen.d
 import 'package:valarpay/features/dashboard/view/cards/vcard_transactions_screen.dart';
 import 'package:valarpay/features/dashboard/view/cards/fund_vcard_screen.dart';
 import 'package:valarpay/features/dashboard/view/cards/withdraw_vcard_screen.dart';
+import 'package:valarpay/features/dashboard/view/services/remita/remita_billing_screen.dart';
+import 'package:valarpay/features/dashboard/view/services/remita/remita_categories_screen.dart';
+import 'package:valarpay/features/dashboard/view/addmoney/card_topup_screen.dart';
 import 'package:valarpay/features/dashboard/view/comming_soon.dart';
 import 'package:valarpay/features/dashboard/view/home/notifications/notifications_screen.dart';
 import 'package:valarpay/features/dashboard/view/home/support/customer_service_screen.dart';
@@ -124,8 +128,15 @@ import 'package:flutter/material.dart';
 import 'package:valarpay/features/dashboard/view/services/all_services_screen.dart';
 import '../../features/dashboard/view/finance/finance_intro_screen.dart';
 import 'package:valarpay/features/dashboard/view/finance/widgets/finance_product_intro_screen.dart';
+import 'package:valarpay/features/dashboard/view/services/flutterwave_bill/flutterwave_bill_screen.dart';
+
 
 import 'package:valarpay/core/services/connectivity_service.dart';
+import '../../features/auth/views/onboarding/signup/identity_verification.dart';
+import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/setup_pin.dart';
+import 'package:valarpay/features/dashboard/view/KYC/nin_camera_permission.dart';
+import 'package:valarpay/features/dashboard/view/KYC/nin_identity_verification.dart';
 
 final router = GoRouter(
   navigatorKey: ConnectivityService.navigatorKey,
@@ -135,6 +146,13 @@ final router = GoRouter(
     GoRoute(path: '/splash', builder: (context, state) => SplashScreen()),
     GoRoute(path: '/intro', builder: (context, state) => const WelcomeScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+    GoRoute(
+      path: '/signup-verify-identity',
+      builder: (context, state) {
+        final request = state.extra as SignUpRequest;
+        return SignupIdentityVerificationScreen(request: request);
+      },
+    ),
     GoRoute(
       path: '/personal-details',
       builder: (context, state) {
@@ -292,6 +310,10 @@ final router = GoRouter(
     GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/card-topup',
+      builder: (context, state) => const CardTopupScreen(),
     ),
     GoRoute(
       path: '/notification-settings',
@@ -567,10 +589,10 @@ final router = GoRouter(
       path: '/swap-currency',
       builder: (context, state) => const SwapCurrencyScreen(),
     ),
-    // GoRoute(
-    //   path: '/insurance',
-    //   builder: (context, state) => const InsuranceScreen(),
-    // ),
+    GoRoute(
+      path: '/insurance',
+      builder: (context, state) => const InsuranceScreen(),
+    ),
     GoRoute(
       path: '/international-airtime',
       builder: (context, state) => const InternationalAirtimeScreen(),
@@ -643,6 +665,32 @@ final router = GoRouter(
       builder: (context, state) => const CloseAccountScreen(),
     ),
     GoRoute(
+      path: '/remita-categories',
+      builder: (context, state) => const RemitaCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/remita-billing/:categoryId/:categoryName',
+      builder: (context, state) {
+        final categoryId = state.pathParameters['categoryId']!;
+        final categoryName = state.pathParameters['categoryName']!;
+        return RemitaBillingScreen(
+          categoryId: categoryId,
+          categoryName: categoryName,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/flutterwave-billing/:categoryId/:categoryName',
+      builder: (context, state) {
+        final categoryId = state.pathParameters['categoryId']!;
+        final categoryName = state.pathParameters['categoryName']!;
+        return FlutterwaveBillingScreen(
+          categoryId: categoryId,
+          categoryName: categoryName,
+        );
+      },
+    ),
+    GoRoute(
       path: '/cable-tv',
       builder: (context, state) => const CableTvScreen(),
     ),
@@ -651,10 +699,10 @@ final router = GoRouter(
       path: '/betting',
       builder: (context, state) => const BettingScreen(),
     ),
-    // GoRoute(
-    //   path: '/shopping',
-    //   builder: (context, state) => const ShoppingScreen(),
-    // ),
+    GoRoute(
+      path: '/shopping',
+      builder: (context, state) => const ShoppingScreen(),
+    ),
     GoRoute(
       path: '/gift-card',
       builder: (context, state) => const GiftCardScreen(),
@@ -688,6 +736,32 @@ final router = GoRouter(
       builder: (context, state) {
         final id = state.pathParameters['id']!;
         return InvestmentDetailsScreen(investmentId: id);
+      },
+    ),
+    GoRoute(
+      path: '/login-history',
+      builder: (context, state) => const LoginActivityScreen(),
+    ),
+    GoRoute(
+      path: '/setup-pin',
+      builder: (context, state) => const SetupTransactionPinPage(),
+    ),
+    GoRoute(
+      path: '/bvn-verification',
+      builder: (context, state) => const BVNPage(),
+    ),
+    GoRoute(
+      path: '/nin-camera-permission/:nin',
+      builder: (context, state) {
+        final nin = state.pathParameters['nin']!;
+        return NinCameraPermissionPage(nin: nin);
+      },
+    ),
+    GoRoute(
+      path: '/nin-identity-verification/:nin',
+      builder: (context, state) {
+        final nin = state.pathParameters['nin']!;
+        return NinIdentityVerificationPage(nin: nin);
       },
     ),
   ],
