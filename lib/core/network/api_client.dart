@@ -20,12 +20,12 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 120),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'X-API-KEY': apiKey,
+          'x-api-key': apiKey,
         },
       ),
     );

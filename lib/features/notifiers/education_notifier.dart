@@ -205,22 +205,22 @@ class EducationPurchaseNotifier extends StateNotifier<DataState<EducationPayment
   }
 }
 
-final schoolBillersProvider = StateNotifierProvider<SchoolBillersNotifier, DataState<EducationBiller>>((ref) {
+final schoolBillersProvider = StateNotifierProvider.autoDispose<SchoolBillersNotifier, DataState<EducationBiller>>((ref) {
   return SchoolBillersNotifier(ref.read(educationRepositoryProvider));
 });
 
-final vendingProvidersProvider = StateNotifierProvider<VendingProvidersNotifier, DataState<EducationBiller>>((ref) {
+final vendingProvidersProvider = StateNotifierProvider.autoDispose<VendingProvidersNotifier, DataState<EducationBiller>>((ref) {
   return VendingProvidersNotifier(ref.read(educationRepositoryProvider));
 });
 
-final educationProductsProvider = StateNotifierProvider<EducationProductsNotifier, DataState<EducationProduct>>((ref) {
+final educationProductsProvider = StateNotifierProvider.autoDispose<EducationProductsNotifier, DataState<EducationProduct>>((ref) {
   return EducationProductsNotifier(ref.read(educationRepositoryProvider));
 });
 
-final educationVerificationProvider = StateNotifierProvider<EducationVerificationNotifier, DataState<EducationVerificationResponse>>((ref) {
+final educationVerificationProvider = StateNotifierProvider.autoDispose<EducationVerificationNotifier, DataState<EducationVerificationResponse>>((ref) {
   return EducationVerificationNotifier(ref.read(educationRepositoryProvider));
 });
 
-final educationPurchaseProvider = StateNotifierProvider<EducationPurchaseNotifier, DataState<EducationPaymentResponse>>((ref) {
+final educationPurchaseProvider = StateNotifierProvider.autoDispose<EducationPurchaseNotifier, DataState<EducationPaymentResponse>>((ref) {
   return EducationPurchaseNotifier(ref.read(educationRepositoryProvider));
 });

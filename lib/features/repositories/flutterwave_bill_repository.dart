@@ -35,12 +35,35 @@ class FlutterwaveBillRepository {
         ApiEndpoints.getFlutterwaveBillInfo,
         queryParameters: {
           'billerCode': billerCode,
-          'billType': category.toLowerCase(),
+          'billType': _mapCategoryToBillType(category),
         },
       );
       return FlutterwaveProductResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to fetch products');
+    }
+  }
+
+  String _mapCategoryToBillType(String category) {
+    switch (category.toUpperCase()) {
+      case 'SCHPB':
+        return 'schoolfee';
+      case 'TRANSLOG':
+        return 'transport';
+      case 'INTSERVICE':
+        return 'internet';
+      case 'UTILITYBILLS':
+        return 'electricity';
+      case 'CABLEBILLS':
+        return 'cable';
+      case 'TAX':
+        return 'tax';
+      case 'MOBILEDATA':
+        return 'data';
+      case 'AIRTIME':
+        return 'airtime';
+      default:
+        return category.toLowerCase();
     }
   }
 

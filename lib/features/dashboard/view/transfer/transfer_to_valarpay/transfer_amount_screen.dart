@@ -127,8 +127,6 @@ class _InternalTransferAmountScreenState
   }
 
   void _initiateTransfer(String pin, double amount) async {
-    Navigator.pop(context); // Close pin modal
-
     _showLoading();
 
     try {
@@ -256,7 +254,6 @@ class _InternalTransferAmountScreenState
     if (pin != null && pin.length == 4) {
       // Ensure PIN is a string
       final pinString = pin.toString();
-      Navigator.pop(context);
       if (mounted) {
         _initiateTransfer(pinString, amount);
       }
@@ -272,7 +269,7 @@ class _InternalTransferAmountScreenState
       MaterialPageRoute(
         builder:
             (context) => ReuseableTransactionDetailsScreen(
-              totalAmount: double.parse(_amountController.text),
+              totalAmount: double.parse(_amountController.text.replaceAll(',', '')),
               hasBottom: false,
               saveBeneficiary: _saveBeneficiary,
               onSaveBeneficiaryChanged: (value) {

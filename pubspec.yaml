@@ -1,7 +1,7 @@
 name: valarpay
 description: "A new Flutter project."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.2.1+4
+version: 1.3.0+6
 
 environment:
   sdk: ^3.7.2

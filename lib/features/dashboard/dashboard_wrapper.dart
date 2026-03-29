@@ -475,24 +475,6 @@ class _KycVerificationModal extends StatelessWidget {
                       child: const Text('Verify with BVN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NINPage()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: appTheme.primaryColor.withOpacity(0.1),
-                        foregroundColor: appTheme.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      child: Text('Verify with NIN', style: TextStyle(color: appTheme.primaryColor, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),

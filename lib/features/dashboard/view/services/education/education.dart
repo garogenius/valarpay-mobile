@@ -22,7 +22,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(schoolBillersProvider.notifier).fetchBillers(useRemita: false);
+      ref.read(schoolBillersProvider.notifier).fetchBillers(useRemita: true);
       ref.read(vendingProvidersProvider.notifier).fetchProviders();
     });
   }
@@ -92,10 +92,21 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                     ),
                   ),
                 ),
-                Expanded(
+                 Expanded(
                   child: vendingState.isInitialLoading && (vendingState.data == null || vendingState.data!.isEmpty)
                       ? const Center(child: CircularProgressIndicator())
-                      : _buildExamPinsList(vendingState.data ?? [], isDark),
+                      : vendingState.message != null
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Text(
+                                  vendingState.message!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            )
+                          : _buildExamPinsList(vendingState.data ?? [], isDark),
                 ),
               ],
             ),

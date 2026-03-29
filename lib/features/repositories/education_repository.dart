@@ -42,13 +42,13 @@ class EducationRepository {
 
   Future<List<EducationBiller>> getVendingProviders() async {
     try {
-      final response = await apiClient.get(ApiEndpoints.getRemitaPlan('vending'));
+      final response = await apiClient.get(ApiEndpoints.getVendingProviders);
       final dynamic rawData = response.data['data'];
       List data = [];
       if (rawData is List) {
         data = rawData;
       } else if (rawData is Map) {
-        data = rawData['billers'] ?? rawData['content'] ?? [];
+        data = rawData['billers'] ?? rawData['content'] ?? rawData['items'] ?? [];
       }
       return data.map((json) => EducationBiller.fromJson(json)).toList();
     } on DioException catch (e) {
@@ -131,7 +131,7 @@ class EducationRepository {
         data: {
           'itemCode': itemCode,
           'billerCode': 'WAEC',
-          'customerId': billerNumber,
+          'billerNumber': billerNumber,
         },
       );
       return EducationVerificationResponse.fromJson(response.data);
@@ -150,7 +150,7 @@ class EducationRepository {
         data: {
           'itemCode': itemCode,
           'billerCode': 'JAMB',
-          'customerId': billerNumber,
+          'billerNumber': billerNumber,
         },
       );
       return EducationVerificationResponse.fromJson(response.data);

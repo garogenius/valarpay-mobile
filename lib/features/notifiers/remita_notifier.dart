@@ -159,22 +159,22 @@ class RemitaPaymentNotifier extends StateNotifier<DataState<RemitaPaymentRespons
   }
 }
 
-final remitaCategoriesProvider = StateNotifierProvider<RemitaCategoriesNotifier, DataState<RemitaCategory>>((ref) {
+final remitaCategoriesProvider = StateNotifierProvider.autoDispose<RemitaCategoriesNotifier, DataState<RemitaCategory>>((ref) {
   return RemitaCategoriesNotifier(ref.watch(remitaRepositoryProvider));
 });
 
-final remitaBillersProvider = StateNotifierProvider<RemitaBillersNotifier, DataState<RemitaBiller>>((ref) {
+final remitaBillersProvider = StateNotifierProvider.autoDispose<RemitaBillersNotifier, DataState<RemitaBiller>>((ref) {
   return RemitaBillersNotifier(ref.watch(remitaRepositoryProvider));
 });
 
-final remitaProductsProvider = StateNotifierProvider<RemitaProductsNotifier, DataState<RemitaProduct>>((ref) {
+final remitaProductsProvider = StateNotifierProvider.autoDispose<RemitaProductsNotifier, DataState<RemitaProduct>>((ref) {
   return RemitaProductsNotifier(ref.watch(remitaRepositoryProvider));
 });
 
-final remitaValidationProvider = StateNotifierProvider<RemitaValidationNotifier, DataState<RemitaCustomerValidation>>((ref) {
+final remitaValidationProvider = StateNotifierProvider.autoDispose<RemitaValidationNotifier, DataState<RemitaCustomerValidation>>((ref) {
   return RemitaValidationNotifier(ref.watch(remitaRepositoryProvider));
 });
 
-final remitaPaymentProvider = StateNotifierProvider<RemitaPaymentNotifier, DataState<RemitaPaymentResponse>>((ref) {
+final remitaPaymentProvider = StateNotifierProvider.autoDispose<RemitaPaymentNotifier, DataState<RemitaPaymentResponse>>((ref) {
   return RemitaPaymentNotifier(ref.watch(remitaRepositoryProvider));
 });

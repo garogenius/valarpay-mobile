@@ -189,10 +189,10 @@ class ApiEndpoints {
   // JAMB & WAEC endpoints
   static const String getVendingProviders = '/api/v1/bill/remita/vending/providers';
   static const String getVendingProducts = '/api/v1/bill/remita/vending/products';
-  static const String verifyWaecBillerNumber = '/api/v1/bill/remita/education/verify-customer';
-  static const String payWaec = '/api/v1/bill/remita/vending/pay';
-  static const String verifyJambBillerNumber = '/api/v1/bill/remita/education/verify-customer';
-  static const String payJamb = '/api/v1/bill/remita/vending/pay';
+  static const String verifyWaecBillerNumber = '/api/v1/bill/remita/waec/verify-biller-number';
+  static const String payWaec = '/api/v1/bill/waec/pay';
+  static const String verifyJambBillerNumber = '/api/v1/bill/remita/jamb/verify-biller-number';
+  static const String payJamb = '/api/v1/bill/jamb/pay';
 
   // Remita Bill Payment endpoints
   static const String getRemitaCategories = '/api/v1/bill/remita/categories';

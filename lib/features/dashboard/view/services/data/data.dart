@@ -1192,7 +1192,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       orElse: () => DataPlanBundle(id: '0', name: '₦${_amountController.text} Data', amount: double.tryParse(_amountController.text) ?? 0, validity: ''),
     );
     
-    final planDescription = selectedBundle.name;
+    final planDescription = selectedBundle.validity.isNotEmpty 
+        ? '${selectedBundle.name} ${selectedBundle.validity} Plan' 
+        : selectedBundle.name;
 
     Navigator.push(
       context,
@@ -1329,7 +1331,9 @@ class _DataScreenState extends ConsumerState<DataScreen> {
       orElse: () => DataPlanBundle(id: '0', name: '₦${_amountController.text} Data', amount: double.tryParse(_amountController.text) ?? 0, validity: ''),
     );
     
-    final planDescription = selectedBundle.name;
+    final planDescription = selectedBundle.validity.isNotEmpty 
+        ? '${selectedBundle.name} ${selectedBundle.validity} Plan' 
+        : selectedBundle.name;
 
     // Create receipt data while State is mounted
     final receiptData = [

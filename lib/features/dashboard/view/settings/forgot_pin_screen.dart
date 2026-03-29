@@ -341,7 +341,7 @@ class _ForgotPinScreenState extends ConsumerState<ForgotPinScreen>
                   onChanged: (value) => setState(() {}),
                 ),
 
-                Spacer(),
+                SizedBox(height: 32.h),
 
                 FullWidthButton(
                   text: 'Continue',

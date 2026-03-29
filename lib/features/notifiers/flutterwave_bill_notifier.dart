@@ -150,27 +150,27 @@ class FlutterwaveBillPaymentNotifier extends StateNotifier<DataState<Flutterwave
   }
 }
 
-final flutterwaveCategoriesProvider = StateNotifierProvider<FlutterwaveCategoriesNotifier,
+final flutterwaveCategoriesProvider = StateNotifierProvider.autoDispose<FlutterwaveCategoriesNotifier,
     DataState<FlutterwaveCategory>>((ref) {
   return FlutterwaveCategoriesNotifier(ref.watch(flutterwaveBillRepositoryProvider));
 });
 
-final flutterwaveBillersProvider = StateNotifierProvider<FlutterwaveBillersNotifier,
+final flutterwaveBillersProvider = StateNotifierProvider.autoDispose<FlutterwaveBillersNotifier,
     DataState<FlutterwaveBiller>>((ref) {
   return FlutterwaveBillersNotifier(ref.watch(flutterwaveBillRepositoryProvider));
 });
 
-final flutterwaveProductsProvider = StateNotifierProvider<FlutterwaveProductsNotifier,
+final flutterwaveProductsProvider = StateNotifierProvider.autoDispose<FlutterwaveProductsNotifier,
     DataState<FlutterwaveProduct>>((ref) {
   return FlutterwaveProductsNotifier(ref.watch(flutterwaveBillRepositoryProvider));
 });
 
-final flutterwaveValidationProvider = StateNotifierProvider<FlutterwaveValidationNotifier,
+final flutterwaveValidationProvider = StateNotifierProvider.autoDispose<FlutterwaveValidationNotifier,
     DataState<FlutterwaveCustomerValidation>>((ref) {
   return FlutterwaveValidationNotifier(ref.watch(flutterwaveBillRepositoryProvider));
 });
 
-final flutterwaveBillPaymentProvider = StateNotifierProvider<FlutterwaveBillPaymentNotifier,
+final flutterwaveBillPaymentProvider = StateNotifierProvider.autoDispose<FlutterwaveBillPaymentNotifier,
     DataState<FlutterwavePaymentResponse>>((ref) {
   return FlutterwaveBillPaymentNotifier(ref.watch(flutterwaveBillRepositoryProvider));
 });

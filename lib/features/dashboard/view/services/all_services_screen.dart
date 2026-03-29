@@ -79,12 +79,24 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             onTap: () => context.push('/internet'),
           );
         } else if (billType.contains('EDUCATION') || 
-                   billType.contains('WAEC') || 
-                   billType.contains('JAMB')) {
+                   billType.contains('SCHOOL')) {
           item = ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'Education',
+            onTap: () => context.push('/remita-billing/6/Educational Institutions'),
+          );
+        } else if (billType.contains('WAEC') || 
+                   billType.contains('JAMB')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/Education.svg',
+            label: 'Exam Pins',
             onTap: () => context.push('/education'),
+          );
+        } else if (billType.contains('TRANSPORT')) {                                                              
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/flight.svg',
+            label: 'Transport',
+            onTap: () => context.push('/flutterwave-billing/TRANSPORT/Transport'),
           );
         } else if (billType.contains('TAX')) {
           item = ServiceItem(
@@ -96,7 +108,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           item = ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',
             label: 'Gov Fees',
-            onTap: () => context.push('/flutterwave-billing/GOVERNMENT_PAYMENT/Government Fees'),
+            onTap: () => context.push('/coming-soon'),
           );
         }
 
@@ -181,11 +193,11 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
       ServiceCategory(
         title: 'Bill Payments',
         items: [
-          ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
-            label: 'All Bills',
-            onTap: () => context.push('/remita-categories'),
-          ),
+          // ServiceItem(
+          //   icon: 'assets/images/service_icon/shoping.svg',
+          //   label: 'All Bills',
+          //   onTap: () => context.push('/remita-categories'),
+          // ),
           ServiceItem(
             icon: 'assets/images/service_icon/airtime.svg',
             label: 'Airtime',
@@ -224,12 +236,17 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'Education',
-            onTap: () => context.push('/remita-billing/education/Education'),
+            onTap: () => context.push('/remita-billing/education/Educational Institutions'),
           ),
+          // ServiceItem(
+          //   icon: 'assets/images/service_icon/Education.svg',
+          //   label: 'Exam Pins',
+          //   onTap: () => context.push('/education'),
+          // ),
           ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'School Fees',
-            onTap: () => context.push('/remita-billing/education/School Fees'),
+            onTap: () => context.push('/flutterwave-billing/SCHPB/School Fees'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/int.svg',
@@ -244,7 +261,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/flight.svg',
             label: 'Transport',
-            onTap: () => context.push('/remita-billing/transportation/Transport'),
+            onTap: () => context.push('/flutterwave-billing/TRANSLOG/Transport'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',
@@ -255,7 +272,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             icon: 'assets/images/service_icon/shoping.svg',
             label: 'Gov Fees',
             onTap: () =>
-                context.push('/flutterwave-billing/GOVERNMENT_PAYMENT/Government Fees'),
+                context.push('/coming-soon'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',

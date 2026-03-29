@@ -69,18 +69,29 @@ class _FlightSelectionScreenState extends ConsumerState<FlightSelectionScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Expanded(
+                    Expanded(
                     child: billerState.isInitialLoading
                         ? const Center(child: CircularProgressIndicator())
-                        : billerState.data == null || billerState.data!.isEmpty
-                            ? const Center(child: Text('No airlines found'))
-                            : ListView.builder(
-                                itemCount: billerState.data!.length,
-                                itemBuilder: (context, index) {
-                                  final biller = billerState.data![index];
-                                  return _buildFlightTile(biller, isDark);
-                                },
-                              ),
+                        : billerState.message != null
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    billerState.message!,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              )
+                            : billerState.data == null || billerState.data!.isEmpty
+                                ? const Center(child: Text('No airlines found'))
+                                : ListView.builder(
+                                    itemCount: billerState.data!.length,
+                                    itemBuilder: (context, index) {
+                                      final biller = billerState.data![index];
+                                      return _buildFlightTile(biller, isDark);
+                                    },
+                                  ),
                   ),
                 ],
               ),
