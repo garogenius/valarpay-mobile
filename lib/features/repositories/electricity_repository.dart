@@ -12,7 +12,7 @@ class ElectricityRepository {
   Future<void> fetchFlutterwaveCategories() async {
     try {
       final response = await apiClient.get(ApiEndpoints.getFlutterwaveCategories);
-      log('Flutterwave Bill Categories: ${response.data}');
+      // log('Flutterwave Bill Categories: ${response.data}');
     } catch (e) {
       log('Error fetching Flutterwave Categories: $e');
     }

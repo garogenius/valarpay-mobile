@@ -9,6 +9,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/auth/widgets/need_help_modal.dart';
+import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:flutter/services.dart';
 
 class CreateInvestmentScreen extends ConsumerStatefulWidget {
   const CreateInvestmentScreen({super.key});
@@ -93,6 +95,7 @@ class _CreateInvestmentScreenState extends ConsumerState<CreateInvestmentScreen>
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              inputFormatters: [CurrencyInputFormatter()],
               style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 prefixText: '₦ ',

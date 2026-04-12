@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
 import 'package:valarpay/features/models/user.dart';
+import 'package:valarpay/features/models/user_tier.dart';
+import 'package:intl/intl.dart';
 
 class Tier2Card extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
   final UserModel? user;
+  final TierInfo? tierInfo;
 
   const Tier2Card({
     Key? key,
     this.isExpanded = false,
     required this.onToggle,
     this.user,
+    this.tierInfo,
   }) : super(key: key);
 
   @override
@@ -124,48 +128,81 @@ class _Tier2CardState extends State<Tier2Card> {
                   ),
                   SizedBox(height: 12.h),
 
-                  // NIN Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NIN',
-                        style: TextStyle(
-                          color:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : const Color(0xFF111827),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          if (nin != null && nin.isNotEmpty) ...[
+                   // Requirements Row(s)
+                  if (widget.tierInfo != null)
+                    ...widget.tierInfo!.requirements.map((req) {
+                      bool isVerified = false;
+                      if (req.toLowerCase().contains('nin') && isNinVerified) isVerified = true;
+                      if (req.toLowerCase().contains('bvn') && (widget.user?.isBvnVerified ?? false)) isVerified = true;
+                      
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Text(
-                              '***${nin.substring(nin.length - 4)}',
+                              req,
                               style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF6B7280),
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : const Color(0xFF111827),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(width: 8.w),
+                            Icon(
+                              isVerified ? Icons.check_circle : Icons.cancel,
+                              color: isVerified ? Colors.green : Colors.red,
+                              size: 16.sp,
+                            ),
                           ],
-                          Icon(
-                            isNinVerified ? Icons.check_circle : Icons.cancel,
-                            color: isNinVerified ? Colors.green : Colors.red,
-                            size: 16.sp,
+                        ),
+                      );
+                    }).toList()
+                  else ...[
+                    // Fallback to NIN if tierInfo is null
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'NIN',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : const Color(0xFF111827),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        Row(
+                          children: [
+                            if (nin != null && nin.isNotEmpty) ...[
+                              Text(
+                                '***${nin.substring(nin.length - 4)}',
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.grey[400]
+                                          : const Color(0xFF6B7280),
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                            ],
+                            Icon(
+                              isNinVerified ? Icons.check_circle : Icons.cancel,
+                              color: isNinVerified ? Colors.green : Colors.red,
+                              size: 16.sp,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -193,17 +230,17 @@ class _Tier2CardState extends State<Tier2Card> {
                   ),
                   SizedBox(height: 16.h),
 
-                  // Limits Section - Two Columns
+                   // Limits Section - Two Columns
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Left Column - Credit Limits
+                      // Left Column - Transaction Limits
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Credit Limit',
+                              'Daily Transaction Limit',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -216,33 +253,9 @@ class _Tier2CardState extends State<Tier2Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              '₦5,000,000.00',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Credit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '₦10,000,000.00',
+                              widget.tierInfo?.dailyTransactionLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.dailyTransactionLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -257,13 +270,13 @@ class _Tier2CardState extends State<Tier2Card> {
                         ),
                       ),
 
-                      // Right Column - Debit Limits
+                      // Right Column - Balance limits
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Debit Limit',
+                              'Maximum Balance',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -276,33 +289,9 @@ class _Tier2CardState extends State<Tier2Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              '₦5,000,000.00',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Debit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '₦10,000,000.00',
+                              widget.tierInfo?.balanceLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.balanceLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==

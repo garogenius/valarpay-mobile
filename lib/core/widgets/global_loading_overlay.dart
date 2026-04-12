@@ -25,6 +25,7 @@ import 'package:valarpay/features/notifiers/fixed_deposit_notifier.dart';
 import 'package:valarpay/features/notifiers/investment_notifier.dart';
 import 'package:valarpay/features/notifiers/remita_notifier.dart';
 import 'package:valarpay/features/notifiers/flutterwave_bill_notifier.dart';
+import 'package:valarpay/features/notifiers/coralpay_notifier.dart';
 
 class GlobalLoadingOverlay extends ConsumerStatefulWidget {
   final Widget child;
@@ -132,6 +133,12 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
     final flutterwavePaymentState = ref.watch(flutterwaveBillPaymentProvider);
     final flutterwaveCategoriesState = ref.watch(flutterwaveCategoriesProvider);
 
+    // CoralPay
+    final coralPayBillersState = ref.watch(coralPayBillersProvider);
+    final coralPayPackagesState = ref.watch(coralPayPackagesProvider);
+    final coralPayVerificationState = ref.watch(coralPayVerificationProvider);
+    final coralPayPaymentState = ref.watch(coralPayPaymentProvider);
+
     // Check if any of the critical notifiers are in initial loading state AND overlay is NOT hidden
     final isLoading =
         (authState.isInitialLoading && !authState.isOverlayHidden) ||
@@ -185,7 +192,11 @@ class _GlobalLoadingOverlayState extends ConsumerState<GlobalLoadingOverlay>
         (flutterwaveProductsState.isInitialLoading && !flutterwaveProductsState.isOverlayHidden) ||
         (flutterwaveValidationState.isInitialLoading && !flutterwaveValidationState.isOverlayHidden) ||
         (flutterwavePaymentState.isInitialLoading && !flutterwavePaymentState.isOverlayHidden) ||
-        (flutterwaveCategoriesState.isInitialLoading && !flutterwaveCategoriesState.isOverlayHidden);
+        (flutterwaveCategoriesState.isInitialLoading && !flutterwaveCategoriesState.isOverlayHidden) ||
+        (coralPayBillersState.isInitialLoading && !coralPayBillersState.isOverlayHidden) ||
+        (coralPayPackagesState.isInitialLoading && !coralPayPackagesState.isOverlayHidden) ||
+        (coralPayVerificationState.isInitialLoading && !coralPayVerificationState.isOverlayHidden) ||
+        (coralPayPaymentState.isInitialLoading && !coralPayPaymentState.isOverlayHidden);
 
     return Stack(
       children: [

@@ -149,8 +149,8 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
   }
 
   Future<ApiResponse?> verifyPhone(VerifyPhoneOtpRequest request) async {
-    log(request.phoneNumber.toString());
-    log(request.otpCode.toString());
+    // log(request.phoneNumber.toString());
+    // log(request.otpCode.toString());
 
     state = state.copyWith(isInitialLoading: true, message: null, isDataAvailable: false);
     try {
@@ -339,19 +339,6 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
         error: 'Verification failed',
         statusCode: 500,
       );
-    }
-  }
-
-  /// Submit KYC Tier 3 address verification
-  Future<void> submitKycTier3(Map<String, dynamic> addressData) async {
-    try {
-      final response = await _repository.submitKycTier3(addressData);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        await refreshUserProfile();
-      }
-    } catch (e, stack) {
-      log('[UserNotifier KYC Tier 3 Error] $e\n$stack');
-      rethrow;
     }
   }
 
@@ -545,6 +532,53 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
       return res;
     } catch (e, stack) {
       log('[UserNotifier uploadDocument Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: e.toString().replaceAll('Exception: ', ''),
+      );
+      rethrow;
+    }
+  }
+
+  /// Upload Tier 3 document
+  Future<ApiResponse?> uploadTier3Document(String filePath, {String? documentType}) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.uploadTier3Document(
+        filePath: filePath,
+        documentType: documentType,
+      );
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        message: res.message,
+      );
+      await refreshUserProfile();
+      return res;
+    } catch (e, stack) {
+      log('[UserNotifier uploadTier3 Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: e.toString().replaceAll('Exception: ', ''),
+      );
+      rethrow;
+    }
+  }
+
+  /// Upload CAC document
+  Future<ApiResponse?> uploadCacDocument(String filePath) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.uploadCacDocument(filePath);
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: true,
+        message: res.message,
+      );
+      await refreshUserProfile();
+      return res;
+    } catch (e, stack) {
+      log('[UserNotifier uploadCAC Error] $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         message: e.toString().replaceAll('Exception: ', ''),

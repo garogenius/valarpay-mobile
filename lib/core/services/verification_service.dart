@@ -65,7 +65,7 @@ class VerificationService {
           ),
         );
 
-        log(response.toString());
+        // log(response.toString());
         return QoreBvnFaceVerificationResponse.fromJson(response.data);
       } else {
         return QoreBvnFaceVerificationResponse(

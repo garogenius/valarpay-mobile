@@ -26,8 +26,7 @@ class ApiEndpoints {
   static const String verifyNin = '/api/v1/user/verify-nin';
   static const String kycTier2 = '/api/v1/user/kyc-tier2';
 
-  // KYC - Address Verification (Tier 3)
-  static const String kycTier3 = '/api/v1/user/kyc-tier3';
+  // KYC - Address Verification (Tier 3) NO LONGER USED (Replaced by uploadTier3Document)
 
   // Wallet - Transaction PIN
   static const String setWalletPin = '/api/v1/user/set-wallet-pin';
@@ -40,6 +39,9 @@ class ApiEndpoints {
   static const String createPasscode = '/api/v1/user/create-passcode';
   static const String editProfile = '/api/v1/user/edit-profile';
   static const String uploadDocument = '/api/v1/user/upload-document';
+  static const String uploadTier3Document = '/api/v1/user/upload-tier3-document';
+  static const String uploadCacDocument = '/api/v1/user/upload-cac-document';
+  static const String getUserTier = '/api/v1/user/tier';
 
   static const String getAllTransactions = '/api/v1/wallet/transaction';
 
@@ -223,6 +225,20 @@ class ApiEndpoints {
       '/api/v1/bill/flutterwave/electricity/verify-meter-number';
   static const String validateFlutterwaveCustomer =
       '/api/v1/bill/flutterwave/validate-customer';
+
+  // CoralPay Bill Payment endpoints
+  static const String getCoralPayGroups = '/api/v1/bill/coralpay/groups';
+  static String getCoralPayBillers(String groupSlug) =>
+      '/api/v1/bill/coralpay/billers/$groupSlug';
+  static String getCoralPayPackages(String billerSlug) =>
+      '/api/v1/bill/coralpay/packages?billerSlug=$billerSlug';
+  static const String verifyCoralPayCustomer =
+      '/api/v1/bill/coralpay/verify-customer';
+  static const String payCoralPayBill = '/api/v1/bill/coralpay/pay';
+  static const String getPopularCoralPayBillers =
+      '/api/v1/bill/coralpay/popular-billers';
+  static const String getCoralPayTransaction =
+      '/api/v1/bill/coralpay/transaction';
 
   // future endpoints can go here
 }

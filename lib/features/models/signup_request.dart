@@ -14,6 +14,7 @@ class SignUpRequest {
   final String? bvn;
   final String? selfieImage;
   final List<String>? livenessImages;
+  final String? cacDocumentPath;
 
   const SignUpRequest({
     this.username,
@@ -31,6 +32,7 @@ class SignUpRequest {
     this.bvn,
     this.selfieImage,
     this.livenessImages,
+    this.cacDocumentPath,
   });
 
   SignUpRequest copyWith({
@@ -49,6 +51,7 @@ class SignUpRequest {
     String? bvn,
     String? selfieImage,
     List<String>? livenessImages,
+    String? cacDocumentPath,
   }) {
     return SignUpRequest(
       username: username ?? this.username,
@@ -67,6 +70,7 @@ class SignUpRequest {
       bvn: bvn ?? this.bvn,
       selfieImage: selfieImage ?? this.selfieImage,
       livenessImages: livenessImages ?? this.livenessImages,
+      cacDocumentPath: cacDocumentPath ?? this.cacDocumentPath,
     );
   }
 
@@ -107,6 +111,7 @@ class SignUpRequest {
       bvn: json['bvn'],
       selfieImage: json['selfieImage'],
       livenessImages: (json['livenessImages'] as List?)?.cast<String>(),
+      cacDocumentPath: json['cacDocumentPath'],
     );
   }
 }

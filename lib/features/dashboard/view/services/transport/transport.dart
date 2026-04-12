@@ -6,19 +6,19 @@ import 'package:valarpay/features/notifiers/coralpay_notifier.dart';
 import 'package:valarpay/features/models/coralpay_models.dart';
 import 'package:go_router/go_router.dart';
 
-class InsuranceScreen extends ConsumerStatefulWidget {
-  const InsuranceScreen({super.key});
+class TransportScreen extends ConsumerStatefulWidget {
+  const TransportScreen({super.key});
 
   @override
-  ConsumerState<InsuranceScreen> createState() => _InsuranceScreenState();
+  ConsumerState<TransportScreen> createState() => _TransportScreenState();
 }
 
-class _InsuranceScreenState extends ConsumerState<InsuranceScreen> {
+class _TransportScreenState extends ConsumerState<TransportScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(coralPayBillersProvider.notifier).fetchBillers('INSURANCE');
+      ref.read(coralPayBillersProvider.notifier).fetchBillers('TRANSPORT_AND_TOLL_PAYMENT');
     });
   }
 
@@ -33,11 +33,11 @@ class _InsuranceScreenState extends ConsumerState<InsuranceScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => context.pop(),
         ),
         title: const Text(
-          'Insurance',
+          'Transport',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -47,7 +47,7 @@ class _InsuranceScreenState extends ConsumerState<InsuranceScreen> {
       body: !isBvnVerified
           ? const KycNotSetWidget(
               title: 'KYC Not Completed',
-              subtitle: 'Complete your KYC verification to pay insurance',
+              subtitle: 'Complete your KYC verification to use transport services',
             )
           : Column(
               children: [
@@ -102,8 +102,8 @@ class _InsuranceScreenState extends ConsumerState<InsuranceScreen> {
             child: biller.logoUrl != null && biller.logoUrl!.isNotEmpty
                 ? Image.network(biller.logoUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.security_outlined))
-                : const Icon(Icons.security_outlined),
+                    errorBuilder: (_, __, ___) => const Icon(Icons.directions_bus_outlined))
+                : const Icon(Icons.directions_bus_outlined),
           ),
         ),
         title: Text(
@@ -120,7 +120,7 @@ class _InsuranceScreenState extends ConsumerState<InsuranceScreen> {
         ),
         onTap: () {
           // Navigate to CoralPayBillingScreen for packages and verification
-          context.push('/coralpay-billing/INSURANCE/Insurance', extra: biller);
+          context.push('/coralpay-billing/TRANSPORT_AND_TOLL_PAYMENT/Transport', extra: biller);
         },
       ),
     );

@@ -43,10 +43,10 @@ class DataState<T> {
     bool? isDataAvailable,
     int? currentPage,
     int? totalPages,
-    String? message,
+    Object? message = _sentinel,
     List<T>? data,
     T? singleData,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return DataState<T>(
       isOverlayHidden: isOverlayHidden ?? this.isOverlayHidden,
@@ -55,12 +55,44 @@ class DataState<T> {
       isDataAvailable: isDataAvailable ?? this.isDataAvailable,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
-      message: message ?? this.message,
+      message: message == _sentinel ? this.message : (message as String?),
       data: data ?? this.data,
       singleData: singleData ?? this.singleData,
-      error: error ?? this.error,
+      error: error == _sentinel ? this.error : (error as String?),
     );
   }
+
+  static const _sentinel = Object();
+
+  DataState<T> toLoading() => copyWith(
+        isInitialLoading: true,
+        message: null,
+        error: null,
+        isDataAvailable: false,
+      );
+
+  DataState<T> toDataAvailable(List<T> data) => copyWith(
+        isInitialLoading: false,
+        data: data,
+        isDataAvailable: true,
+        message: null,
+        error: null,
+      );
+
+  DataState<T> toSingleDataAvailable(T data) => copyWith(
+        isInitialLoading: false,
+        singleData: data,
+        isDataAvailable: true,
+        message: null,
+        error: null,
+      );
+
+  DataState<T> toError(String message) => copyWith(
+        isInitialLoading: false,
+        message: message,
+        error: message,
+        isDataAvailable: false,
+      );
 }
 
 class DataSuccess<T> extends DataState<T> {

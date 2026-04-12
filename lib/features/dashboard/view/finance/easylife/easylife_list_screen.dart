@@ -92,7 +92,6 @@ class _EasyLifeListScreenState extends ConsumerState<EasyLifeListScreen> with Si
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      height: 115,
       child: Stack(
         children: [
           Container(

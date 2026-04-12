@@ -11,6 +11,7 @@ import 'package:valarpay/features/models/signup_request.dart';
 import 'package:valarpay/features/models/verify_phone_number.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
+import 'package:valarpay/core/utils/logger.dart';
 
 class VerifyPhoneScreen extends ConsumerStatefulWidget {
   final SignUpRequest request;
@@ -117,6 +118,15 @@ class _VerifyPhoneScreenState extends ConsumerState<VerifyPhoneScreen>
 
     final state = ref.read(userNotifierProvider);
     if (state.isDataAvailable) {
+      // If it's a business account and we have a CAC document, upload it now
+      if (widget.request.accountType == "BUSINESS" && widget.request.cacDocumentPath != null) {
+        try {
+          await notifier.uploadCacDocument(widget.request.cacDocumentPath!);
+        } catch (e) {
+          AppLogger.logError('CAC Upload failed but registration succeeded: $e', tag: 'Signup_CAC');
+          // We can optionally show a warning but continue
+        }
+      }
       context.pushReplacement('/signup-success', extra: widget.request);
     } else {
       AppMessenger.show(

@@ -64,7 +64,7 @@ class FlutterwaveProductsNotifier extends StateNotifier<DataState<FlutterwavePro
 
   FlutterwaveProductsNotifier(this._repository) : super(DataState<FlutterwaveProduct>.initial());
 
-  Future<void> fetchProducts(String billerCode, String categoryCode, {bool isOverlayHidden = false}) async {
+  Future<void> fetchProducts(String billerCode, String categoryCode, {String? billType, bool isOverlayHidden = false}) async {
     state = state.copyWith(
       isInitialLoading: true, 
       message: null,
@@ -72,7 +72,7 @@ class FlutterwaveProductsNotifier extends StateNotifier<DataState<FlutterwavePro
       isDataAvailable: false,
     );
     try {
-      final res = await _repository.getBillerProducts(billerCode, categoryCode);
+      final res = await _repository.getBillerProducts(billerCode, categoryCode, billType: billType);
       state = state.copyWith(data: res.data, isDataAvailable: true);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());

@@ -16,16 +16,16 @@ class CurrencyNotifier extends StateNotifier<DataState<CurrencyConversionData>> 
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
-      print('[CurrencyNotifier] Converting $amount $fromCurrency to $toCurrency');
+      // print('[CurrencyNotifier] Converting $amount $fromCurrency to $toCurrency');
       final res = await _repository.convertCurrency(
         amount: amount,
         fromCurrency: fromCurrency,
         toCurrency: toCurrency,
       );
       
-      print('[CurrencyNotifier] Raw API Response: $res');
+      // print('[CurrencyNotifier] Raw API Response: $res');
       final convResponse = CurrencyConversionResponse.fromJson(res);
-      print('[CurrencyNotifier] Parsed Data: ${convResponse.data}');
+      // print('[CurrencyNotifier] Parsed Data: ${convResponse.data}');
 
       if (convResponse.data != null) {
         state = state.copyWith(
@@ -35,7 +35,7 @@ class CurrencyNotifier extends StateNotifier<DataState<CurrencyConversionData>> 
           message: convResponse.message,
         );
       } else {
-        print('[CurrencyNotifier] No data found in response');
+        // print('[CurrencyNotifier] No data found in response');
         state = state.copyWith(
           isInitialLoading: false,
           isDataAvailable: false,
@@ -43,7 +43,7 @@ class CurrencyNotifier extends StateNotifier<DataState<CurrencyConversionData>> 
         );
       }
     } catch (e) {
-      print('[CurrencyNotifier] Conversion Error: $e');
+      // print('[CurrencyNotifier] Conversion Error: $e');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,

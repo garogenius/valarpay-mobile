@@ -8,6 +8,7 @@ import 'package:valarpay/features/notifiers/savings_notifier.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/auth/widgets/need_help_modal.dart';
+import 'package:valarpay/core/utils/currency_formatter.dart';
 
 class CreateSavingsPlanScreen extends ConsumerStatefulWidget {
   final String type; // FIXED or TARGET
@@ -89,7 +90,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
       _dailyAmountController.text = '';
       return;
     }
-    final target = double.tryParse(_amountController.text) ?? 0;
+    final target = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
     final days = _endDate!.difference(_startDate!).inDays;
     if (days <= 0) {
       _dailyAmountController.text = '₦ 0';
@@ -442,7 +443,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
       type: widget.type == 'FIXED' ? 'VALAR_AUTO_SAVE' : 'FLEX_SAVE',
       name: _nameController.text,
       description: 'Saving for ${_nameController.text}',
-      goalAmount: double.parse(_amountController.text),
+      goalAmount: double.parse(_amountController.text.replaceAll(',', '')),
       durationMonths: durationMonths,
     );
 
@@ -466,11 +467,11 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
             const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 48),
             const SizedBox(height: 24),
             _buildSummaryRow('Goal Name', _nameController.text),
-            _buildSummaryRow('Deposit Amount', '₦${NumberFormat('#,###').format(double.tryParse(_amountController.text) ?? 0)}'),
+            _buildSummaryRow('Deposit Amount', '₦${NumberFormat('#,###').format(double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0)}'),
             _buildSummaryRow('Interest Rate', '${((_product?.interestRate ?? 0.17) * 100).toInt()}%'),
             _buildSummaryRow('Lock Duration', widget.type == 'FIXED' ? (_duration ?? '3 Months') : '${(_endDate!.difference(_startDate!).inDays / 30).ceil()} Months'),
             _buildSummaryRow('Due Date', DateFormat('dd MMMM, yyyy').format(_endDate ?? DateTime.now())),
-            _buildSummaryRow('Total Payable', '₦${NumberFormat('#,###').format((double.tryParse(_amountController.text) ?? 0) * (1 + (_product?.interestRate ?? 0.17)))}'),
+            _buildSummaryRow('Total Payable', '₦${NumberFormat('#,###').format((double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0) * (1 + (_product?.interestRate ?? 0.17)))}'),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -555,7 +556,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
               if (widget.type == 'FIXED') ...[
                 _buildTextField('Goal Name', _nameController, 'Enter the goal name'),
                 const SizedBox(height: 20),
-                _buildTextField('Deposit Amount', _amountController, '₦', keyboardType: TextInputType.number),
+                _buildTextField('Deposit Amount', _amountController, '₦', keyboardType: TextInputType.number, inputFormatters: [CurrencyInputFormatter()]),
                 const SizedBox(height: 20),
                 _buildSelectorField('Duration', _duration ?? 'Select the duration', _showDurationPicker),
               ] else ...[
@@ -565,7 +566,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
                   _buildTextField('Custom Goal Name', _nameController, 'Enter your goal name'),
                 ],
                 const SizedBox(height: 20),
-                _buildTextField('Target Amount', _amountController, '₦', keyboardType: TextInputType.number),
+                _buildTextField('Target Amount', _amountController, '₦', keyboardType: TextInputType.number, inputFormatters: [CurrencyInputFormatter()]),
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -662,7 +663,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, String hint, {TextInputType keyboardType = TextInputType.text, bool readOnly = false}) {
+  Widget _buildTextField(String label, TextEditingController controller, String hint, {TextInputType keyboardType = TextInputType.text, bool readOnly = false, List<TextInputFormatter>? inputFormatters}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,6 +673,7 @@ class _CreateSavingsPlanScreenState extends ConsumerState<CreateSavingsPlanScree
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           readOnly: readOnly,
           style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 15),
           decoration: InputDecoration(

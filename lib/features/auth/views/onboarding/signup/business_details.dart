@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/core/widgets/terms_and_conditions_widget.dart';
 import 'package:valarpay/features/models/signup_request.dart';
@@ -28,6 +30,8 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
   // final _dobController = TextEditingController();
   final _referralController = TextEditingController();
   bool _isRegistered = true;
+  String? _cacDocumentPath;
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _checkUserAvailablity() async {
     try {
@@ -53,6 +57,7 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
             businessName: _businessNameController.text,
             companyRegistrationNumber:
                 _isRegistered ? _registrationNumberController.text : "",
+            cacDocumentPath: _cacDocumentPath,
           );
           context.push('/security-details', extra: updatedRequest);
         }
@@ -178,6 +183,16 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
                             hint: 'Enter registration number',
                             obscureText: true,
                           ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Upload CAC Document',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildFileUploadSection(),
                         ],
                         const SizedBox(height: 16),
                         // Referral Code
@@ -338,5 +353,69 @@ class _BusinessDetailsScreenState extends ConsumerState<BusinessDetailsScreen> {
     _registrationNumberController.dispose();
     _referralController.dispose();
     super.dispose();
+  }
+
+  Widget _buildFileUploadSection() {
+    return GestureDetector(
+      onTap: _pickCacDocument,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+        ),
+        child: _cacDocumentPath == null
+            ? Column(
+                children: [
+                  Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.grey.shade400),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap to upload CAC document',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'JPG, PNG or PDF (Max 5MB)',
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  const Icon(Icons.description, color: appTheme.primaryColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _cacDocumentPath!.split('/').last,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                    onPressed: () => setState(() => _cacDocumentPath = null),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _pickCacDocument() async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (file != null) {
+        setState(() {
+          _cacDocumentPath = file.path;
+        });
+      }
+    } catch (e) {
+      AppMessenger.show(context, message: 'Failed to pick image: $e', type: MessageType.error);
+    }
   }
 }

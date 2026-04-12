@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/features/models/user.dart';
+import 'package:valarpay/features/models/user_tier.dart';
+import 'package:intl/intl.dart';
 
 class Tier1Card extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
   final UserModel? user;
+  final TierInfo? tierInfo;
 
   const Tier1Card({
     Key? key,
     this.isExpanded = true,
     required this.onToggle,
     this.user,
+    this.tierInfo,
   }) : super(key: key);
 
   @override
@@ -100,45 +104,76 @@ class _Tier1CardState extends State<Tier1Card> {
                   ),
                   SizedBox(height: 12.h),
 
-                  // BVN Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'BVN',
-                        style: TextStyle(
-                          color:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : const Color(0xFF111827),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            isBvnVerified ? Icons.check_circle : Icons.cancel,
-                            color: isBvnVerified ? Colors.green : Colors.red,
-                            size: 16.sp,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            isBvnVerified ? 'Verified' : 'Not Verified',
-                            style: TextStyle(
-                              color: isBvnVerified ? Colors.green : Colors.red,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
+                   // Requirements Row(s)
+                  if (widget.tierInfo != null)
+                    ...widget.tierInfo!.requirements.map((req) {
+                      bool isVerified = false;
+                      if (req.toLowerCase().contains('bvn') && isBvnVerified) isVerified = true;
+                      // Add other checks if needed, like liveness which might be user.isSelfieVerified if that exists
+                      
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              req,
+                              style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : const Color(0xFF111827),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
+                            Icon(
+                              isVerified ? Icons.check_circle : Icons.cancel,
+                              color: isVerified ? Colors.green : Colors.red,
+                              size: 16.sp,
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList()
+                  else ...[
+                    // Fallback to BVN if tierInfo is null
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'BVN',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : const Color(0xFF111827),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              isBvnVerified ? Icons.check_circle : Icons.cancel,
+                              color: isBvnVerified ? Colors.green : Colors.red,
+                              size: 16.sp,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              isBvnVerified ? 'Verified' : 'Not Verified',
+                              style: TextStyle(
+                                color: isBvnVerified ? Colors.green : Colors.red,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+                  ],
 
-                  SizedBox(height: 12.h),
-
-                  // Nationality Row
+                  // Nationality Row (keep as it's useful but maybe not in API requirements)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -205,7 +240,7 @@ class _Tier1CardState extends State<Tier1Card> {
                   ),
                   SizedBox(height: 16.h),
 
-                  // Limits Section - Two Columns
+                   // Limits Section - Two Columns
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -215,7 +250,7 @@ class _Tier1CardState extends State<Tier1Card> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Credit Limit',
+                              'Daily Transaction Limit',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -228,33 +263,9 @@ class _Tier1CardState extends State<Tier1Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              '₦1,000,000.00',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Credit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '₦5,000,000.00',
+                              widget.tierInfo?.dailyTransactionLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.dailyTransactionLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -269,13 +280,13 @@ class _Tier1CardState extends State<Tier1Card> {
                         ),
                       ),
 
-                      // Right Column - Debit Limits
+                      // Right Column - Debit Limits (Balance Limit)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Debit Limit',
+                              'Maximum Balance',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -288,33 +299,9 @@ class _Tier1CardState extends State<Tier1Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              '₦1,000,000.00',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Debit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '₦5,000,000.00',
+                              widget.tierInfo?.balanceLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.balanceLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==

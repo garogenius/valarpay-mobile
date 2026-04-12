@@ -6,6 +6,7 @@ class FlutterwaveBiller {
   final String billerCode;
   final String? billerName;
   final String? billerIcon;
+  final String? type;
 
   FlutterwaveBiller({
     required this.id,
@@ -14,6 +15,7 @@ class FlutterwaveBiller {
     required this.billerCode,
     this.billerName,
     this.billerIcon,
+    this.type,
   });
 
   factory FlutterwaveBiller.fromJson(Map<String, dynamic> json) => FlutterwaveBiller(
@@ -24,6 +26,7 @@ class FlutterwaveBiller {
             json['billerCode'] ?? json['biller_code'] ?? json['billerId']?.toString() ?? '',
         billerName: json['billerName']?.toString(),
         billerIcon: json['billerIcon']?.toString(),
+        type: json['type']?.toString(),
       );
 }
 

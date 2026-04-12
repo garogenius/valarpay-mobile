@@ -85,10 +85,10 @@ class AirtimeRepository {
   ) async {
     try {
       final requestData = request.toJson();
-      print('[AirtimeRepository] Purchase request data: $requestData');
-      print(
-        '[AirtimeRepository] addBeneficiary value: ${request.addBeneficiary}',
-      );
+      // print('[AirtimeRepository] Purchase request data: $requestData');
+      // print(
+      //   '[AirtimeRepository] addBeneficiary value: ${request.addBeneficiary}',
+      // );
 
       final response = await apiClient.post(
         ApiEndpoints.payAirtime,
@@ -231,7 +231,7 @@ class AirtimeRepository {
       );
 
       // Debug log the raw response
-      print('[AirtimeRepository] Raw response: ${response.data}');
+      // print('[AirtimeRepository] Raw response: ${response.data}');
 
       return AirtimeBeneficiariesResponse.fromJson(response.data);
     } on DioException catch (e) {

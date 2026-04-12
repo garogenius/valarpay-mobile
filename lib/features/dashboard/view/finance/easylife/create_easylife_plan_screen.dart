@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
 import 'package:valarpay/features/models/easylife_models.dart';
 import 'package:valarpay/features/notifiers/easylife_notifier.dart';
+import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 class CreateEasyLifePlanScreen extends ConsumerStatefulWidget {
   final String? initialName;
@@ -36,6 +40,7 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      ref.read(userNotifierProvider.notifier).refreshUserProfile();
       await ref.read(easyLifeProductNotifierProvider.notifier).fetchProductInfo();
       final product = ref.read(easyLifeProductNotifierProvider).data?.firstOrNull;
       if (product != null) {
@@ -99,7 +104,7 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
     final request = CreateEasyLifePlanRequest(
       name: _nameController.text,
       description: 'EasyLife Savings for ${_nameController.text}',
-      goalAmount: double.parse(_amountController.text),
+      goalAmount: double.parse(_amountController.text.replaceAll(',', '')),
       durationDays: int.parse(_durationController.text),
       contributionFrequency: _frequency,
       autoDebitEnabled: _autoDebit,
@@ -154,6 +159,8 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLoading = ref.watch(easyLifePlanNotifierProvider).isInitialLoading;
+    final userState = ref.watch(userNotifierProvider);
+    final walletBalance = userState.data?.firstOrNull?.wallets.firstOrNull?.balance ?? 0;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
@@ -171,7 +178,7 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
             children: [
               _buildTextField('Plan Name', _nameController, 'e.g. Vacation Fund'),
               const SizedBox(height: 20),
-              _buildTextField('Goal Amount', _amountController, '₦', keyboardType: TextInputType.number),
+              _buildTextField('Goal Amount', _amountController, '₦', keyboardType: TextInputType.number, inputFormatters: [CurrencyInputFormatter()]),
               const SizedBox(height: 20),
               _buildTextField('Duration (Days)', _durationController, '90', keyboardType: TextInputType.number),
               const SizedBox(height: 20),
@@ -192,6 +199,49 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
                       Icon(Icons.arrow_drop_down, color: isDark ? Colors.white70 : Colors.black54),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Funding Account
+              Text('Funding Account', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1A1A) : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 24,
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) => Icon(Icons.account_balance_wallet, color: Theme.of(context).primaryColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Valarpay Wallet', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text('Balance: ₦${NumberFormat('#,###.##').format(walletBalance)}', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -229,7 +279,7 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, String hint, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(String label, TextEditingController controller, String hint, {TextInputType keyboardType = TextInputType.text, List<TextInputFormatter>? inputFormatters}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,6 +289,7 @@ class _CreateEasyLifePlanScreenState extends ConsumerState<CreateEasyLifePlanScr
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,

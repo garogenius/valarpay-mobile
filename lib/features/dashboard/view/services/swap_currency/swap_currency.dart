@@ -76,10 +76,10 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen(currencyNotifierProvider, (previous, next) {
-      print('[SwapCurrencyScreen] State changed. isDataAvailable: ${next.isDataAvailable}');
+      // print('[SwapCurrencyScreen] State changed. isDataAvailable: ${next.isDataAvailable}');
       if (next.isDataAvailable && next.singleData != null) {
         final data = next.singleData!;
-        print('[SwapCurrencyScreen] Conversion result: ${data.convertedAmount}');
+        // print('[SwapCurrencyScreen] Conversion result: ${data.convertedAmount}');
         toAmountController.text = currencyFormatter(data.convertedAmount.toStringAsFixed(2), symbol: '');
         
         setState(() {

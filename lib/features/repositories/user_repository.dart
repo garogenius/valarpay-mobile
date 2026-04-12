@@ -19,6 +19,7 @@ import 'package:valarpay/features/models/verify_wallet_pin_request.dart';
 import 'package:valarpay/features/models/verify_wallet_pin_response.dart';
 import 'package:valarpay/features/models/nin_verification_request.dart';
 import 'package:valarpay/features/models/nin_verification_response.dart';
+import 'package:valarpay/features/models/user_tier.dart';
 import '../../../core/network/api_client.dart';
 
 class UserRepository {
@@ -173,6 +174,15 @@ class UserRepository {
       final response = await apiClient.get(ApiEndpoints.getUserProfile);
       final user = UserModel.fromJson(response.data);
       return user;
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    }
+  }
+
+  Future<UserTierResponse> getUserTier() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.getUserTier);
+      return UserTierResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     }
@@ -466,28 +476,6 @@ class UserRepository {
     }
   }
 
-  /// Submit address for Tier 3 KYC upgrade
-  Future<ApiResponse> submitKycTier3(Map<String, dynamic> addressData) async {
-    try {
-      final response = await apiClient.post(
-        ApiEndpoints.kycTier3,
-        data: addressData,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return ApiResponse.fromJson(response.data);
-      } else {
-        throw Exception(
-          response.data?['message'] ?? 'Failed to submit address verification',
-        );
-      }
-    } on DioException catch (e) {
-      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
-    } catch (e) {
-      throw Exception('Failed to submit address verification: $e');
-    }
-  }
-
   /// Upload document for identity verification
   Future<ApiResponse> uploadDocument({
     required String documentType,
@@ -525,6 +513,64 @@ class UserRepository {
       throw Exception(ApiResponse.getErrorMessage(e.response?.data));
     } catch (e) {
       throw Exception('Failed to upload document: $e');
+    }
+  }
+
+  /// Upload Tier 3 document (Proof of Address/Bank Statement)
+  Future<ApiResponse> uploadTier3Document({
+    required String filePath,
+    String? documentType,
+  }) async {
+    try {
+      final file = File(filePath);
+      final fileName = file.path.split(Platform.pathSeparator).last;
+
+      final Map<String, dynamic> data = {
+        'tier3Document': await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        ),
+        if (documentType != null) 'documentType': documentType,
+      };
+
+      final formData = FormData.fromMap(data);
+
+      final response = await apiClient.postFormData(
+        ApiEndpoints.uploadTier3Document,
+        data: formData,
+      );
+
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Failed to upload Tier 3 document: $e');
+    }
+  }
+
+  /// Upload CAC document for business accounts
+  Future<ApiResponse> uploadCacDocument(String filePath) async {
+    try {
+      final file = File(filePath);
+      final fileName = file.path.split(Platform.pathSeparator).last;
+
+      final formData = FormData.fromMap({
+        'cacDocument': await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        ),
+      });
+
+      final response = await apiClient.postFormData(
+        ApiEndpoints.uploadCacDocument,
+        data: formData,
+      );
+
+      return ApiResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
+    } catch (e) {
+      throw Exception('Failed to upload CAC document: $e');
     }
   }
 }

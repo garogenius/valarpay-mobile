@@ -13,6 +13,11 @@ class RemitaRepository {
       final response = await apiClient.get(
         ApiEndpoints.getRemitaCategories,
         query: {'page': page, 'size': size},
+        options: Options(
+          headers: {
+            'x-api-key': ApiClient.apiKey,
+          },
+        ),
       );
       final dynamic rawData = response.data['data'] ?? response.data['categories'];
       List data = [];
@@ -31,9 +36,18 @@ class RemitaRepository {
 
   Future<List<RemitaBiller>> getBillersByCategory(String categoryId, {int page = 0, int size = 20}) async {
     try {
+      final String path = categoryId.toLowerCase() == 'school' 
+          ? ApiEndpoints.getRemitaSchoolBillers 
+          : ApiEndpoints.getRemitaPlan(categoryId);
+          
       final response = await apiClient.get(
-        ApiEndpoints.getRemitaPlan(categoryId),
+        path,
         query: {'page': page, 'size': size},
+        options: Options(
+          headers: {
+            'x-api-key': ApiClient.apiKey,
+          },
+        ),
       );
       final dynamic rawData = response.data['data'] ?? response.data['billers'];
       List data = [];
@@ -55,6 +69,11 @@ class RemitaRepository {
       final response = await apiClient.get(
         ApiEndpoints.getRemitaBillerProducts(billerId),
         query: {'page': page, 'size': size},
+        options: Options(
+          headers: {
+            'x-api-key': ApiClient.apiKey,
+          },
+        ),
       );
       final dynamic rawData = response.data['data'] ?? response.data['products'] ?? response.data['items'];
       List data = [];

@@ -32,7 +32,7 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/cable.svg',
         label: 'Cable Tv',
-        onTap: () => context.push('/cable-tv'),
+        onTap: () => context.push('/coralpay-billing/PAY_TV/Cable TV'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/arrow-swap-horizontal.svg',
@@ -57,7 +57,7 @@ class OurServicesWidget extends StatelessWidget {
       ServiceItem(
         icon: 'assets/images/service_icon/Education.svg',
         label: 'Education',
-        onTap: () => context.push('/remita-billing/education/Education'),
+        onTap: () => context.push('/coralpay-billing/COLLECTIONS/Education'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/shoping.svg',
@@ -65,14 +65,29 @@ class OurServicesWidget extends StatelessWidget {
         onTap: () => context.push('/shopping'),
       ),
       ServiceItem(
+        icon: 'assets/images/service_icon/Education.svg',
+        label: 'Church',
+        onTap: () => context.push('/coralpay-billing/CHURCH_COLLECTIONS/Church'),
+      ),
+      ServiceItem(
+        icon: 'assets/images/service_icon/int.svg',
+        label: 'Lifestyle',
+        onTap: () => context.push('/coralpay-billing/EVENTS_AND_LIFESTYLE/Lifestyle'),
+      ),
+      ServiceItem(
         icon: 'assets/images/service_icon/Insurance.svg',
         label: 'Insurance',
-        onTap: () => context.push('/insurance'),
+        onTap: () => context.push('/coming-soon'),
       ),
       ServiceItem(
         icon: 'assets/images/service_icon/flight.svg',
         label: 'Flight',
         onTap: () => context.push('/flight'),
+      ),
+      ServiceItem(
+        icon: 'assets/images/service_icon/flight.svg',
+        label: 'Transport',
+        onTap: () => context.push('/transport'),
       ),
     ];
 

@@ -70,7 +70,7 @@ class _FlutterwaveBillingScreenState extends ConsumerState<FlutterwaveBillingScr
     super.dispose();
   }
 
-  void _onBillerSelected(FlutterwaveBiller biller) {
+  void _onBillerSelected(FlutterwaveBiller biller) async {
     setState(() {
       _selectedBiller = biller;
       _selectedProduct = null;
@@ -78,7 +78,46 @@ class _FlutterwaveBillingScreenState extends ConsumerState<FlutterwaveBillingScr
       _currentStep = 1;
       _searchController.clear();
     });
-    ref.read(flutterwaveProductsProvider.notifier).fetchProducts(biller.billerCode, widget.categoryId, isOverlayHidden: false);
+    
+    // Fetch products
+    final String? billType = widget.categoryId == 'SCHPB' ? null : biller.type;
+await ref.read(flutterwaveProductsProvider.notifier).fetchProducts(
+      biller.billerCode,
+      widget.categoryId,
+      billType: billType,
+      isOverlayHidden: false,
+    );
+    
+    if (!mounted) return;
+    
+    final state = ref.read(flutterwaveProductsProvider);
+    if (state.isDataAvailable && state.data != null) {
+      if (state.data!.length == 1) {
+        // Auto-select if only one product
+        _onProductSelected(state.data!.first);
+      } else if (state.data!.isEmpty && widget.categoryId == 'SCHPB') {
+        _useFallbackProduct(biller);
+      }
+    } else if (state.message != null && widget.categoryId == 'SCHPB') {
+      // For school fees, if fetch fails, allow manual entry
+      _useFallbackProduct(biller);
+    }
+  }
+
+  void _useFallbackProduct(FlutterwaveBiller biller) {
+    setState(() {
+      _selectedProduct = FlutterwaveProduct(
+        id: 0,
+        billerCode: biller.billerCode,
+        name: '${biller.name} Fees',
+        fee: 0,
+        itemCode: biller.billerCode,
+        labelName: 'Student ID / Reference',
+        amount: 0,
+        isResolvable: true,
+      );
+      _currentStep = 2;
+    });
   }
 
   void _onProductSelected(FlutterwaveProduct product) {
@@ -337,6 +376,25 @@ class _FlutterwaveBillingScreenState extends ConsumerState<FlutterwaveBillingScr
   Widget _buildProductSelection() {
     final state = ref.watch(flutterwaveProductsProvider);
     if (state.message != null) {
+      if (widget.categoryId == 'SCHPB') {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildErrorWidget(
+              title: 'Unable to Load Fee Types',
+              message: state.message!,
+              onRetry: () => ref.read(flutterwaveProductsProvider.notifier).fetchProducts(_selectedBiller!.billerCode, widget.categoryId, isOverlayHidden: false),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40.w),
+              child: TextButton(
+                onPressed: () => _useFallbackProduct(_selectedBiller!),
+                child: Text('Proceed with General Payment', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        );
+      }
       return _buildErrorWidget(
         title: 'Unable to Load Products',
         message: state.message!,

@@ -19,8 +19,7 @@ import 'package:valarpay/features/models/transfer_models.dart';
 import 'package:valarpay/features/notifiers/transfer_notifier.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/core/widgets/smart_selfie_widget.dart';
-import 'package:valarpay/core/services/smileid_socket_service.dart';
-import 'dart:async';
+
 import 'package:valarpay/features/notifiers/wallet_notifier.dart';
 
 import '../../../../../core/utils/logger.dart';
@@ -43,6 +42,7 @@ class _InternalTransferAmountScreenState
   bool _isNotMinimumAmount = false;
   bool _saveBeneficiary = false;
   bool _loadingShown = false;
+  bool _isLivenessVerifying = false;
   late String _userFullname;
   late double _amount;
 
@@ -73,33 +73,13 @@ class _InternalTransferAmountScreenState
         });
       }
     });
-    SmileIdSocketService().connect();
   }
   
-  StreamSubscription? _smartSelfieSub;
-  bool _isLivenessVerifying = false;
-
-  void _listenToSmartSelfie(VoidCallback onVerified) {
-    _smartSelfieSub?.cancel();
-    _smartSelfieSub = SmileIdSocketService().smartSelfieStream.listen((data) {
-      if (!mounted || !_isLivenessVerifying) return;
-      
-      setState(() => _isLivenessVerifying = false);
-      
-      if (data['resultCode'] == '0' || data['resultCode'] == '1020' || data['resultCode'] == '1') {
-        onVerified();
-      } else {
-        AppMessenger.show(context, message: data['resultText'] ?? 'Liveness verification failed', type: MessageType.error);
-        if (Navigator.canPop(context)) Navigator.pop(context);
-      }
-    });
-  }
 
   @override
   void dispose() {
     _amountController.dispose();
     _narrationController.dispose();
-    _smartSelfieSub?.cancel();
     super.dispose();
   }
 
@@ -219,11 +199,6 @@ class _InternalTransferAmountScreenState
     if (!hasEnoughBalance) return;
     
     if (amount >= 50000) {
-      _listenToSmartSelfie(() {
-        if (Navigator.canPop(context)) Navigator.pop(context); 
-        _proceedToPinEntry(biometric, amount);
-      });
-      
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -234,6 +209,11 @@ class _InternalTransferAmountScreenState
                 selfieImage: selfie,
                 livenessImages: liveness,
               );
+              setState(() => _isLivenessVerifying = false);
+              if (ok && mounted) {
+                Navigator.pop(context); // Pop the selfie screen
+                _proceedToPinEntry(biometric, amount);
+              }
               return ok;
             },
           ),

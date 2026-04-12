@@ -29,14 +29,19 @@ class FlutterwaveBillRepository {
     }
   }
 
-  Future<FlutterwaveProductResponse> getBillerProducts(String billerCode, String category) async {
+  Future<FlutterwaveProductResponse> getBillerProducts(String billerCode, String category, {String? billType}) async {
     try {
       final response = await apiClient.get(
         ApiEndpoints.getFlutterwaveBillInfo,
         queryParameters: {
           'billerCode': billerCode,
-          'billType': _mapCategoryToBillType(category),
+          'billType': _mapCategoryToBillType(billType ?? category),
         },
+        options: Options(
+          headers: {
+            'x-api-key': ApiClient.apiKey,
+          },
+        ),
       );
       return FlutterwaveProductResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -45,25 +50,55 @@ class FlutterwaveBillRepository {
   }
 
   String _mapCategoryToBillType(String category) {
-    switch (category.toUpperCase()) {
+    final String normalized = category.trim().toUpperCase();
+    switch (normalized) {
       case 'SCHPB':
+      case 'SCHOOL':
+      case 'SCHOOLFEES':
+      case 'SCHOOLFEE':
         return 'schoolfee';
       case 'TRANSLOG':
+      case 'TRANSPORT':
+      case 'TRANSPORTATION':
         return 'transport';
       case 'INTSERVICE':
+      case 'INTERNET':
         return 'internet';
+      case 'MOBILEDATA':
+      case 'DATA':
+        return 'internet'; // Based on server list, 'data' might need to be 'internet'
       case 'UTILITYBILLS':
+      case 'ELECTRICITY':
         return 'electricity';
       case 'CABLEBILLS':
+      case 'CABLE':
+      case 'TV':
         return 'cable';
       case 'TAX':
+      case 'TAXES':
         return 'tax';
-      case 'MOBILEDATA':
-        return 'data';
+      case 'GOVT':
+      case 'GOVTFEES':
+      case 'GOVERNMENT_COLLECTIONS':
+      case 'GOVERNMENT':
+        return 'govt_fees';
+      case 'WATER':
+        return 'water';
+      case 'WAEC':
+        return 'waec';
+      case 'JAMB':
+        return 'jamb';
       case 'AIRTIME':
         return 'airtime';
       default:
-        return category.toLowerCase();
+        // Try to see if the input itself is one of the valid short codes
+        final lower = normalized.toLowerCase();
+        final validTypes = [
+          'cable', 'electricity', 'internet', 'transport', 'schoolfee', 
+          'tax', 'govt_fees', 'water', 'waec', 'jamb', 'airtime'
+        ];
+        if (validTypes.contains(lower)) return lower;
+        return lower;
     }
   }
 
@@ -89,8 +124,9 @@ class FlutterwaveBillRepository {
 
   Future<FlutterwavePaymentResponse> payBill(FlutterwavePaymentRequest request) async {
     try {
+      final String mappedCategory = _mapCategoryToBillType(request.category);
       final response = await apiClient.post(
-        ApiEndpoints.payFlutterwaveBill(request.category.toLowerCase()),
+        ApiEndpoints.payFlutterwaveBill(mappedCategory),
         data: request.toJson(),
       );
       return FlutterwavePaymentResponse.fromJson(response.data);

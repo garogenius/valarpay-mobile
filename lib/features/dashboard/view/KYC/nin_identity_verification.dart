@@ -41,9 +41,9 @@ class _NinIdentityVerificationPageState
             livenessImages: base64Liveness,
           );
 
-      log("📥 SmileID Response:");
-      log("   - Status Code: ${response?.statusCode}");
-      log("   - Message: ${response?.message}");
+      // log("📥 SmileID Response:");
+      // log("   - Status Code: ${response?.statusCode}");
+      // log("   - Message: ${response?.message}");
 
       if (response != null && (response.statusCode == 200 || response.statusCode == 201)) {
         log("✅ Smart Selfie Registration successful!");

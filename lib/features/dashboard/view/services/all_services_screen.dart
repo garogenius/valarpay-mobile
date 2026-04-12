@@ -70,7 +70,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           item = ServiceItem(
             icon: 'assets/images/service_icon/cable.svg',
             label: 'TV',
-            onTap: () => context.push('/cable-tv'),
+            onTap: () => context.push('/coralpay-billing/PAY_TV/TV'),
           );
         } else if (billType.contains('INTERNET')) {
           item = ServiceItem(
@@ -78,12 +78,17 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             label: 'Internet',
             onTap: () => context.push('/internet'),
           );
-        } else if (billType.contains('EDUCATION') || 
-                   billType.contains('SCHOOL')) {
+        } else if (billType.contains('EDUCATION')) {
           item = ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'Education',
-            onTap: () => context.push('/remita-billing/6/Educational Institutions'),
+            onTap: () => context.push('/coralpay-billing/COLLECTIONS/Education'),
+          );
+        } else if (billType.contains('SCHOOL')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/Education.svg',
+            label: 'School Fees',
+            onTap: () => context.push('/flutterwave-billing/SCHPB/School Fees'),
           );
         } else if (billType.contains('WAEC') || 
                    billType.contains('JAMB')) {
@@ -92,11 +97,11 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             label: 'Exam Pins',
             onTap: () => context.push('/education'),
           );
-        } else if (billType.contains('TRANSPORT')) {                                                              
+        } else if (billType.contains('TRANSPORT')) {
           item = ServiceItem(
             icon: 'assets/images/service_icon/flight.svg',
             label: 'Transport',
-            onTap: () => context.push('/flutterwave-billing/TRANSPORT/Transport'),
+            onTap: () => context.push('/transport'),
           );
         } else if (billType.contains('TAX')) {
           item = ServiceItem(
@@ -109,6 +114,18 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             icon: 'assets/images/service_icon/shoping.svg',
             label: 'Gov Fees',
             onTap: () => context.push('/coming-soon'),
+          );
+        } else if (billType.contains('CHURCH')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/Education.svg',
+            label: 'Church',
+            onTap: () => context.push('/coralpay-billing/CHURCH_COLLECTIONS/Church'),
+          );
+        } else if (billType.contains('LIFESTYLE') || billType.contains('EVENT')) {
+          item = ServiceItem(
+            icon: 'assets/images/service_icon/int.svg',
+            label: 'Lifestyle',
+            onTap: () => context.push('/coralpay-billing/EVENTS_AND_LIFESTYLE/Lifestyle'),
           );
         }
 
@@ -221,7 +238,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/cable.svg',
             label: 'TV',
-            onTap: () => context.push('/cable-tv'),
+            onTap: () => context.push('/coralpay-billing/PAY_TV/TV'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/gift.svg',
@@ -236,7 +253,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
             label: 'Education',
-            onTap: () => context.push('/remita-billing/education/Educational Institutions'),
+            onTap: () => context.push('/coralpay-billing/COLLECTIONS/Education'),
           ),
           // ServiceItem(
           //   icon: 'assets/images/service_icon/Education.svg',
@@ -261,7 +278,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/flight.svg',
             label: 'Transport',
-            onTap: () => context.push('/flutterwave-billing/TRANSLOG/Transport'),
+            onTap: () => context.push('/transport'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',
@@ -271,8 +288,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',
             label: 'Gov Fees',
-            onTap: () =>
-                context.push('/coming-soon'),
+            onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/shoping.svg',
@@ -298,6 +314,16 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             icon: 'assets/images/service_icon/shoping.svg',
             label: 'Shopping',
             onTap: () => context.push('/shopping'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/Education.svg',
+            label: 'Church',
+            onTap: () => context.push('/coralpay-billing/CHURCH_COLLECTIONS/Church'),
+          ),
+          ServiceItem(
+            icon: 'assets/images/service_icon/int.svg',
+            label: 'Lifestyle',
+            onTap: () => context.push('/coralpay-billing/EVENTS_AND_LIFESTYLE/Lifestyle'),
           ),
           // ServiceItem(
           //   icon: 'assets/images/service_icon/Insurance.svg',

@@ -9,6 +9,8 @@ import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/auth/widgets/need_help_modal.dart';
 import 'package:valarpay/features/models/wallet.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
+import 'package:valarpay/core/utils/currency_formatter.dart';
+import 'package:flutter/services.dart';
 
 class CreateFixedDepositScreen extends ConsumerStatefulWidget {
   final String? initialAmount;
@@ -23,7 +25,6 @@ class _CreateFixedDepositScreenState extends ConsumerState<CreateFixedDepositScr
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   FixedDepositPlan? _selectedPlan;
-  String _rolloverType = 'NONE';
   String? _selectedWalletId;
 
   @override
@@ -175,9 +176,8 @@ class _CreateFixedDepositScreenState extends ConsumerState<CreateFixedDepositScr
   Future<void> _submitDeposit() async {
     final amountText = _amountController.text.replaceAll(',', '');
     final request = CreateFixedDepositRequest(
-      planId: _selectedPlan!.id,
-      amount: double.parse(amountText),
-      rolloverType: _rolloverType,
+      planType: _selectedPlan!.id,
+      principalAmount: double.parse(amountText),
     );
 
     final success = await ref.read(fixedDepositNotifierProvider.notifier).createDeposit(request);
@@ -289,24 +289,11 @@ class _CreateFixedDepositScreenState extends ConsumerState<CreateFixedDepositScr
                       isDark: isDark,
                     ),
                     const SizedBox(height: 20),
-                    _buildTextField('Fixed Deposit Amount', _amountController, '₦', isDark, keyboardType: TextInputType.number),
+                    _buildTextField('Fixed Deposit Amount', _amountController, '₦', isDark, keyboardType: TextInputType.number, inputFormatters: [CurrencyInputFormatter()]),
                     const SizedBox(height: 20),
                     _buildLabel('Funding Account', isDark),
                     const SizedBox(height: 12),
                     _buildWalletOption(wallets.firstOrNull, isDark),
-                    const SizedBox(height: 20),
-                    _buildLabel('Rollover Option', isDark),
-                    const SizedBox(height: 8),
-                    _buildDropdown<String>(
-                      value: _rolloverType,
-                      items: const [
-                        DropdownMenuItem(value: 'NONE', child: Text('No Rollover')),
-                        DropdownMenuItem(value: 'PRINCIPAL', child: Text('Rollover Principal Only')),
-                        DropdownMenuItem(value: 'PRINCIPAL_AND_INTEREST', child: Text('Rollover Principal + Interest')),
-                      ],
-                      onChanged: (val) => setState(() => _rolloverType = val!),
-                      isDark: isDark,
-                    ),
                     const SizedBox(height: 48),
                     SizedBox(
                       width: double.infinity,
@@ -352,7 +339,7 @@ class _CreateFixedDepositScreenState extends ConsumerState<CreateFixedDepositScr
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, String hint, bool isDark, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(String label, TextEditingController controller, String hint, bool isDark, {TextInputType keyboardType = TextInputType.text, List<TextInputFormatter>? inputFormatters}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -361,6 +348,7 @@ class _CreateFixedDepositScreenState extends ConsumerState<CreateFixedDepositScr
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,

@@ -5,6 +5,8 @@ import 'package:valarpay/features/dashboard/widgets/Kyc/tier1_card.dart';
 import 'package:valarpay/features/dashboard/widgets/Kyc/tier2_kyc.dart';
 import 'package:valarpay/features/dashboard/widgets/Kyc/tier3_card.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/notifiers/tier_notifier.dart';
+import 'package:valarpay/features/models/user_tier.dart';
 
 class UpgradeKycScreen extends ConsumerStatefulWidget {
   const UpgradeKycScreen({Key? key}) : super(key: key);
@@ -19,12 +21,38 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
   bool _isTier3Expanded = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(tierNotifierProvider.notifier).getUserTier();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final userState = ref.watch(userNotifierProvider);
     final user =
         userState.data?.isNotEmpty == true ? userState.data!.first : null;
     final isNinVerified = user?.isNinVerified ?? false;
     final isAddressSubmitted = user?.isAddressVerified ?? false;
+
+    final tierState = ref.watch(tierNotifierProvider);
+    final tierData = tierState.data?.isNotEmpty == true ? tierState.data!.first : null;
+
+    TierInfo? getTier(String name) {
+      if (tierData == null) return null;
+      try {
+        return tierData.tiers.firstWhere(
+          (t) => t.tier.toLowerCase() == name.toLowerCase() || t.tier == name,
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final tier1 = getTier('one');
+    final tier2 = getTier('two');
+    final tier3 = getTier('three');
 
     return Scaffold(
       appBar: AppBar(
@@ -47,6 +75,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
             Tier1Card(
               isExpanded: _isTier1Expanded,
               user: user,
+              tierInfo: tier1,
               onToggle: () {
                 setState(() {
                   _isTier1Expanded = !_isTier1Expanded;
@@ -59,6 +88,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
             Tier2Card(
               isExpanded: _isTier2Expanded,
               user: user,
+              tierInfo: tier2,
               onToggle: () {
                 setState(() {
                   _isTier2Expanded = !_isTier2Expanded;
@@ -73,6 +103,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
               isNinVerified: isNinVerified,
               isAddressSubmitted: isAddressSubmitted,
               user: user,
+              tierInfo: tier3,
               onToggle: () {
                 setState(() {
                   _isTier3Expanded = !_isTier3Expanded;

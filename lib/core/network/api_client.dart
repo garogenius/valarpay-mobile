@@ -4,13 +4,15 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/services/session_service.dart';
+import 'package:valarpay/core/routing/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valarpay/core/network/data_state.dart';
 
 final apiClientProvider = Provider((ref) => ApiClient());
 
 class ApiClient {
   static const String baseUrl = 'https://valarpay.nattycore.com';
-    // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
+  //   // static const String baseUrl = 'https://valar-pay-api.up.railway.app';
   // static const String baseUrl = 'https://valar-pay-backend-staging.up.railway.app';
   static const String apiKey = '5821039487621507';
 
@@ -20,8 +22,8 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 120),
+        connectTimeout: const Duration(seconds: 120),
+        receiveTimeout: const Duration(seconds: 180),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -33,11 +35,11 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          _logRequest(options);
+          // _logRequest(options);
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          _logResponse(response);
+          // _logResponse(response);
 
           if (response.statusCode == 200) {
             final data = response.data;
@@ -64,7 +66,21 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          _logError(e);
+          // _logError(e);
+          
+          if (e.response?.statusCode == 401) {
+            final message = e.response?.data?['message']?.toString().toLowerCase();
+            if (message != null && (message.contains('jwt expired') || message.contains('unauthorized'))) {
+              // Note: We can't easily call SessionService.logout() here without context
+              // But we can clear the tokens at least to force re-login on next start
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('user_access_token');
+              await prefs.remove('user_details');
+              // Optionally trigger a global event or redirect if router is accessible
+              router.go('/signin');
+            }
+          }
+          
           return handler.next(e);
         },
       ),
@@ -89,12 +105,17 @@ class ApiClient {
     return await dio.post(path, data: data, options: options);
   }
 
-  Future<Response> get(String path, {Map<String, dynamic>? query, Map<String, dynamic>? queryParameters, bool useAuth = true}) async {
-    final options = Options();
+  Future<Response> get(String path, {Map<String, dynamic>? query, Map<String, dynamic>? queryParameters, bool useAuth = true, Options? options}) async {
+    final opts = options ?? Options();
+    // Explicitly remove Content-Type for GET requests as some providers reject it
+    opts.headers ??= {};
+    opts.headers!.remove('Content-Type');
+    opts.headers!.remove('content-type');
+    
     if (useAuth) {
-      await _withAuth(options);
+      await _withAuth(opts);
     }
-    return await dio.get(path, queryParameters: query ?? queryParameters, options: options);
+    return await dio.get(path, queryParameters: query ?? queryParameters, options: opts);
   }
 
   Future<Response> put(String path, {Map<String, dynamic>? data, bool useAuth = true}) async {
@@ -282,6 +303,8 @@ class ApiClient {
   }
 
   void _printLog(String message, String name) {
+    // Logging disabled
+    /*
     // 1. Log to DevTools using dart:developer log (handles large strings better)
     log(message, name: name);
     
@@ -301,6 +324,7 @@ class ApiClient {
         }
       }
     }
+    */
   }
 
   String _formatJson(dynamic data) {

@@ -31,23 +31,20 @@ class FixedDepositPlan {
 }
 
 class CreateFixedDepositRequest {
-  final String planId;
-  final double amount;
+  final String planType;
+  final double principalAmount;
   final String currency;
-  final String rolloverType; // NONE, PRINCIPAL, PRINCIPAL_AND_INTEREST
 
   CreateFixedDepositRequest({
-    required this.planId,
-    required this.amount,
+    required this.planType,
+    required this.principalAmount,
     this.currency = 'NGN',
-    required this.rolloverType,
   });
 
   Map<String, dynamic> toJson() => {
-    'planId': planId,
-    'amount': amount,
+    'planType': planType,
+    'principalAmount': principalAmount,
     'currency': currency,
-    'rolloverType': rolloverType,
   };
 }
 

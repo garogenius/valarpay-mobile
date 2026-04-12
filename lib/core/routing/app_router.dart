@@ -27,6 +27,7 @@ import 'package:valarpay/features/dashboard/view/services/international_airtime/
 import 'package:valarpay/features/dashboard/view/services/internet/internet_screen.dart';
 import 'package:valarpay/features/dashboard/view/services/shopping/shopping.dart';
 import 'package:valarpay/features/dashboard/view/services/swap_currency/swap_currency.dart';
+import 'package:valarpay/features/dashboard/view/services/transport/transport.dart';
 import 'package:valarpay/features/dashboard/view/settings/close_account_screen.dart';
 import 'package:valarpay/features/dashboard/view/settings/forgot_pin_screen.dart';
 import 'package:valarpay/features/models/signup_request.dart';
@@ -129,6 +130,7 @@ import 'package:valarpay/features/dashboard/view/services/all_services_screen.da
 import '../../features/dashboard/view/finance/finance_intro_screen.dart';
 import 'package:valarpay/features/dashboard/view/finance/widgets/finance_product_intro_screen.dart';
 import 'package:valarpay/features/dashboard/view/services/flutterwave_bill/flutterwave_bill_screen.dart';
+import 'package:valarpay/features/dashboard/view/services/coralpay/coralpay_billing_screen.dart';
 
 
 import 'package:valarpay/core/services/connectivity_service.dart';
@@ -586,6 +588,10 @@ final router = GoRouter(
       builder: (context, state) => const FlightSelectionScreen(),
     ),
     GoRoute(
+      path: '/transport',
+      builder: (context, state) => const TransportScreen(),
+    ),
+    GoRoute(
       path: '/swap-currency',
       builder: (context, state) => const SwapCurrencyScreen(),
     ),
@@ -667,6 +673,17 @@ final router = GoRouter(
     GoRoute(
       path: '/remita-categories',
       builder: (context, state) => const RemitaCategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/coralpay-billing/:groupSlug/:groupName',
+      builder: (context, state) {
+        final groupSlug = state.pathParameters['groupSlug']!;
+        final groupName = state.pathParameters['groupName']!;
+        return CoralPayBillingScreen(
+          groupSlug: groupSlug,
+          groupName: groupName,
+        );
+      },
     ),
     GoRoute(
       path: '/remita-billing/:categoryId/:categoryName',

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:valarpay/features/dashboard/view/KYC/residential_address.dart';
+import 'package:valarpay/features/dashboard/view/KYC/proof_of_address.dart';
+import 'package:valarpay/features/models/kyc_address_request.dart';
 import 'package:valarpay/features/models/user.dart';
+import 'package:valarpay/features/models/user_tier.dart';
+import 'package:intl/intl.dart';
 
 class Tier3Card extends StatefulWidget {
   final bool isExpanded;
@@ -10,6 +13,7 @@ class Tier3Card extends StatefulWidget {
   final bool isNinVerified;
   final bool isAddressSubmitted;
   final UserModel? user;
+  final TierInfo? tierInfo;
 
   const Tier3Card({
     Key? key,
@@ -18,6 +22,7 @@ class Tier3Card extends StatefulWidget {
     this.isNinVerified = false,
     this.isAddressSubmitted = false,
     this.user,
+    this.tierInfo,
   }) : super(key: key);
 
   @override
@@ -118,29 +123,34 @@ class _Tier3CardState extends State<Tier3Card> {
                 // Clickable upgrade text
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      // Navigate to residential address page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ResidentialAddressPage(),
-                        ),
-                      );
-                    },
+                    onTap: widget.isNinVerified && !widget.isAddressSubmitted
+                        ? () {
+                            // Directly navigate to document upload for Tier 3 review
+                            final request = const KycAddressRequest();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => 
+                                    ProofOfAddressPage(addressRequest: request),
+                              ),
+                            );
+                          }
+                        : null,
                     child: Row(
                       children: [
                         Text(
-                          widget.isNinVerified ? 'Tier 3' : 'Upgrade to Tier 3',
+                          widget.isAddressSubmitted 
+                              ? 'Tier 3' 
+                              : 'Upgrade to Tier 3',
                           style: TextStyle(
-                            color:
-                                widget.isNinVerified
-                                    ? const Color(0xFF9CA3AF)
-                                    : const Color(0xFFF76301),
+                            color: widget.isNinVerified && !widget.isAddressSubmitted
+                                ? const Color(0xFFF76301)
+                                : const Color(0xFF9CA3AF),
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (!widget.isNinVerified) ...[
+                        if (widget.isNinVerified && !widget.isAddressSubmitted) ...[
                           SizedBox(width: 4.w),
                           Icon(
                             Icons.arrow_forward_ios,
@@ -195,107 +205,143 @@ class _Tier3CardState extends State<Tier3Card> {
                       fontWeight: FontWeight.w400,
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 12.h),                   // Requirements Row(s)
+                  if (widget.tierInfo != null)
+                    ...widget.tierInfo!.requirements.map((req) {
+                      bool isVerified = false;
+                      // Logic to determine if requirement is met
+                      if (req.toLowerCase().contains('nin') && widget.isNinVerified) isVerified = true;
+                      if (req.toLowerCase().contains('address') && widget.isAddressSubmitted) isVerified = true;
+                      if (req.toLowerCase().contains('bvn') && (widget.user?.isBvnVerified ?? false)) isVerified = true;
+                      if (req.toLowerCase().contains('statement') && (widget.user?.bankStatementUrl != null)) isVerified = true;
 
-                  // NIN Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NIN',
-                        style: TextStyle(
-                          color:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : const Color(0xFF111827),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                req,
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : const Color(0xFF111827),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              isVerified ? Icons.check_circle : Icons.cancel,
+                              color: isVerified ? Colors.green : Colors.red,
+                              size: 16.sp,
+                            ),
+                          ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          if (nin != null && nin.isNotEmpty) ...[
+                      );
+                    }).toList()
+                  else ...[
+                    // Fallback requirements if tierInfo is null
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'NIN',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : const Color(0xFF111827),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (nin != null && nin.isNotEmpty) ...[
+                              Text(
+                                '***${nin.substring(nin.length - 4)}',
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.grey[400]
+                                          : const Color(0xFF6B7280),
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                            ],
+                            Icon(
+                              widget.isNinVerified
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color:
+                                  widget.isNinVerified
+                                      ? Colors.green
+                                      : Colors.red,
+                              size: 16.sp,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 12.h),
+
+                    // Address Row
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Text(
-                              '***${nin.substring(nin.length - 4)}',
+                              'Address',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
                                             Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF6B7280),
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
+                                        ? Colors.white
+                                        : const Color(0xFF111827),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(width: 8.w),
+                            Icon(
+                              widget.isAddressSubmitted
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color:
+                                  widget.isAddressSubmitted
+                                      ? Colors.green
+                                      : Colors.red,
+                              size: 16.sp,
+                            ),
                           ],
-                          Icon(
-                            widget.isNinVerified
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color:
-                                widget.isNinVerified
-                                    ? Colors.green
-                                    : Colors.red,
-                            size: 16.sp,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 12.h),
-
-                  // Address Row
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                        ),
+                        if (address != null && address.isNotEmpty) ...[
+                          SizedBox(height: 4.h),
                           Text(
-                            'Address',
+                            formattedAddress,
                             style: TextStyle(
                               color:
-                                  Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : const Color(0xFF111827),
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
+                                  Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.grey[400]
+                                      : const Color(0xFF6B7280),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
                             ),
-                          ),
-                          Icon(
-                            widget.isAddressSubmitted
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color:
-                                widget.isAddressSubmitted
-                                    ? Colors.green
-                                    : Colors.red,
-                            size: 16.sp,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                      ),
-                      if (address != null && address.isNotEmpty) ...[
-                        SizedBox(height: 4.h),
-                        Text(
-                          formattedAddress,
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.grey[400]
-                                    : const Color(0xFF6B7280),
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -321,19 +367,17 @@ class _Tier3CardState extends State<Tier3Card> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 16.h),
-
-                  // Limits Section - Two Columns
+                  SizedBox(height: 16.h),                   // Limits Section - Two Columns
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Left Column - Credit Limits
+                      // Left Column - Transaction Limits
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Credit Limit',
+                              'Daily Transaction Limit',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -346,33 +390,9 @@ class _Tier3CardState extends State<Tier3Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              'Unlimited',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Credit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              'Unlimited',
+                              widget.tierInfo?.dailyTransactionLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.dailyTransactionLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -387,13 +407,13 @@ class _Tier3CardState extends State<Tier3Card> {
                         ),
                       ),
 
-                      // Right Column - Debit Limits
+                      // Right Column - Balance limits
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Single Debit Limit',
+                              'Maximum Balance',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==
@@ -406,33 +426,9 @@ class _Tier3CardState extends State<Tier3Card> {
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              'Unlimited',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : const Color(0xFF111827),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Daily Debit Limit',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[400]
-                                        : const Color(0xFF9CA3AF),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              'Unlimited',
+                              widget.tierInfo?.balanceLimit != null
+                                  ? '₦${NumberFormat('#,###.00').format(widget.tierInfo!.balanceLimit)}'
+                                  : 'Unlimited',
                               style: TextStyle(
                                 color:
                                     Theme.of(context).brightness ==

@@ -22,7 +22,7 @@ class RemitaCategoriesNotifier extends StateNotifier<DataState<RemitaCategory>> 
     );
     try {
       final categories = await _repository.getCategories();
-      state = state.copyWith(data: categories, isDataAvailable: true);
+      state = state.copyWith(data: categories, isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());
     } finally {
@@ -37,7 +37,7 @@ class RemitaBillersNotifier extends StateNotifier<DataState<RemitaBiller>> {
   RemitaBillersNotifier(this._repository) : super(DataState<RemitaBiller>.initial());
 
   Future<void> fetchBillers(String categoryId, {bool isOverlayHidden = false}) async {
-    state = state.copyWith(
+    state = DataState<RemitaBiller>.initial().copyWith(
       isInitialLoading: true,
       message: null,
       isOverlayHidden: isOverlayHidden,
@@ -47,7 +47,7 @@ class RemitaBillersNotifier extends StateNotifier<DataState<RemitaBiller>> {
       print(
         '[RemitaBillersNotifier] Category $categoryId returned ${billers.length} billers',
       );
-      state = state.copyWith(data: billers, isDataAvailable: true);
+      state = state.copyWith(data: billers, isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());
     } finally {
@@ -69,7 +69,7 @@ class RemitaProductsNotifier extends StateNotifier<DataState<RemitaProduct>> {
     );
     try {
       final products = await _repository.getBillerProducts(billerId);
-      state = state.copyWith(data: products, isDataAvailable: true);
+      state = state.copyWith(data: products, isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());
     } finally {
@@ -92,7 +92,7 @@ class RemitaProductsNotifier extends StateNotifier<DataState<RemitaProduct>> {
         categoryCode: categoryCode,
         provider: provider,
       );
-      state = state.copyWith(data: products, isDataAvailable: true);
+      state = state.copyWith(data: products, isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());
     } finally {
@@ -116,7 +116,7 @@ class RemitaValidationNotifier extends StateNotifier<DataState<RemitaCustomerVal
         billPaymentProductId: billPaymentProductId,
         customerId: customerId,
       );
-      state = state.copyWith(data: [res], isDataAvailable: true);
+      state = state.copyWith(data: [res], isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());
     } finally {

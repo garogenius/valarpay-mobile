@@ -175,14 +175,11 @@ class _ProofOfAddressPageState extends ConsumerState<ProofOfAddressPage> {
       // Prepare API request data matching the endpoint format
       final addressData = widget.addressRequest.toJson();
 
-      // Log the data being sent
-      AppLogger.log('📤 [ProofOfAddress] Sending data to API:');
-      AppLogger.log('   City: ${addressData['city']}');
-      AppLogger.log('   State: ${addressData['state']}');
-      AppLogger.log('   Address: ${addressData['address']}');
+      // Log the document being uploaded
+      AppLogger.log('📤 [ProofOfAddress] Uploading document to API: ${imageFile.path}');
 
-      // Submit to API
-      await ref.read(userNotifierProvider.notifier).submitKycTier3(addressData);
+      // Upload document for Tier 3 review
+      await ref.read(userNotifierProvider.notifier).uploadTier3Document(imageFile.path);
 
       if (mounted) {
         Navigator.pop(context); // Close loading
@@ -190,7 +187,7 @@ class _ProofOfAddressPageState extends ConsumerState<ProofOfAddressPage> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Address verification submitted successfully'),
+            content: Text('Document submitted for review. Pending approval.'),
             backgroundColor: Colors.green,
           ),
         );
