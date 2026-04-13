@@ -262,8 +262,10 @@ class NotificationModel {
           if (isCredit) {
             final senderName =
                 metadata?['senderName'] ??
+                metadata?['sender_name'] ??
                 metadata?['source'] ??
                 metadata?['sender'] ??
+                metadata?['from'] ??
                 'Unknown';
 
             // "Credit: NGN 5,000.00 from John Doe. Ref: 12345678. 17/02/2026 12:30."
@@ -273,10 +275,17 @@ class NotificationModel {
           } else if (isDebit) {
             final recipientName =
                 metadata?['beneficiaryName'] ??
+                metadata?['beneficiary_name'] ??
+                metadata?['recipientName'] ??
+                metadata?['recipient_name'] ??
                 metadata?['recipient'] ??
                 metadata?['receiver'] ??
                 metadata?['destination'] ??
                 metadata?['merchant'] ??
+                metadata?['provider'] ??
+                metadata?['network'] ??
+                metadata?['accountName'] ??
+                metadata?['account_name'] ??
                 'Service Provider';
 
             // "Debit: NGN 5,000.00 to John Doe. Ref: 12345678. 17/02/2026 12:30."

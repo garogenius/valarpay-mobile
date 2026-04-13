@@ -34,20 +34,20 @@ class SmileIdSocketService {
 
     _socket!.onConnect((_) {
       isConnected = true;
-      print('SmileID WebSocket Connected');
+      // print('SmileID WebSocket Connected');
     });
 
     _socket!.onDisconnect((_) {
       isConnected = false;
-      print('SmileID WebSocket Disconnected');
+      // print('SmileID WebSocket Disconnected');
     });
 
     _socket!.on('connection:success', (data) {
-      print('SmileID connection:success => $data');
+      // print('SmileID connection:success => $data');
     });
 
     _socket!.on('connection:error', (data) {
-      print('SmileID connection:error => $data');
+      // print('SmileID connection:error => $data');
     });
 
     _socket!.on('basic:kyc:result', (data) {

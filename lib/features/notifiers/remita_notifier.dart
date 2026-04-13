@@ -44,9 +44,9 @@ class RemitaBillersNotifier extends StateNotifier<DataState<RemitaBiller>> {
     );
     try {
       final billers = await _repository.getBillersByCategory(categoryId);
-      print(
-        '[RemitaBillersNotifier] Category $categoryId returned ${billers.length} billers',
-      );
+      // print(
+      //   '[RemitaBillersNotifier] Category $categoryId returned ${billers.length} billers',
+      // );
       state = state.copyWith(data: billers, isDataAvailable: true, message: null);
     } catch (e) {
       state = state.copyWith(isDataAvailable: false, message: e.toString());

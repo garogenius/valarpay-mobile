@@ -40,6 +40,7 @@ class AccountSettingsPage extends ConsumerWidget {
         (wallet?.accountNumber != null && wallet!.accountNumber.isNotEmpty)
             ? wallet.accountNumber
             : 'Not Available';
+    final bankName = wallet?.bankName ?? 'Not Available';
     final dailyLimit =
         user?.dailyCummulativeTransactionLimit != null
             ? currencyFormatter(
@@ -59,7 +60,7 @@ class AccountSettingsPage extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Account Settings',
+          'Account',
           style: TextStyle(
             fontFamily: 'SF Pro',
             fontSize: 18,
@@ -85,16 +86,32 @@ class AccountSettingsPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Tier 1',
-                      style: TextStyle(
-                        color: Color(0xFFF76301),
-                        fontFamily: 'SF Pro',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 1.33,
-                        letterSpacing: 0.06,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Tier 1',
+                          style: TextStyle(
+                            color: Color(0xFFF76301),
+                            fontFamily: 'SF Pro',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            height: 1.33,
+                            letterSpacing: 0.06,
+                          ),
+                        ),
+                        Text(
+                          bankName,
+                          style: const TextStyle(
+                            color: Color(0xFFF76301),
+                            fontFamily: 'SF Pro',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            height: 1.33,
+                            letterSpacing: 0.06,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow(
