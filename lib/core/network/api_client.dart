@@ -35,11 +35,11 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // _logRequest(options);
+          _logRequest(options);
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          // _logResponse(response);
+          _logResponse(response);
 
           if (response.statusCode == 200) {
             final data = response.data;
@@ -66,7 +66,7 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          // _logError(e);
+          _logError(e);
           
           if (e.response?.statusCode == 401) {
             final message = e.response?.data?['message']?.toString().toLowerCase();
@@ -165,7 +165,7 @@ class ApiClient {
       }
       return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
     } on DioException catch (e) {
-      return DataFailed<T>(e.message ?? 'An error occurred');
+      return DataFailed<T>(_getErrorMessage(e));
     } catch (e) {
       return DataFailed<T>(e.toString());
     }
@@ -180,7 +180,7 @@ class ApiClient {
       }
       return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
     } on DioException catch (e) {
-      return DataFailed<T>(e.message ?? 'An error occurred');
+      return DataFailed<T>(_getErrorMessage(e));
     } catch (e) {
       return DataFailed<T>(e.toString());
     }
@@ -195,7 +195,7 @@ class ApiClient {
       }
       return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
     } on DioException catch (e) {
-      return DataFailed<T>(e.message ?? 'An error occurred');
+      return DataFailed<T>(_getErrorMessage(e));
     } catch (e) {
       return DataFailed<T>(e.toString());
     }
@@ -210,9 +210,84 @@ class ApiClient {
       }
       return DataSuccess<T>(singleData: converted as T, data: [converted as T]);
     } on DioException catch (e) {
-      return DataFailed<T>(e.message ?? 'An error occurred');
+      return DataFailed<T>(_getErrorMessage(e));
     } catch (e) {
       return DataFailed<T>(e.toString());
+    }
+  }
+
+  String _getErrorMessage(DioException e) {
+    try {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map) {
+          if (data['message'] != null) {
+            return data['message'].toString();
+          } else if (data['error'] != null) {
+            return data['error'].toString();
+          } else if (data['errors'] != null) {
+            final errors = data['errors'];
+            if (errors is Map) {
+              return errors.values.map((v) => v.toString()).join('\n');
+            } else if (errors is List) {
+              return errors.map((v) => v.toString()).join('\n');
+            }
+            return errors.toString();
+          }
+        } else if (data is String) {
+          try {
+            final parsed = jsonDecode(data);
+            if (parsed is Map) {
+              if (parsed['message'] != null) {
+                return parsed['message'].toString();
+              } else if (parsed['error'] != null) {
+                return parsed['error'].toString();
+              } else if (parsed['errors'] != null) {
+                final errors = parsed['errors'];
+                if (errors is Map) {
+                  return errors.values.map((v) => v.toString()).join('\n');
+                } else if (errors is List) {
+                  return errors.map((v) => v.toString()).join('\n');
+                }
+                return errors.toString();
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+        return 'Connection timeout. Please check your internet connection.';
+      case DioExceptionType.sendTimeout:
+        return 'Send timeout. Please try again.';
+      case DioExceptionType.receiveTimeout:
+        return 'Receive timeout. Please try again.';
+      case DioExceptionType.badCertificate:
+        return 'Security certificate validation failed.';
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        if (statusCode == 404) {
+          return 'Requested resource not found.';
+        } else if (statusCode == 500) {
+          return 'Internal server error. Please try again later.';
+        } else if (statusCode == 403) {
+          return 'Access denied. You do not have permission.';
+        } else if (statusCode == 401) {
+          return 'Unauthorized. Please sign in again.';
+        }
+        return 'Server returned an error ($statusCode).';
+      case DioExceptionType.cancel:
+        return 'Request cancelled.';
+      case DioExceptionType.connectionError:
+        return 'No internet connection. Please connect to a network.';
+      case DioExceptionType.unknown:
+      default:
+        if (e.message != null && e.message!.contains('SocketException')) {
+          return 'No internet connection. Please check your network.';
+        }
+        return e.message ?? 'An unknown error occurred.';
     }
   }
 
@@ -303,8 +378,6 @@ class ApiClient {
   }
 
   void _printLog(String message, String name) {
-    // Logging disabled
-    /*
     // 1. Log to DevTools using dart:developer log (handles large strings better)
     log(message, name: name);
     
@@ -324,7 +397,6 @@ class ApiClient {
         }
       }
     }
-    */
   }
 
   String _formatJson(dynamic data) {

@@ -48,7 +48,7 @@ class SwapCurrencyTransactionSuccessScreen extends StatelessWidget {
 
               // Amount
               Text(
-                '${_getCurrencySymbol(transactionData['toAmount'] ?? '0')}${transactionData['toAmount'] ?? '0'}',
+                '${_getCurrencySymbol(transactionData['toCurrency'] ?? 'USD')}${transactionData['toAmount'] ?? '0'}',
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
                   fontSize: 32,
@@ -199,6 +199,20 @@ class SwapCurrencyTransactionSuccessScreen extends StatelessWidget {
         return '€';
       case 'GBP':
         return '£';
+      case 'XAF':
+        return 'FCFA';
+      case 'TZS':
+        return 'TSh';
+      case 'KES':
+        return 'KSh';
+      case 'GHS':
+        return 'GH₵';
+      case 'UGX':
+        return 'USh';
+      case 'ZAR':
+        return 'R';
+      case 'XOF':
+        return 'CFA';
       default:
         return '';
     }

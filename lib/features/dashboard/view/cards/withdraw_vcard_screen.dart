@@ -124,7 +124,6 @@ class _WithdrawVCardScreenState extends ConsumerState<WithdrawVCardScreen> {
     final success = await ref.read(cardNotifierProvider.notifier).withdrawFromCard(
       widget.cardId, 
       double.parse(_amountController.text),
-      _pinController.text,
     );
     
     if (mounted) {

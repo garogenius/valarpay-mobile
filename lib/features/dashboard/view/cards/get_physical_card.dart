@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:valarpay/core/utils/color_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:valarpay/features/dashboard/view/cards/card.dart';
 
-class GetPhysicalCardScreen extends StatefulWidget {
+class GetPhysicalCardScreen extends ConsumerStatefulWidget {
   const GetPhysicalCardScreen({super.key});
 
   @override
-  State<GetPhysicalCardScreen> createState() => _GetPhysicalCardScreenState();
+  ConsumerState<GetPhysicalCardScreen> createState() => _GetPhysicalCardScreenState();
 }
 
-class _GetPhysicalCardScreenState extends State<GetPhysicalCardScreen> {
+class _GetPhysicalCardScreenState extends ConsumerState<GetPhysicalCardScreen> {
   String selectedPreference = "Visit a branch for collection";
 
   void _openPreferenceSelector() async {
@@ -28,6 +29,7 @@ class _GetPhysicalCardScreenState extends State<GetPhysicalCardScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appTheme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.grey.shade50,
@@ -127,7 +129,11 @@ class _GetPhysicalCardScreenState extends State<GetPhysicalCardScreen> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // navigate to branch map or next step
+                    ref.read(physicalCardCreatedProvider.notifier).state = true;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Physical Card ordered successfully!')),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: appTheme.primaryColor,
@@ -216,6 +222,7 @@ class _SelectPreferenceBottomSheetState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appTheme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -303,7 +310,7 @@ class _SelectPreferenceBottomSheetState
                 border: Border.all(
                   color:
                       isSelected
-                          ? appTheme.primaryColor
+                          ? Theme.of(context).primaryColor
                           : (isDark ? Colors.grey.shade600 : Colors.grey),
                   width: 1.4,
                 ),
@@ -315,7 +322,7 @@ class _SelectPreferenceBottomSheetState
                           width: 10,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: appTheme.primaryColor,
+                            color: Theme.of(context).primaryColor,
                             shape: BoxShape.circle,
                           ),
                         ),

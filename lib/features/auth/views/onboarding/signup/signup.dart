@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:valarpay/core/utils/color_utils.dart';
-import 'package:valarpay/core/widgets/all_time_reusable_button.dart';
 import 'package:valarpay/features/models/signup_request.dart';
 import '../../../../../features/auth/widgets/need_help_modal.dart';
 
@@ -15,230 +13,30 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   String selectedAccountType = 'Personal';
-  String selectedCurrency = 'NGN';
-
-  void _showDialog<T>({
-    required String title,
-    required List<DialogOption<T>> options,
-  }) {
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => Dialog(
-            backgroundColor: Theme.of(ctx).cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: Icon(
-                          Icons.arrow_back,
-                          color: Theme.of(ctx).colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(ctx).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: options.map(
-                          (option) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildDialogOption(option, ctx),
-                          ),
-                        ).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  Widget _buildDialogOption<T>(DialogOption<T> option, BuildContext ctx) {
-    final isSelected = option.isSelected;
-    final isDark = Theme.of(ctx).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: () {
-        if (option.disabled == false) {
-          option.onTap();
-          Navigator.pop(ctx);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: option.disabled == true
-              ? (isDark ? Colors.white10 : Colors.grey.shade100)
-              : Colors.transparent,
-          border: Border.all(
-            width: 1,
-            color: isSelected
-                ? (option.activeColor ?? Theme.of(ctx).primaryColor)
-                : (isDark ? Colors.white12 : Colors.grey.shade300),
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            if (option.flag != null)
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (option.activeColor?.withOpacity(0.2) ??
-                          Theme.of(ctx).primaryColor.withOpacity(0.2))
-                      : (isDark ? Colors.white10 : Colors.grey.shade100),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                alignment: Alignment.center,
-                child: Text(option.flag!, style: const TextStyle(fontSize: 18)),
-              ),
-            if (option.flag != null) const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    option.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(ctx).colorScheme.onSurface,
-                    ),
-                  ),
-                  if (option.subtitle != null) const SizedBox(height: 6),
-                  if (option.subtitle != null)
-                    Text(
-                      option.subtitle!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(ctx)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.6),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Radio<T>(
-              value: option.value,
-              groupValue: option.groupValue,
-              onChanged: (_) {
-                if (option.disabled == false) {
-                  option.onTap();
-                }
-              },
-              activeColor: option.activeColor,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAccountTypeDialog() {
-    _showDialog<String>(
-      title: 'Choose Account',
-      options: [
-        DialogOption(
-          title: 'Personal',
-          subtitle: 'For individuals and everyday needs',
-          value: 'Personal',
-          groupValue: selectedAccountType,
-          activeColor: Theme.of(context).primaryColor,
-          onTap: () => {setState(() => selectedAccountType = 'Personal')},
-        ),
-        DialogOption(
-          title: 'Business',
-          subtitle: 'For organizations and corporate needs',
-          value: 'Business',
-          groupValue: selectedAccountType,
-          activeColor: Theme.of(context).primaryColor,
-          onTap: () => setState(() => selectedAccountType = 'Business'),
-        ),
-      ],
-    );
-  }
-
-  void _showCurrencyDialog() {
-    _showDialog<String>(
-      title: 'Choose Currency',
-      options: [
-        DialogOption(
-          title: 'NGN',
-          subtitle: 'For transactions in Naira',
-          flag: '🇳🇬',
-          value: 'NGN',
-          groupValue: selectedCurrency,
-          activeColor: Colors.green,
-          onTap: () => setState(() => selectedCurrency = 'NGN'),
-        ),
-        DialogOption(
-          title: 'USD',
-          subtitle: 'For transactions in US Dollars',
-          flag: '🇺🇸',
-          value: 'USD',
-          groupValue: selectedCurrency,
-          activeColor: Colors.grey,
-          disabled: true,
-          onTap: () => {},
-        ),
-        DialogOption(
-          title: 'GBP',
-          subtitle: 'For transactions in Pounds',
-          flag: '🇬🇧',
-          value: 'GBP',
-          groupValue: selectedCurrency,
-          activeColor: Colors.grey,
-          disabled: true,
-          onTap: () => {},
-        ),
-        DialogOption(
-          title: 'EUR',
-          subtitle: 'For transactions in Euros',
-          flag: '🇪🇺',
-          value: 'EUR',
-          groupValue: selectedCurrency,
-          activeColor: Colors.grey,
-          disabled: true,
-          onTap: () => {},
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Define colors according to the reference design
+    final Color primaryColor = const Color(0xFFF76301);
+    final Color tertiaryColor = const Color(0xFFE9C349);
+    
+    final Color backgroundColor = isDark ? const Color(0xFF041521) : const Color(0xFFF9FAFB);
+    final Color cardBackgroundColor = isDark ? const Color(0xFF11212E).withOpacity(0.8) : Colors.white;
+    final Color unselectedBorderColor = isDark ? Colors.white.withOpacity(0.12) : Colors.grey.shade200;
+    
+    final Color textColor = isDark ? const Color(0xFFD4E4F6) : const Color(0xFF1F2937);
+    final Color subtitleColor = isDark ? const Color(0xFFE2BFB1) : const Color(0xFF4B5563);
+
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).pop(),
+          icon: Icon(Icons.arrow_back, color: primaryColor),
+          onPressed: () => context.pop(),
         ),
         actions: [
           TextButton(
@@ -246,154 +44,252 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             child: Text(
               'Need Help?',
               style: TextStyle(
-                color: Theme.of(context).primaryColor,
+                color: primaryColor,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLogoHeader(),
-            const SizedBox(height: 40),
-            Text(
-              'Create account',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+      body: Stack(
+        children: [
+          // Premium Soft Glows for Background Depth
+          Positioned(
+            top: -50,
+            left: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primaryColor.withOpacity(isDark ? 0.08 : 0.05),
               ),
             ),
-            Text(
-              'Select the account type that best fits your needs',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+          Positioned(
+            bottom: 50,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: tertiaryColor.withOpacity(isDark ? 0.05 : 0.03),
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          // Content
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
 
-            // Label + selection tile
-            Text(
-              'Account Type',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  // Personal Account Card
+                  _buildAccountCard(
+                    title: 'Personal Account',
+                    description: 'Perfect for everyday payments, international transfers, and managing digital assets with absolute security.',
+                    icon: Icons.person,
+                    iconBgColor: isDark ? const Color(0xFFF76301).withOpacity(0.2) : const Color(0xFFF76301).withOpacity(0.1),
+                    iconColor: primaryColor,
+                    bullets: [
+                      _BulletItem(icon: Icons.bolt, text: 'Instant global transfers'),
+                      _BulletItem(icon: Icons.security, text: 'Biometric vault security'),
+                    ],
+                    isSelected: selectedAccountType == 'Personal',
+                    onTap: () => setState(() => selectedAccountType = 'Personal'),
+                    primaryColor: primaryColor,
+                    tertiaryColor: tertiaryColor,
+                    cardBg: cardBackgroundColor,
+                    unselectedBorder: unselectedBorderColor,
+                    textColor: textColor,
+                    subtitleColor: subtitleColor,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Business Account Card
+                  _buildAccountCard(
+                    title: 'Business Account',
+                    description: 'Advanced multi-user management, high-volume transactions, and integrated enterprise-grade liquidity.',
+                    icon: Icons.business,
+                    iconBgColor: isDark ? const Color(0xFF3A486B).withOpacity(0.3) : const Color(0xFF3A486B).withOpacity(0.1),
+                    iconColor: isDark ? const Color(0xFFB7C6EF) : const Color(0xFF2E3B5E),
+                    bullets: [
+                      _BulletItem(icon: Icons.corporate_fare, text: 'Multi-signatory approvals'),
+                      _BulletItem(icon: Icons.api, text: 'Full API access & integration'),
+                    ],
+                    isSelected: selectedAccountType == 'Business',
+                    onTap: () => setState(() => selectedAccountType = 'Business'),
+                    primaryColor: primaryColor,
+                    tertiaryColor: tertiaryColor,
+                    cardBg: cardBackgroundColor,
+                    unselectedBorder: unselectedBorderColor,
+                    textColor: textColor,
+                    subtitleColor: subtitleColor,
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  // Action Button
+                  GestureDetector(
+                    onTap: () {
+                      SignUpRequest request = SignUpRequest(
+                        accountType: selectedAccountType.toUpperCase(),
+                      );
+                      context.push('/signup-currency', extra: request);
+                    },
+                    child: Container(
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Continue with Selection',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Secured Caption
+                  Text(
+                    'SECURED BY VALAR-SHIELD PROTOCOL',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                      color: subtitleColor.withOpacity(0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            _buildSelectionTile(
-              selectedAccountType,
-              _showAccountTypeDialog,
-              Icons.account_balance_wallet,
-            ),
-            const SizedBox(height: 24),
-
-            Text(
-              'Currency',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildSelectionTile(
-              selectedCurrency,
-              _showCurrencyDialog,
-              Icons.currency_exchange_sharp,
-            ),
-            const SizedBox(height: 50),
-
-            FullWidthButton(
-              text: 'Continue',
-              onPressed: () {
-                SignUpRequest request = SignUpRequest(
-                  accountType: selectedAccountType.toUpperCase(),
-                  countryCode: selectedCurrency,
-                );
-
-                if (selectedAccountType == 'Personal') {
-                  context.push('/personal-details', extra: request);
-                } else {
-                  context.push('/business-details', extra: request);
-                }
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLogoHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-          child: ClipRRect(
-            // Use ClipRRect to apply border radius to the image
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              'assets/images/logo2.png',
-              fit: BoxFit.cover, // Cover the container area
-              width: 40,
-              height: 40,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'Valarpay',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelectionTile(String value, VoidCallback onTap, IconData icon) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildAccountCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+    required List<_BulletItem> bullets,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Color primaryColor,
+    required Color tertiaryColor,
+    required Color cardBg,
+    required Color unselectedBorder,
+    required Color textColor,
+    required Color subtitleColor,
+  }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor.withOpacity(0.5),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? Colors.white12 : Colors.grey.shade300,
+            color: isSelected ? primaryColor : unselectedBorder,
+            width: isSelected ? 2 : 1.2,
           ),
-          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 28),
                 ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: primaryColor, size: 24),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
               ),
             ),
-            Icon(
-              Icons.keyboard_arrow_down,
-              color: Theme.of(context).colorScheme.onSurface,
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 14,
+                color: subtitleColor,
+                height: 1.4,
+              ),
             ),
+            const SizedBox(height: 16),
+            ...bullets.map((bullet) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Icon(bullet.icon, color: tertiaryColor, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      bullet.text,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textColor.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ],
         ),
       ),
@@ -401,25 +297,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 }
 
-class DialogOption<T> {
-  final String title;
-  final String? subtitle;
-  final String? flag;
-  final T value;
-  final T? groupValue;
-  final Color? activeColor;
-  final bool isSelected;
-  final VoidCallback onTap;
-  bool disabled;
+class _BulletItem {
+  final IconData icon;
+  final String text;
 
-  DialogOption({
-    required this.title,
-    this.subtitle,
-    this.flag,
-    required this.value,
-    this.groupValue,
-    this.activeColor,
-    required this.onTap,
-    this.disabled = false,
-  }) : isSelected = value == groupValue;
+  _BulletItem({required this.icon, required this.text});
 }

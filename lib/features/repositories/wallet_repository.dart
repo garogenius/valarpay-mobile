@@ -179,7 +179,7 @@ class WalletRepository {
     }
   }
 
-  /// Convert currency
+  /// Convert currency (Eversend Exchange API integration)
   Future<Map<String, dynamic>> convertCurrency({
     required double amount,
     required String fromCurrency,
@@ -189,11 +189,10 @@ class WalletRepository {
       final response = await apiClient.post(
         ApiEndpoints.convertCurrency,
         data: {
+          'from': fromCurrency,
+          'to': toCurrency,
           'amount': amount,
-          'fromCurrency': fromCurrency,
-          'toCurrency': toCurrency,
         },
-        useAuth: false,
       );
       return response.data;
     } on DioException catch (e) {
@@ -246,12 +245,29 @@ class WalletRepository {
     required String label,
   }) async {
     try {
+      final isPayazaCurrency = currency != 'NGN' &&
+          currency != 'USD' &&
+          currency != 'GBP';
+
+      final endpoint = isPayazaCurrency
+          ? ApiEndpoints.payazaVirtualAccounts
+          : ApiEndpoints.createCurrencyAccount;
+
+      final Map<String, dynamic> requestData = {
+        'currency': currency,
+      };
+
+      if (!isPayazaCurrency) {
+        requestData['label'] = label;
+      }
+
+      if (isPayazaCurrency) {
+        requestData['isPermanent'] = true;
+      }
+
       final response = await apiClient.post(
-        ApiEndpoints.createCurrencyAccount,
-        data: {
-          'currency': currency,
-          'label': label,
-        },
+        endpoint,
+        data: requestData,
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -260,6 +276,53 @@ class WalletRepository {
       );
     } catch (e) {
       throw Exception('Failed to create multi-currency account: $e');
+    }
+  }
+
+
+  /// 🏦 Get Payaza main account(s)
+  Future<Map<String, dynamic>> getPayazaMainAccount() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.payazaMainAccount);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch main account');
+    }
+  }
+
+  /// 💳 Verify Payaza account number (name enquiry)
+  Future<Map<String, dynamic>> verifyPayazaAccount({
+    required String accountNumber,
+    required String bankCode,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.verifyPayazaAccount,
+        data: {'accountNumber': accountNumber, 'bankCode': bankCode},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to verify Payaza account');
+    }
+  }
+
+  /// 💳 Get Payaza payout status
+  Future<Map<String, dynamic>> getPayazaPayoutStatus(String transactionRef) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.payazaPayoutStatus(transactionRef));
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to get payout status');
+    }
+  }
+
+  /// 💰 List all Payaza wallets
+  Future<Map<String, dynamic>> getPayazaWallets() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.payazaWallets);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to fetch Payaza wallets');
     }
   }
 
@@ -405,13 +468,30 @@ class WalletRepository {
     String? description,
   }) async {
     try {
+      final isPayazaCurrency = currency != 'NGN' &&
+          currency != 'USD' &&
+          currency != 'GBP';
+
+      final endpoint = isPayazaCurrency
+          ? ApiEndpoints.createPayazaPayout
+          : ApiEndpoints.createPayout(currency);
+
+      final payload = isPayazaCurrency
+          ? {
+              'sourceWalletId': destinationId,
+              'amount': amount,
+              'currency': currency,
+              'reason': description ?? 'Exchange Payout',
+            }
+          : {
+              'destination_id': destinationId,
+              'amount': amount,
+              if (description != null) 'description': description,
+            };
+
       final response = await apiClient.post(
-        ApiEndpoints.createPayout(currency),
-        data: {
-          'destination_id': destinationId,
-          'amount': amount,
-          if (description != null) 'description': description,
-        },
+        endpoint,
+        data: payload,
       );
       return ApiResponse.fromJson(response.data);
     } on DioException catch (e) {

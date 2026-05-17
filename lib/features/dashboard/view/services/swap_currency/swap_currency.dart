@@ -21,20 +21,25 @@ class SwapCurrencyScreen extends ConsumerStatefulWidget {
 }
 
 class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
-  CurrencyModel fromCurrency = CurrencyModel(
+  CurrencyModel fromCurrency = const CurrencyModel(
     code: 'NGN',
     name: 'Nigerian Naira',
     flagAsset: 'assets/images/nigerian.png',
-    symbol: '#',
+    symbol: '₦',
+    emoji: '🇳🇬',
   );
-  CurrencyModel toCurrency = CurrencyModel(
+  CurrencyModel toCurrency = const CurrencyModel(
     code: 'USD',
     name: 'US Dollar',
     flagAsset: 'assets/images/USA.png',
     symbol: '\$',
+    emoji: '🇺🇸',
   );
   final TextEditingController fromAmountController = TextEditingController();
   final TextEditingController toAmountController = TextEditingController();
+
+  bool _walletsInitialized = false;
+  List<String> _allowedCurrencies = [];
 
   Timer? _debounce;
   String _displayRate = '';
@@ -74,6 +79,38 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Fetch available wallets & distinct currency codes owned by the user
+    final userWallets = user?.wallets ?? [];
+    final userCurrencyCodes = userWallets.map((w) => w.currency.toUpperCase()).toList();
+
+    // Persist allowed currency code list to filter dynamic modal picks
+    _allowedCurrencies = userCurrencyCodes;
+
+    // Automatically dynamically prioritize and default select active user wallets once ready
+    if (!_walletsInitialized && userCurrencyCodes.length >= 2) {
+      final String defaultFrom = userCurrencyCodes[0];
+      final String defaultTo = userCurrencyCodes[1];
+
+      final fromModel = supportedCurrencies.firstWhere(
+        (c) => c.code.toUpperCase() == defaultFrom,
+        orElse: () => supportedCurrencies.first,
+      );
+      final toModel = supportedCurrencies.firstWhere(
+        (c) => c.code.toUpperCase() == defaultTo,
+        orElse: () => supportedCurrencies.firstWhere((c) => c.code == 'USD', orElse: () => supportedCurrencies[1]),
+      );
+
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            fromCurrency = fromModel;
+            toCurrency = toModel;
+            _walletsInitialized = true;
+          });
+        }
+      });
+    }
 
     ref.listen(currencyNotifierProvider, (previous, next) {
       // print('[SwapCurrencyScreen] State changed. isDataAvailable: ${next.isDataAvailable}');
@@ -146,115 +183,155 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
                 ]
                 : null,
       ),
-      body:
-          !isBvnVerified
-              ? const KycNotSetWidget(
-                title: 'KYC Not Completed',
-                subtitle: 'Complete your KYC verification to swap currency',
-              )
+      body: !isBvnVerified
+          ? const KycNotSetWidget(
+              title: 'KYC Not Completed',
+              subtitle: 'Complete your KYC verification to swap currency',
+            )
+          : userCurrencyCodes.length < 2
+              ? _buildNeedWalletsWidget(isDark)
               : SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 32),
-
-                    CurrencyAmountInput(
-                      label: "I have",
-                      controller: fromAmountController,
-                      currencyCode: fromCurrency.code,
-                      currencySymbol: fromCurrency.symbol,
-                      flagAsset: fromCurrency.flagAsset,
-                      isEditable: true,
-                      onCurrencyTap: () => _showCurrencySelector(true),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Center(
-                      child: GestureDetector(
-                        onTap: _swapCurrencies,
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF76301),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const Icon(
-                            Icons.swap_vert,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-                    CurrencyAmountInput(
-                      label: "You’ll receive",
-                      controller: toAmountController,
-                      currencyCode: toCurrency.code,
-                      currencySymbol: toCurrency.symbol,
-                      flagAsset: toCurrency.flagAsset,
-                      isEditable: false,
-                      onCurrencyTap: () => _showCurrencySelector(false),
-                    ),
-                    SizedBox(height: 50.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Rate:',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
+                        const SizedBox(height: 32),
+                        CurrencyAmountInput(
+                          label: "I have",
+                          controller: fromAmountController,
+                          currencyCode: fromCurrency.code,
+                          currencySymbol: fromCurrency.symbol,
+                          flagAsset: fromCurrency.flagAsset,
+                          emoji: fromCurrency.emoji,
+                          isEditable: true,
+                          onCurrencyTap: () => _showCurrencySelector(true),
                         ),
-                        ref.watch(currencyNotifierProvider).isInitialLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Text(
-                                _displayRate.isNotEmpty
-                                    ? _displayRate
-                                    : 'Enter amount to see rate',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black,
-                                  fontSize: 16, // Reduced slightly to fit
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        const SizedBox(height: 24),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _swapCurrencies,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF76301),
+                                borderRadius: BorderRadius.circular(24),
                               ),
-                      ],
-                    ),
-                    SizedBox(height: 20.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Transaction Fee:',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                              child: const Icon(
+                                Icons.swap_vert,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
                           ),
                         ),
-                        Text(
-                          '${fromCurrency.symbol} 0.00',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 24),
+                        CurrencyAmountInput(
+                          label: "You’ll receive",
+                          controller: toAmountController,
+                          currencyCode: toCurrency.code,
+                          currencySymbol: toCurrency.symbol,
+                          flagAsset: toCurrency.flagAsset,
+                          emoji: toCurrency.emoji,
+                          isEditable: false,
+                          onCurrencyTap: () => _showCurrencySelector(false),
+                        ),
+                        SizedBox(height: 50.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Rate:',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            ref.watch(currencyNotifierProvider).isInitialLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Text(
+                                    _displayRate.isNotEmpty
+                                        ? _displayRate
+                                        : 'Enter amount to see rate',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ],
+                        ),
+                        SizedBox(height: 20.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Transaction Fee:',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            Text(
+                              '${fromCurrency.symbol} 0.00',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 40.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: fromAmountController.text.isNotEmpty &&
+                                    !ref.watch(currencyNotifierProvider).isInitialLoading
+                                ? () {
+                                    final conversionState = ref.read(currencyNotifierProvider);
+                                    final rate = conversionState.singleData?.exchangeRate ?? 1.0;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SwapCurrencyTransactionDetailsScreen(
+                                          transactionData: {
+                                            'fromCurrency': fromCurrency.code,
+                                            'toCurrency': toCurrency.code,
+                                            'fromAmount': fromAmountController.text,
+                                            'toAmount': toAmountController.text,
+                                            'exchangeRate': rate.toString(),
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF76301),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Continue',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ],
-                    ),
-
-                  ],
                     ),
                   ),
                 ),
@@ -276,21 +353,85 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => CurrencySelectorModal(
-            selectedCurrency:
-                isFromCurrency ? fromCurrency.code : toCurrency.code,
-            onCurrencySelected: (currency) {
-              setState(() {
-                if (isFromCurrency) {
-                  fromCurrency = currency;
-                } else {
-                  toCurrency = currency;
-                }
-                 _fetchConversion();
-              });
-            },
-          ),
+      builder: (context) => CurrencySelectorModal(
+        selectedCurrency: isFromCurrency ? fromCurrency.code : toCurrency.code,
+        allowedCurrencies: _allowedCurrencies, // Pass our calculated valid filter
+        onCurrencySelected: (currency) {
+          setState(() {
+            if (isFromCurrency) {
+              fromCurrency = currency;
+            } else {
+              toCurrency = currency;
+            }
+            _fetchConversion();
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildNeedWalletsWidget(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF76301).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 48,
+                color: Color(0xFFF76301),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Multiple Accounts Needed',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Currency swapping is available only if you have opened more than one currency account. You can convert funds seamlessly between them once they are created!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF76301),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Go Back',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

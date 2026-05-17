@@ -5,12 +5,14 @@ class CurrencyModel {
   final String name;
   final String flagAsset;
   final String symbol; // ✅ new field
+  final String? emoji; // ✅ optional emoji flag
 
   const CurrencyModel({
     required this.code,
     required this.name,
     required this.flagAsset,
     required this.symbol, // ✅ include in constructor
+    this.emoji,
   });
 }
 
@@ -20,53 +22,102 @@ const List<CurrencyModel> supportedCurrencies = [
     name: 'Nigerian Naira',
     flagAsset: 'assets/images/nigerian.png',
     symbol: '₦',
+    emoji: '🇳🇬',
   ),
   CurrencyModel(
     code: 'USD',
     name: 'US Dollar',
     flagAsset: 'assets/images/USA.png',
     symbol: '\$',
+    emoji: '🇺🇸',
   ),
   CurrencyModel(
     code: 'EUR',
     name: 'Euro',
-    flagAsset: 'assets/images/POUNDS.png',
+    flagAsset: 'assets/images/euflag.png',
     symbol: '€',
+    emoji: '🇪🇺',
   ),
   CurrencyModel(
     code: 'GBP',
     name: 'British Pound',
-    flagAsset: 'assets/images/POUNDS.png',
+    flagAsset: 'assets/images/pounds2.png',
     symbol: '£',
+    emoji: '🇬🇧',
   ),
   CurrencyModel(
-    code: 'CAD',
-    name: 'Canadian Dollar',
-    flagAsset: 'assets/images/POUNDS.png',
-    symbol: 'C\$',
+    code: 'XAF',
+    name: 'Cameroon Franc',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'FCFA',
+    emoji: '🇨🇲',
   ),
   CurrencyModel(
-    code: 'AUD',
-    name: 'Australian Dollar',
-    flagAsset: 'assets/images/uk.png',
-    symbol: 'A\$',
+    code: 'TZS',
+    name: 'Tanzanian Shilling',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'TSh',
+    emoji: '🇹🇿',
+  ),
+  CurrencyModel(
+    code: 'KES',
+    name: 'Kenyan Shilling',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'KSh',
+    emoji: '🇰🇪',
+  ),
+  CurrencyModel(
+    code: 'GHS',
+    name: 'Ghanaian Cedi',
+    flagAsset: 'assets/images/ghflag.png',
+    symbol: 'GH₵',
+    emoji: '🇬🇭',
+  ),
+  CurrencyModel(
+    code: 'UGX',
+    name: 'Ugandan Shilling',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'USh',
+    emoji: '🇺🇬',
+  ),
+  CurrencyModel(
+    code: 'ZAR',
+    name: 'South African Rand',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'R',
+    emoji: '🇿🇦',
+  ),
+  CurrencyModel(
+    code: 'XOF',
+    name: 'West African CFA Franc',
+    flagAsset: 'assets/images/flag.png',
+    symbol: 'CFA',
+    emoji: '🇧🇯',
   ),
 ];
 
 class CurrencySelectorModal extends StatelessWidget {
   final String selectedCurrency;
   final ValueChanged<CurrencyModel> onCurrencySelected;
+  final List<String>? allowedCurrencies; // Added filter list
 
   const CurrencySelectorModal({
     super.key,
     required this.selectedCurrency,
     required this.onCurrencySelected,
+    this.allowedCurrencies,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final List<CurrencyModel> currencies = supportedCurrencies;
+    
+    // Filter statically supported list against permitted user currencies if provided
+    final List<CurrencyModel> currencies = allowedCurrencies == null
+        ? supportedCurrencies
+        : supportedCurrencies
+            .where((c) => allowedCurrencies!.contains(c.code.toUpperCase()))
+            .toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -125,17 +176,23 @@ class CurrencySelectorModal extends StatelessWidget {
                   leading: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 28,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          image: DecorationImage(
-                            image: AssetImage(currency.flagAsset),
-                            fit: BoxFit.cover,
+                      if (currency.emoji != null)
+                        Text(
+                          currency.emoji!,
+                          style: const TextStyle(fontSize: 24),
+                        )
+                      else
+                        Container(
+                          width: 28,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            image: DecorationImage(
+                              image: AssetImage(currency.flagAsset),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
 
                       const SizedBox(width: 12),
 

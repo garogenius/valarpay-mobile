@@ -30,16 +30,27 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
   }
 
   Future<void> _handleLogout(LoginActivity activity) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Device?'),
-        content: Text('Are you sure you want to log out from ${activity.deviceName}?'),
+        backgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+        title: Text(
+          'Remove Device?',
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        ),
+        content: Text(
+          'Are you sure you want to log out from ${activity.deviceName}?',
+          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white30 : Colors.grey)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log out', style: TextStyle(color: Colors.red)),
+            child: const Text('Log out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -48,11 +59,8 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
     if (confirm == true) {
       if (activity.isCurrentDevice) {
         AppMessenger.show(context, message: 'Logging out from current device...');
-        // Trigger actual logout here if needed
-        // For now, satisfy the UI request
       }
       
-      // Simulate backend call and update local state
       setState(() {
         _history.removeWhere((h) => h.id == activity.id);
       });
@@ -62,26 +70,42 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Login Activity History', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+        title: Text(
+          'Login Activity History',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.grey),
+            icon: Icon(Icons.delete_outline, color: isDark ? Colors.white30 : Colors.grey),
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Clear History'),
-                  content: const Text('Are you sure you want to clear your login activity history?'),
+                  backgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                  title: Text('Clear History', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                  content: Text(
+                    'Are you sure you want to clear your login activity history?',
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white30 : Colors.grey)),
+                    ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                      child: const Text('Clear', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -104,16 +128,17 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.security, size: 80, color: Colors.grey[200]),
+          Icon(Icons.security, size: 80, color: isDark ? Colors.white10 : Colors.grey[200]),
           const SizedBox(height: 16),
           Text(
             'Your account security is our priority.\nRecent login history will appear here.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600], fontSize: 15),
+            style: TextStyle(color: isDark ? Colors.white30 : Colors.grey[600], fontSize: 15),
           ),
         ],
       ),
@@ -121,6 +146,7 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
   }
 
   Widget _buildHistoryList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _history.length,
@@ -131,16 +157,21 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
+            boxShadow: isDark ? [] : [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: activity.isCurrentDevice ? Border.all(color: const Color(0xFFF76301).withOpacity(0.3), width: 1) : null,
+            border: Border.all(
+              color: activity.isCurrentDevice 
+                  ? const Color(0xFFF76301).withOpacity(0.4) 
+                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+              width: 1,
+            ),
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -163,7 +194,10 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
                       decoration: BoxDecoration(
                         color: Colors.green,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF1F1F1F) : Colors.white, 
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -171,9 +205,17 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
             ),
             title: Row(
               children: [
-                Text(
-                  activity.deviceName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Expanded(
+                  child: Text(
+                    activity.deviceName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
                 ),
                 if (activity.isCurrentDevice)
                   Container(
@@ -183,7 +225,7 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('THIS DEVICE', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)),
+                    child: const Text('THIS DEVICE', style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
@@ -193,15 +235,25 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.white30 : Colors.grey),
                     const SizedBox(width: 4),
-                    Text(activity.location ?? 'Unknown Location', style: const TextStyle(fontSize: 13)),
+                    Expanded(
+                      child: Text(
+                        activity.location ?? 'Unknown Location', 
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('MMM dd, hh:mm a').format(activity.timestamp)} • ${activity.ipAddress ?? 'Hidden IP'}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.white30 : Colors.grey[600], fontSize: 11),
                 ),
               ],
             ),
@@ -209,7 +261,7 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
                ? null 
                : TextButton(
                   onPressed: () => _handleLogout(activity),
-                  child: const Text('LOGOUT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: const Text('LOGOUT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 11)),
                 ),
           ),
         );

@@ -83,6 +83,7 @@ import '../../features/auth/views/onboarding/signup/business_details.dart';
 import '../../features/auth/views/onboarding/signup/personal_details.dart';
 import '../../features/auth/views/onboarding/signup/validate_phone.dart';
 import '../../features/auth/views/onboarding/signup/signup.dart';
+import '../../features/auth/views/onboarding/signup/currency_selection.dart';
 import '../../features/auth/views/onboarding/signup/signup_success.dart';
 import '../../features/auth/views/onboarding/signup/verify_email.dart';
 import '../../features/auth/views/onboarding/signup/verify_phone.dart';
@@ -148,6 +149,13 @@ final router = GoRouter(
     GoRoute(path: '/splash', builder: (context, state) => SplashScreen()),
     GoRoute(path: '/intro', builder: (context, state) => const WelcomeScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+    GoRoute(
+      path: '/signup-currency',
+      builder: (context, state) {
+        final request = state.extra as SignUpRequest;
+        return CurrencySelectionScreen(request: request);
+      },
+    ),
     GoRoute(
       path: '/signup-verify-identity',
       builder: (context, state) {
@@ -637,7 +645,10 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/account-setup',
-      builder: (context, state) => const AccountSetupScreen(),
+      builder: (context, state) {
+        final currencyCode = state.extra as String? ?? 'USD';
+        return AccountSetupScreen(accountType: currencyCode);
+      },
     ),
     GoRoute(
       path: '/upgrade-kyc',

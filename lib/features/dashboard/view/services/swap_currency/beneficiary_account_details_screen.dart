@@ -180,6 +180,20 @@ class BeneficiaryAccountDetailsScreen extends StatelessWidget {
         return '€';
       case 'GBP':
         return '£';
+      case 'XAF':
+        return 'FCFA';
+      case 'TZS':
+        return 'TSh';
+      case 'KES':
+        return 'KSh';
+      case 'GHS':
+        return 'GH₵';
+      case 'UGX':
+        return 'USh';
+      case 'ZAR':
+        return 'R';
+      case 'XOF':
+        return 'CFA';
       default:
         return '';
     }

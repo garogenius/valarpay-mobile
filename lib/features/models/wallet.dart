@@ -65,7 +65,36 @@ class WalletModel {
 
   // Helper method to format balance with currency
   String get formattedBalance {
-    return '₦${balance.toStringAsFixed(2)}';
+    return '${_getCurrencySymbol(currency)}${balance.toStringAsFixed(2)}';
+  }
+
+  static String _getCurrencySymbol(String currencyCode) {
+    switch (currencyCode.toUpperCase()) {
+      case 'NGN':
+        return '₦';
+      case 'USD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'GBP':
+        return '£';
+      case 'XAF':
+        return 'FCFA ';
+      case 'TZS':
+        return 'TSh ';
+      case 'KES':
+        return 'KSh ';
+      case 'GHS':
+        return 'GH₵ ';
+      case 'UGX':
+        return 'USh ';
+      case 'ZAR':
+        return 'R ';
+      case 'XOF':
+        return 'CFA ';
+      default:
+        return '$currencyCode ';
+    }
   }
 
   // Helper to get masked account number (e.g., "****7890")

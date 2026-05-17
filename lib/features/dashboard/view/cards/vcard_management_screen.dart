@@ -91,14 +91,38 @@ class VCardManagementScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      final success = await ref.read(cardNotifierProvider.notifier).freezeCard(card.id, !card.isFrozen);
-      if (success) {
+      final notifier = ref.read(cardNotifierProvider.notifier);
+      final success = card.isFrozen 
+          ? await notifier.unfreezeCard(card.id) 
+          : await notifier.freezeCard(card.id);
+          
+      if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Card ${card.isFrozen ? 'unfrozen' : 'frozen'} successfully')));
       }
     }
   }
 
   void _handleBlock(BuildContext context, WidgetRef ref, VirtualCardModel card) async {
-     // Similar implementation for block...
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+        title: const Text('Terminate Card', style: TextStyle(color: Colors.red)),
+        content: const Text('Are you sure you want to permanently terminate this card? This action cannot be undone.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Terminate', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await ref.read(cardNotifierProvider.notifier).terminateCard(card.id);
+      if (success && context.mounted) {
+        Navigator.pop(context); // Close management screen
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card terminated successfully')));
+      }
+    }
   }
 }

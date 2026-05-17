@@ -8,6 +8,8 @@ import 'package:valarpay/core/utils/responsive_utils.dart';
 import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/dashboard/widgets/services_widgets/swap_currency_widgets/currency_selector_modal.dart'; // Import supportedCurrencies
+import 'package:valarpay/features/models/wallet.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
@@ -17,8 +19,7 @@ class AccountScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
-  bool showNairaBalance = false;
-  bool showDollarBalance = false;
+  bool showBalances = false;
 
   @override
   void initState() {
@@ -84,16 +85,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     // Get user data from provider
     final user = ref.watch(userProvider);
     final isBvnVerified = user?.isBvnVerified ?? false;
-    final wallet =
-        user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
-
-    // Extract wallet data
-    final formattedBalance = wallet?.formattedBalance ?? '₦0.00';
-    final bankName = wallet?.bankName ?? 'ValarPay Bank';
-    final accountName =
-        wallet?.accountName ?? user?.fullname ?? 'Not Available';
-    final accountNumber = wallet?.accountNumber ?? 'Not Available';
+    final wallets = user?.wallets ?? [];
     final tierLevel = user?.tierLevel ?? 'notSet';
+    
+    // Map existing currencies to speed up filtering
+    final existingCurrencies = wallets.map((w) => w.currency.toUpperCase()).toSet();
+    
+    // Filter supported currencies to show ONLY those NOT yet activated
+    // We skip NGN from the list as it is the base account
+    final availableSetupCurrencies = supportedCurrencies.where((c) {
+      final code = c.code.toUpperCase();
+      return code != 'NGN' && !existingCurrencies.contains(code);
+    }).toList();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -106,9 +109,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Account",
+          "Accounts",
            style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
           ),),
       ),
@@ -121,52 +124,52 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           : SingleChildScrollView(
         padding: ResponsiveUtils.paddingAll16,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Naira Account Card
-            _accountCard(
-              currency: "₦",
-              balance: formattedBalance,
-              bankName: bankName,
-              accountName: accountName,
-              accountNumber: accountNumber,
-              tierLevel: tierLevel,
-              isVisible: showNairaBalance,
-              onToggle: () =>
-                  setState(() => showNairaBalance = !showNairaBalance),
-            ),
-            SizedBox(height: 20.h),
+            // 1. Render Active Wallet Cards
+            ...wallets.map((wallet) {
+              final isNgn = wallet.currency.toUpperCase() == 'NGN';
+              
+              return Padding(
+                padding: EdgeInsets.only(bottom: 20.h),
+                child: _accountCard(
+                  wallet: wallet,
+                  tierLevel: tierLevel,
+                  showTierUpgrade: isNgn, // Only show upgrade link on main NGN wallet
+                  isVisible: showBalances,
+                  onToggle: () => setState(() => showBalances = !showBalances),
+                ),
+              );
+            }),
 
-            // Get USD Account
-            _accountSetupCard(
-              flag: "assets/images/usflag.png",
-              title: "Get USD Account",
-              subtitle: "Open a secure dollar account",
-              onTap: () {
-                context.push('/account-setup', extra: 'USD');
-              },
-            ),
-            SizedBox(height: 12.h),
-
-            // Get Euro Account
-            _accountSetupCard(
-              flag: "assets/images/euflag.png",
-              title: "Get Euro Account",
-              subtitle: "Open a secure euro account",
-              onTap: () {
-                context.push('/account-setup', extra: 'EUR');
-              },
-            ),
-            SizedBox(height: 12.h),
-
-            // Get Pound Account
-            _accountSetupCard(
-              flag: "assets/images/pounds2.png",
-              title: "Get Pound Account",
-              subtitle: "Open a secure pounds account",
-              onTap: () {
-                context.push('/account-setup', extra: 'GBP');
-              },
-            ),
+            // 2. Display "Get a new account" header if there are available currencies
+            if (availableSetupCurrencies.isNotEmpty) ...[
+              Padding(
+                padding: EdgeInsets.only(top: 8.h, bottom: 16.h),
+                child: Text(
+                  "Get a New Account",
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // 3. Render Setup Cards dynamically for non-activated currencies
+              ...availableSetupCurrencies.map((currency) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: _accountSetupCard(
+                    flag: currency.flagAsset,
+                    emoji: currency.emoji,
+                    title: "Get ${currency.code} Account",
+                    subtitle: "Open a secure ${currency.name.toLowerCase()} account",
+                    onTap: () {
+                      context.push('/account-setup', extra: currency.code);
+                    },
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
@@ -175,15 +178,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   // Reusable Account Card
   Widget _accountCard({
-    required String currency,
-    required String balance,
-    required String bankName,
-    required String accountName,
-    required String accountNumber,
+    required WalletModel wallet,
     required String tierLevel,
+    required bool showTierUpgrade,
     required bool isVisible,
     required VoidCallback onToggle,
   }) {
+    final currency = wallet.currency.toUpperCase();
+    final formattedBalance = wallet.formattedBalance;
+    final bankName = wallet.bankName.isNotEmpty ? wallet.bankName : "ValarPay";
+    final accountName = wallet.accountName;
+    final accountNumber = wallet.accountNumber;
+
+    // Get masked symbol
+    String masked = "$currency •••••";
+    if (currency == 'NGN') masked = "₦ •••••";
+    else if (currency == 'USD') masked = "\$ •••••";
+    else if (currency == 'EUR') masked = "€ •••••";
+    else if (currency == 'GBP') masked = "£ •••••";
     return Container(
       padding: ResponsiveUtils.paddingAll16,
       decoration: BoxDecoration(
@@ -216,12 +228,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   ),
                 ],
               ),
-              _buildTierUpgradeButton(tierLevel),
+              if (showTierUpgrade) _buildTierUpgradeButton(tierLevel),
             ],
           ),
           SizedBox(height: 4.h),
           Text(
-            isVisible ? balance : "$currency •••••",
+            isVisible ? formattedBalance : masked,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
@@ -363,6 +375,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    String? emoji,
   }) {
     return Container(
       padding: ResponsiveUtils.paddingAll12,
@@ -371,7 +384,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         borderRadius: ResponsiveUtils.borderRadius12,
       ),
       child: ListTile(
-        leading: CircleAvatar(radius: 18.r, backgroundImage: AssetImage(flag)),
+        leading: emoji != null
+            ? Text(
+                emoji,
+                style: TextStyle(fontSize: 24.sp),
+              )
+            : CircleAvatar(radius: 18.r, backgroundImage: AssetImage(flag)),
         title: Text(
           title,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(

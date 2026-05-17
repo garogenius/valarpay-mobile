@@ -6,6 +6,7 @@ class CurrencyAmountInput extends StatelessWidget {
   final String currencyCode; // e.g. "NGN"
   final String currencySymbol; // e.g. "#"
   final String flagAsset;
+  final String? emoji; // ✅ optional emoji flag
   final bool isEditable;
   final VoidCallback onCurrencyTap;
 
@@ -17,6 +18,7 @@ class CurrencyAmountInput extends StatelessWidget {
     required this.currencySymbol,
     required this.flagAsset,
     required this.onCurrencyTap,
+    this.emoji,
     this.isEditable = true,
   });
 
@@ -94,11 +96,17 @@ class CurrencyAmountInput extends StatelessWidget {
             onTap: onCurrencyTap,
             child: Row(
               children: [
-                Image.asset(
-                  flagAsset,
-                  width: 28,
-                  height: 20,
-                ),
+                if (emoji != null)
+                  Text(
+                    emoji!,
+                    style: const TextStyle(fontSize: 24),
+                  )
+                else
+                  Image.asset(
+                    flagAsset,
+                    width: 28,
+                    height: 20,
+                  ),
                 const SizedBox(width: 8),
                 Text(
                   currencyCode,

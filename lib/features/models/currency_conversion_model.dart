@@ -18,10 +18,10 @@ class CurrencyConversionData {
   factory CurrencyConversionData.fromJson(Map<String, dynamic> json) {
     return CurrencyConversionData(
       amount: (json['originalAmount'] ?? json['amount'] ?? 0.0).toDouble(),
-      convertedAmount: (json['convertedAmount'] ?? 0.0).toDouble(),
-      exchangeRate: (json['exchangeRate'] ?? 0.0).toDouble(),
-      fromCurrency: json['fromCurrency'] ?? '',
-      toCurrency: json['toCurrency'] ?? '',
+      convertedAmount: (json['convertedAmount'] ?? json['converted'] ?? json['exchangeAmount'] ?? 0.0).toDouble(),
+      exchangeRate: (json['exchangeRate'] ?? json['rate'] ?? 0.0).toDouble(),
+      fromCurrency: json['fromCurrency'] ?? json['from'] ?? '',
+      toCurrency: json['toCurrency'] ?? json['to'] ?? '',
       timestamp: json['timestamp'],
     );
   }

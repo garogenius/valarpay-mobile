@@ -117,6 +117,8 @@ class WalletNotifier extends StateNotifier<DataState<ApiResponse>> {
     }
   }
 
+
+
   void reset() => state = DataState<ApiResponse>.initial();
 }
 

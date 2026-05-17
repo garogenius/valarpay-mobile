@@ -7,9 +7,9 @@ class CardRepository {
 
   CardRepository(this._apiClient);
 
-  Future<DataState<VirtualCardModel>> createCard(CreateCardRequest request) async {
+  Future<DataState<VirtualCardModel>> createCard(EversendCreateCardRequest request) async {
     return _apiClient.postData<VirtualCardModel>(
-      '/api/v1/currency/cards',
+      '/api/v1/currency/eversend/cards',
       data: request.toJson(),
       converter: (json) => VirtualCardModel.fromJson(json),
     );
@@ -17,9 +17,19 @@ class CardRepository {
 
   Future<DataState<VirtualCardModel>> getCards() async {
     return _apiClient.getData<VirtualCardModel>(
-      '/api/v1/currency/cards',
+      '/api/v1/currency/eversend/cards',
       converter: (json) {
-        final List cards = json['data']['cards'];
+        final List cards = json['data'] is List ? json['data'] : (json['data']?['cards'] ?? []);
+        return cards.map((c) => VirtualCardModel.fromJson(c)).toList();
+      },
+    );
+  }
+
+  Future<DataState<VirtualCardModel>> getCardsByWallet(String walletId) async {
+    return _apiClient.getData<VirtualCardModel>(
+      '/api/v1/currency/eversend/wallets/$walletId/cards',
+      converter: (json) {
+        final List cards = json['data'] is List ? json['data'] : (json['data']?['cards'] ?? []);
         return cards.map((c) => VirtualCardModel.fromJson(c)).toList();
       },
     );
@@ -27,80 +37,56 @@ class CardRepository {
 
   Future<DataState<VirtualCardModel>> getCardDetails(String cardId) async {
     return _apiClient.getData<VirtualCardModel>(
-      '/api/v1/currency/cards/$cardId',
-      converter: (json) => VirtualCardModel.fromJson(json['data']),
-    );
-  }
-
-  Future<DataState<bool>> updateCard(String cardId, String label) async {
-    return _apiClient.patchData<bool>(
-      '/api/v1/currency/cards/$cardId',
-      data: {'label': label},
-      converter: (json) => true,
+      '/api/v1/currency/eversend/cards/$cardId',
+      converter: (json) => VirtualCardModel.fromJson(json['data'] ?? json),
     );
   }
 
   Future<DataState<bool>> fundCard(FundCardRequest request) async {
     return _apiClient.postData<bool>(
-      '/api/v1/currency/cards/${request.cardId}/fund',
-      data: request.toJson(),
+      '/api/v1/currency/eversend/cards/${request.cardId}/fund',
+      data: {'amount': request.amount},
       converter: (json) => true,
     );
   }
 
-  Future<DataState<bool>> freezeCard(String cardId, bool freeze) async {
-    return _apiClient.patchData<bool>(
-      '/api/v1/currency/cards/$cardId/freeze',
-      queryParameters: {'freeze': freeze},
-      converter: (json) => true,
-    );
-  }
-
-  Future<DataState<bool>> blockCard(String cardId, String walletPin, String reason) async {
+  Future<DataState<bool>> withdrawFromCard(String cardId, double amount) async {
     return _apiClient.postData<bool>(
-      '/api/v1/currency/cards/$cardId/block',
-      data: {'walletPin': walletPin, 'reason': reason},
+      '/api/v1/currency/eversend/cards/$cardId/withdraw',
+      data: {'amount': amount},
       converter: (json) => true,
     );
   }
 
-  Future<DataState<bool>> closeCard(String cardId, String walletPin) async {
+  Future<DataState<bool>> freezeCard(String cardId) async {
     return _apiClient.postData<bool>(
-      '/api/v1/currency/cards/$cardId/close',
-      data: {'walletPin': walletPin},
+      '/api/v1/currency/eversend/cards/$cardId/freeze',
+      converter: (json) => true,
+    );
+  }
+
+  Future<DataState<bool>> unfreezeCard(String cardId) async {
+    return _apiClient.postData<bool>(
+      '/api/v1/currency/eversend/cards/$cardId/unfreeze',
+      converter: (json) => true,
+    );
+  }
+
+  Future<DataState<bool>> terminateCard(String cardId) async {
+    return _apiClient.postData<bool>(
+      '/api/v1/currency/eversend/cards/$cardId/terminate',
       converter: (json) => true,
     );
   }
 
   Future<DataState<CardTransactionModel>> getCardTransactions(String cardId, {int limit = 50, int offset = 0}) async {
     return _apiClient.getData<CardTransactionModel>(
-      '/api/v1/currency/cards/$cardId/transactions',
+      '/api/v1/currency/eversend/cards/$cardId/transactions',
       queryParameters: {'limit': limit, 'offset': offset},
       converter: (json) {
-        final List txs = json['transactions'];
+        final List txs = json['data']?['transactions'] ?? json['transactions'] ?? [];
         return txs.map((t) => CardTransactionModel.fromJson(t)).toList();
       },
-    );
-  }
-
-  Future<DataState<bool>> setCardLimits(String cardId, double daily, double monthly, double txLimit, String pin) async {
-    return _apiClient.putData<bool>(
-      '/api/v1/currency/cards/$cardId/limits',
-      data: {
-        'dailyLimit': daily,
-        'monthlyLimit': monthly,
-        'transactionLimit': txLimit,
-        'walletPin': pin,
-      },
-      converter: (json) => true,
-    );
-  }
-
-  Future<DataState<bool>> withdrawFromCard(String cardId, double amount, String pin) async {
-    return _apiClient.postData<bool>(
-      '/api/v1/currency/cards/$cardId/withdraw',
-      data: {'amount': amount, 'walletPin': pin},
-      converter: (json) => true,
     );
   }
 }
