@@ -241,7 +241,17 @@ class _FinanceTransactionHistoryScreenState extends ConsumerState<FinanceTransac
         }
       }
 
-      title = provider.isEmpty ? displayType : '$provider $displayType';
+      if (provider.toLowerCase().contains('kuda')) {
+        if (displayType == 'Airtime' || displayType == 'Intl. Airtime') {
+          title = 'Airtime purchase';
+        } else if (displayType == 'Mobile Data') {
+          title = 'Data purchase';
+        } else {
+          title = displayType;
+        }
+      } else {
+        title = provider.isEmpty ? displayType : '$provider $displayType';
+      }
     }
     final subtitle = DateFormat('MMMM dd, yyyy h:mm a').format(tx.createdAt);
     final amount = tx.amount;

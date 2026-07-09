@@ -355,74 +355,6 @@ class UserRepository {
     return rawDate;
   }
 
-  /// Submit SmileID Basic KYC (BVN or NIN number verification)
-  Future<ApiResponse> submitBasicKyc({
-    required String idType,
-    required String idNumber,
-    required String dob,
-    String? phoneNumber, // optional
-  }) async {
-    try {
-      final Map<String, dynamic> payload = {
-        'idType': idType,
-        'idNumber': idNumber,
-        'dob': _normalizeDate(dob), // ensure YYYY-MM-DD format
-      };
-      // Only include phone if provided
-      if (phoneNumber != null && phoneNumber.isNotEmpty) {
-        payload['phoneNumber'] = phoneNumber;
-      }
-      final response = await apiClient.post(
-        ApiEndpoints.basicKyc,
-        data: payload,
-      );
-      return ApiResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
-    } catch (e) {
-      throw Exception('Basic KYC submission failed: $e');
-    }
-  }
-
-  /// Submit SmileID Smart Selfie Registration (Enrolling liveness)
-  Future<ApiResponse> submitSmartSelfieRegister({
-    required String selfieImage,
-    required List<String> livenessImages,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        ApiEndpoints.biometricKyc,
-        data: {
-          'selfieImage': selfieImage,
-          'livenessImages': livenessImages,
-        },
-      );
-      return ApiResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
-    } catch (e) {
-      throw Exception('Smart Selfie Registration failed: $e');
-    }
-  }
-
-  /// Submit SmileID Smart Selfie Authentication (Biometric for 50k+ transfers)
-  Future<ApiResponse> submitSmartSelfieAuth({
-    required String selfieImage,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        ApiEndpoints.smartSelfieAuth,
-        data: {
-          'selfieImage': selfieImage,
-        },
-      );
-      return ApiResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(ApiResponse.getErrorMessage(e.response?.data));
-    } catch (e) {
-      throw Exception('Smart Selfie Authentication failed: $e');
-    }
-  }
 
   /// Poll SmileID job status
   Future<ApiResponse> getSmileIdJobStatus(String jobId) async {
@@ -443,24 +375,34 @@ class UserRepository {
     NinVerificationRequest request,
   ) async {
     try {
-       // If liveness is present, we call smart selfie register
-       if (request.selfieImage.isNotEmpty) {
-          final res = await submitSmartSelfieRegister(
-            selfieImage: request.selfieImage,
-            livenessImages: request.livenessImages ?? [],
-          );
-          return NinVerificationResponse(
-            message: res.message,
-            statusCode: res.statusCode,
-          );
-       } else {
-          // If no images, we call the old kycTier2 or basicKyc
-          final response = await apiClient.post(
-            ApiEndpoints.kycTier2,
-            data: request.toJson(),
-          );
-          return NinVerificationResponse.fromJson(response.data);
-       }
+       final response = await apiClient.post(
+         ApiEndpoints.kycTier2,
+         data: request.toJson(),
+       );
+       return NinVerificationResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      return NinVerificationResponse(
+        message: ApiResponse.getErrorMessage(e.response?.data),
+        error: e.response?.data is Map? e.response?.data['error'] ?? 'Bad Request' : 'Bad Request',
+        statusCode: e.response?.statusCode ?? 400,
+      );
+    } catch (e) {
+      return NinVerificationResponse(
+        message: 'Unexpected error: $e',
+        error: 'Internal Error',
+        statusCode: 500,
+      );
+    }
+  }
+
+  /// Verify BVN for Tier 2 KYC upgrade
+  Future<NinVerificationResponse> verifyBvnTier2(String bvn) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.kycTier2,
+        data: {'bvn': bvn},
+      );
+      return NinVerificationResponse.fromJson(response.data);
     } on DioException catch (e) {
       return NinVerificationResponse(
         message: ApiResponse.getErrorMessage(e.response?.data),
@@ -526,7 +468,7 @@ class UserRepository {
       final fileName = file.path.split(Platform.pathSeparator).last;
 
       final Map<String, dynamic> data = {
-        'tier3Document': await MultipartFile.fromFile(
+        'document': await MultipartFile.fromFile(
           file.path,
           filename: fileName,
         ),

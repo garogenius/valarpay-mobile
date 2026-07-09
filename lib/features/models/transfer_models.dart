@@ -175,33 +175,42 @@ class AccountVerificationResponse {
 class InitiateTransferRequest {
   final String bankCode;
   final String accountNumber;
+  final String? accountName;
   final double amount;
   final String currency;
   final String description;
   final String pin;
+  final double? fee;
   final bool saveBeneficiary;
-  final String sessionId;
+  final String? sessionId;
+  final String? requestRef;
 
   InitiateTransferRequest({
     required this.bankCode,
     required this.accountNumber,
+    this.accountName,
     required this.amount,
     required this.currency,
     required this.description,
     required this.pin,
+    this.fee,
     required this.saveBeneficiary,
-    required this.sessionId,
+    this.sessionId,
+    this.requestRef,
   });
 
   Map<String, dynamic> toJson() => {
+    if (requestRef != null) 'requestRef': requestRef,
     'bankCode': bankCode,
     'accountNumber': accountNumber,
+    if (accountName != null) 'accountName': accountName,
     'amount': amount,
     'currency': currency,
     'description': description,
     'walletPin': pin, // Backend expects 'walletPin', not 'pin'
-    "saveBeneficiary": saveBeneficiary,
-    "sessionId": sessionId,
+    if (fee != null) 'fee': fee,
+    "addBeneficiary": saveBeneficiary,
+    if (sessionId != null) "sessionId": sessionId,
   };
 }
 

@@ -17,22 +17,19 @@ class UserTierResponse {
 
 class UserTierData {
   final String currentTier;
-  final num dailyTransactionLimit;
-  final num balanceLimit;
+  final TierInfo? tier;
   final List<TierInfo> tiers;
 
   UserTierData({
     required this.currentTier,
-    required this.dailyTransactionLimit,
-    required this.balanceLimit,
+    this.tier,
     required this.tiers,
   });
 
   factory UserTierData.fromJson(Map<String, dynamic> json) {
     return UserTierData(
       currentTier: json['currentTier'] ?? 'one',
-      dailyTransactionLimit: json['dailyTransactionLimit'] ?? 0,
-      balanceLimit: json['balanceLimit'] ?? 0,
+      tier: json['tier'] != null ? TierInfo.fromJson(json['tier']) : null,
       tiers: (json['tiers'] as List?)
               ?.map((t) => TierInfo.fromJson(t))
               .toList() ??
@@ -55,11 +52,20 @@ class TierInfo {
   });
 
   factory TierInfo.fromJson(Map<String, dynamic> json) {
+    List<String> parsedRequirements = [];
+    if (json['requirements'] is List) {
+      parsedRequirements = List<String>.from(json['requirements']);
+    } else if (json['requirements'] is Map) {
+      (json['requirements'] as Map).forEach((key, value) {
+        if (value == true) parsedRequirements.add(key.toString());
+      });
+    }
+
     return TierInfo(
       tier: json['tier'] ?? '',
       dailyTransactionLimit: json['dailyTransactionLimit'],
-      balanceLimit: json['balanceLimit'],
-      requirements: List<String>.from(json['requirements'] ?? []),
+      balanceLimit: json['balanceLimit'] ?? json['cumulativeBalanceLimit'],
+      requirements: parsedRequirements,
     );
   }
 }

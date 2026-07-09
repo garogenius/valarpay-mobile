@@ -76,7 +76,7 @@ class KYCWidget extends StatelessWidget {
 
           ElevatedButton(
             onPressed: () {
-              final isBvnVerified = user?.isBvnVerified ?? false;
+              final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
               final isNinVerified = user?.isNinVerified ?? false;
               final isWalletPinSet = user?.isWalletPinSet ?? false;
 
@@ -147,6 +147,25 @@ class KYCWidget extends StatelessWidget {
                   ),
                 ),
                 child: const Text('Use BVN', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/nin-verification');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: appTheme.primaryColor, width: 1.5),
+                  ),
+                ),
+                child: Text('Use NIN', style: TextStyle(color: appTheme.primaryColor)),
               ),
             ),
             const SizedBox(height: 16),

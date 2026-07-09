@@ -11,7 +11,7 @@ class TransferRepository {
   Future<BanksResponse> getBanks({required String currency}) async {
     try {
       final response = await apiClient.get(
-        '${ApiEndpoints.getBanks}/$currency',
+        ApiEndpoints.getBanksByCurrency(currency),
       );
       return BanksResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -54,7 +54,7 @@ class TransferRepository {
   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.verifyAccount,
+        ApiEndpoints.verifyBankAccount,
         data: request.toJson(),
       );
       return AccountVerificationResponse.fromJson(response.data);
@@ -65,17 +65,35 @@ class TransferRepository {
     }
   }
 
-  Future<TransferResponse> initiateTransfer(
+  Future<TransferResponse> initiateBankTransfer(
     InitiateTransferRequest request,
   ) async {
     try {
       final response = await apiClient.post(
-        ApiEndpoints.initiateTransfer,
+        ApiEndpoints.initiateBankTransfer,
         data: request.toJson(),
       );
       return TransferResponse.fromJson(response.data);
     } on DioException catch (e) {
-      // Try to extract more detailed error message
+      final message =
+          e.response?.data['message'] ??
+          e.response?.data['error'] ??
+          e.response?.data['errors']?.toString() ??
+          'Transfer processing failed';
+      throw Exception(message);
+    }
+  }
+
+  Future<TransferResponse> initiateNattyPayTransfer(
+    InitiateTransferRequest request,
+  ) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.initiateNattyPayTransfer,
+        data: request.toJson(),
+      );
+      return TransferResponse.fromJson(response.data);
+    } on DioException catch (e) {
       final message =
           e.response?.data['message'] ??
           e.response?.data['error'] ??

@@ -196,8 +196,8 @@ class NotificationModel {
   String get type => category.toLowerCase();
 
   String get formattedTitle {
-    if (category == 'TRANSACTIONS') {
-      final lowerTitle = title.toLowerCase();
+    final lowerTitle = title.toLowerCase();
+    if (category == 'TRANSACTIONS' || category == 'SERVICES') {
       if (lowerTitle.contains('credit') || lowerTitle.contains('deposit')) {
         return 'Credit Alert';
       } else if (lowerTitle.contains('debit') ||
@@ -205,7 +205,10 @@ class NotificationModel {
           lowerTitle.contains('transfer') ||
           lowerTitle.contains('sent') ||
           lowerTitle.contains('payment') ||
-          lowerTitle.contains('purchase')) {
+          lowerTitle.contains('purchase') ||
+          lowerTitle.contains('airtime') ||
+          lowerTitle.contains('data') ||
+          lowerTitle.contains('bill')) {
         return 'Debit Alert';
       }
     }
@@ -213,7 +216,12 @@ class NotificationModel {
   }
 
   String get formattedMessage {
-    if (category == 'TRANSACTIONS' && metadata != null) {
+    String cleanMessage = message
+        .replaceAll(RegExp(r'(?:Your )?new balance is.*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'balance:.*', caseSensitive: false), '')
+        .trim();
+
+    if ((category == 'TRANSACTIONS' || category == 'SERVICES') && metadata != null) {
       final lowerTitle = title.toLowerCase();
       final isCredit =
           lowerTitle.contains('credit') || lowerTitle.contains('deposit');
@@ -224,25 +232,23 @@ class NotificationModel {
           lowerTitle.contains('sent') ||
           lowerTitle.contains('payment') ||
           lowerTitle.contains('purchase');
+          
+      final isBillPayment = category == 'SERVICES' ||
+          lowerTitle.contains('airtime') ||
+          lowerTitle.contains('data') ||
+          lowerTitle.contains('bill') ||
+          lowerTitle.contains('electricity') ||
+          lowerTitle.contains('tv') ||
+          lowerTitle.contains('betting') ||
+          lowerTitle.contains('internet');
 
-      if (isCredit || isDebit) {
+      if (isCredit || isDebit || isBillPayment) {
         try {
           final amountVal = metadata?['amount'];
           final amount =
               (amountVal is num)
                   ? amountVal.toDouble()
                   : (double.tryParse(amountVal.toString()) ?? 0.0);
-
-          final balanceVal =
-              metadata?['balance'] ??
-              metadata?['currentBalance'] ??
-              metadata?['bal'];
-          final balance =
-              (balanceVal is num)
-                  ? balanceVal.toDouble()
-                  : (balanceVal != null
-                      ? double.tryParse(balanceVal.toString())
-                      : null);
 
           final reference =
               metadata?['reference'] ??
@@ -268,11 +274,10 @@ class NotificationModel {
                 metadata?['from'] ??
                 'Unknown';
 
-            // "Credit: NGN 5,000.00 from John Doe. Ref: 12345678. 17/02/2026 12:30."
             if (amount > 0) {
               return 'Credit: $formattedAmount from $senderName. Ref: $reference. $formattedDate.';
             }
-          } else if (isDebit) {
+          } else if (isDebit || isBillPayment) {
             final recipientName =
                 metadata?['beneficiaryName'] ??
                 metadata?['beneficiary_name'] ??
@@ -288,18 +293,19 @@ class NotificationModel {
                 metadata?['account_name'] ??
                 'Service Provider';
 
-            // "Debit: NGN 5,000.00 to John Doe. Ref: 12345678. 17/02/2026 12:30."
             if (amount > 0) {
+              if (isBillPayment) {
+                return 'Transaction Successful. You have paid $formattedAmount for $recipientName. Ref: $reference.';
+              }
               return 'Debit: $formattedAmount to $recipientName. Ref: $reference. $formattedDate.';
             }
           }
         } catch (e) {
-          // Fallback to original message if parsing fails
-          return message;
+          return cleanMessage;
         }
       }
     }
-    return message;
+    return cleanMessage;
   }
 }
 

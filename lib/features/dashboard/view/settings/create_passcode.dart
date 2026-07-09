@@ -8,6 +8,10 @@ import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:valarpay/features/models/create_passcode_request.dart';
 import 'package:valarpay/features/notifiers/passcode_notifier.dart';
+import 'package:valarpay/features/models/login.dart';
+import 'package:valarpay/features/models/user.dart';
+import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/features/providers/user_provider.dart';
 
 class CreatePasscodeScreen extends ConsumerStatefulWidget {
   const CreatePasscodeScreen({super.key});
@@ -51,8 +55,52 @@ class _CreatePasscodeScreenState extends ConsumerState<CreatePasscodeScreen> {
           // Clear passcode controller
           ref.read(passcodeControllerProvider.notifier).clearAllPasscodes();
 
-          // Navigate back
-          context.pop();
+          // Navigate back to dashboard BEFORE updating the user state
+          if (mounted) {
+            context.pop();
+          }
+
+          // Update local state IMMEDIATELY (this will trigger the KYC modal on the dashboard)
+          final currentUser = ref.read(userProvider);
+          if (currentUser != null) {
+            final jsonMap = currentUser.toJson();
+            jsonMap['isPasscodeSet'] = true;
+            jsonMap['is_passcode_set'] = true;
+            final overrideUser = UserModel.fromJson(jsonMap);
+            ref.read(userProvider.notifier).setUser(overrideUser);
+          }
+
+          // Refresh user profile and update state properly
+          try {
+            await Future.delayed(const Duration(milliseconds: 1500));
+            final updatedUser = await ref.read(userNotifierProvider.notifier).refreshUserProfile();
+
+            if (updatedUser != null) {
+              UserModel finalUser = updatedUser;
+              if (!updatedUser.isPasscodeSet) {
+                 final jsonMap = updatedUser.toJson();
+                 jsonMap['isPasscodeSet'] = true;
+                 jsonMap['is_passcode_set'] = true;
+                 finalUser = UserModel.fromJson(jsonMap);
+              }
+
+              ref.read(userProvider.notifier).setUser(finalUser);
+
+              final currentToken = await SessionService.getAccessToken();
+              if (currentToken != null) {
+                await SessionService.saveSession(
+                  LoginResponse(
+                    user: finalUser,
+                    accessToken: currentToken,
+                    message: 'Success',
+                    statusCode: 200,
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            debugPrint('Error refreshing profile: $e');
+          }
         } else {
           AppMessenger.show(
             context,

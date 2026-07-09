@@ -49,669 +49,733 @@ class VirtualCardWidget extends StatelessWidget {
     }
   }
 
-  // 1. Midnight Executive
-  Widget _buildMidnightExecutive(BuildContext context) {
+  // Common card contents layout structure
+  Widget _buildCardBase({
+    required Decoration decoration,
+    required CustomPainter backgroundPainter,
+    required Color textColor,
+    List<Widget> backgroundDecoration = const [],
+  }) {
     return Container(
+      decoration: decoration,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Background decorations (e.g. blurs or color patches)
+          ...backgroundDecoration,
+          
+          // Background pattern custom painter
+          Positioned.fill(
+            child: CustomPaint(
+              painter: backgroundPainter,
+            ),
+          ),
+          
+          // Foreground components
+          Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildValarPayLogo(),
+                _buildCardDetails(textColor),
+                _buildCardBottomRow(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 1. Midnight Executive (Deep Premium Navy/Black)
+  Widget _buildMidnightExecutive(BuildContext context) {
+    return _buildCardBase(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const RadialGradient(
           center: Alignment.topLeft,
           radius: 1.5,
-          colors: [Color(0xFF0D1D2A), Color(0xFF041521)],
+          colors: [Color(0xFF0F1E36), Color(0xFF070F1A)],
         ),
         boxShadow: const [
-          BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 6)),
-        ],
-        border: Border.all(color: const Color(0xFFFFB596).withOpacity(0.15), width: 1),
-      ),
-      child: Stack(
-        children: [
-          _buildNoiseOverlay(),
-          Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            card?.label ?? 'My Valarpay Virtual Card',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'EXECUTIVE EDITION',
-                            style: TextStyle(color: const Color(0xFFFFB596).withOpacity(0.8), fontSize: 8, letterSpacing: 1.5, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Valarpay',
-                      style: TextStyle(
-                        color: Color(0xFFF76301),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFFE9C349), Color(0xFFCCA72F)]),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: CustomPaint(painter: ChipPainter()),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.wifi, color: Colors.white24, size: 20),
-                  ],
-                ),
-                _buildCardBottomInfo(textColor: Colors.white),
-              ],
-            ),
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 10,
+            offset: Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
+        ),
       ),
+      backgroundPainter: MidnightExecutivePainter(color: Colors.white.withOpacity(0.12)),
+      textColor: Colors.white,
     );
   }
 
-  // 2. Quantum Grid
+  // 2. Quantum Grid (Sleek digital/tech dot matrix grid)
   Widget _buildQuantumGrid(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFFF76301),
-        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 6))],
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(painter: GridPainter()),
-          ),
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Valarpay', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                          Text('QUANTUM EDITION', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 8, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 36,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFFE9C349), Color(0xFFCCA72F)]),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: CustomPaint(painter: ChipPainter()),
-                    ),
-                  ],
-                ),
-                _buildCardBottomInfo(textColor: Colors.white, showBrand: true),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 3. Titanium Edge
-  Widget _buildTitaniumEdge(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF0D1D2A),
-                    ),
-                    child: CustomPaint(painter: CarbonFiberPainter()),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF273644), Color(0xFF0D1D2A)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Positioned.fill(
-              child: CustomPaint(painter: DiagonalSplitPainter()),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('TITANIUM EDGE', style: TextStyle(color: const Color(0xFFF76301).withOpacity(0.8), fontSize: 8, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-                            const Text('Valarpay USD', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 40,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFF76301), Color(0xFFA33F00)]),
-                          borderRadius: BorderRadius.circular(6),
-                          boxShadow: [BoxShadow(color: const Color(0xFFF76301).withOpacity(0.3), blurRadius: 4)],
-                        ),
-                        child: const Icon(Icons.bolt, color: Colors.white, size: 18),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFE9C349), Color(0xFFCCA72F)]),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: CustomPaint(painter: ChipPainter()),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.contactless_outlined, color: Colors.white24, size: 22),
-                    ],
-                  ),
-                  _buildCardBottomInfo(textColor: Colors.white),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 4. Ethereal Flow
-  Widget _buildEtherealFlow(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF010816),
-        border: Border.all(color: const Color(0xFFA98A7D).withOpacity(0.15)),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -40,
-              left: -40,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFF76301).withOpacity(0.12),
-                ),
-                child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), child: const SizedBox()),
-              ),
-            ),
-            Positioned(
-              bottom: -40,
-              right: -40,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFE9C349).withOpacity(0.08),
-                ),
-                child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40), child: const SizedBox()),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('VALARPAY', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                            const Text('ETHEREAL FLOW', style: TextStyle(color: Color(0xFFFFB596), fontSize: 8, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: const Text('PLATINUM', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFD9E2FF), Color(0xFFA9B8E0)]),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: CustomPaint(painter: ChipPainter(color: Colors.black12)),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.contactless, color: Colors.white38, size: 22),
-                    ],
-                  ),
-                  _buildCardBottomInfo(textColor: Colors.white, showBrand: true),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 5. Solar Velocity
-  Widget _buildSolarVelocity(BuildContext context) {
-    return Container(
+    return _buildCardBase(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFFF76301), Color(0xFFA33F00)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(0xFF13C296), Color(0xFF0CA47E)],
         ),
-        border: Border.all(color: Colors.white24),
-        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(painter: MicroGridPainter()),
-            ),
-            Positioned(
-              top: -40,
-              left: -15,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.08),
-                ),
-                child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), child: const SizedBox()),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Valarpay', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                            Text('SOLAR VELOCITY', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 8, letterSpacing: 1.5)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black12,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: const Text('USD PLATINUM', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Colors.white30, Colors.white10]),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: CustomPaint(painter: ChipPainter(color: Colors.white24)),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.wifi, color: Colors.white38, size: 22),
-                    ],
-                  ),
-                  _buildCardBottomInfo(textColor: Colors.white, showBrand: true),
-                ],
-              ),
-            ),
-          ],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF13C296).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+          width: 1,
         ),
       ),
+      backgroundPainter: QuantumGridPainter(color: Colors.white.withOpacity(0.18)),
+      textColor: Colors.white,
     );
   }
 
-  // 6. Prism Digital
-  Widget _buildPrismDigital(BuildContext context) {
-    return Container(
+  // 3. Titanium Edge (Luxury Matte Charcoal)
+  Widget _buildTitaniumEdge(BuildContext context) {
+    return _buildCardBase(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF1C2B39).withOpacity(0.4),
-        border: Border.all(color: const Color(0xFFA98A7D).withOpacity(0.2)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E3238), Color(0xFF15181C)],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.06),
+          width: 1,
+        ),
       ),
-      child: ClipRRect(
+      backgroundPainter: TitaniumEdgePainter(color: Colors.white.withOpacity(0.12)),
+      textColor: Colors.white,
+    );
+  }
+
+  // 4. Ethereal Flow (Rich Violet/Glow)
+  Widget _buildEtherealFlow(BuildContext context) {
+    return _buildCardBase(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('My Valarpay Virtual Card', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          Text('USD', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('VISA', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 18, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
-                  ],
-                ),
-                _buildCardBottomInfo(textColor: Colors.white.withOpacity(0.6)),
-              ],
-            ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2C1A42), Color(0xFF0E0716)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2C1A42).withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
         ),
       ),
+      backgroundPainter: EtherealFlowPainter(color: Colors.white.withOpacity(0.12)),
+      textColor: Colors.white,
     );
   }
 
-  Widget _buildNoiseOverlay() {
-    return Positioned.fill(
-      child: Opacity(
-        opacity: 0.05,
-        child: Image.network(
-          'https://www.transparenttextures.com/patterns/cubes.png',
-          repeat: ImageRepeat.repeat,
-          errorBuilder: (_, __, ___) => const SizedBox(),
+  // 5. Solar Velocity (Sunset Orange)
+  Widget _buildSolarVelocity(BuildContext context) {
+    return _buildCardBase(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF76301), Color(0xFFC74F00)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF76301).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+          width: 1,
         ),
       ),
+      backgroundPainter: SolarVelocityPainter(color: Colors.white.withOpacity(0.18)),
+      textColor: Colors.white,
     );
   }
 
-  Widget _buildCardBottomInfo({required Color textColor, bool showBrand = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            card != null 
-                ? (showDetails ? _formatCardNumber(card!.cardNumber) : '**** **** **** ${card!.last4Digits}')
-                : '**** **** **** 4821',
-            style: TextStyle(
-              color: textColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2.0,
-              shadows: [Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 4)],
+  // 6. Prism Digital (Glassmorphic Frosted Glass)
+  Widget _buildPrismDigital(BuildContext context) {
+    return _buildCardBase(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF1E2E3D).withOpacity(0.4),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      backgroundPainter: PrismDigitalPainter(color: Colors.white.withOpacity(0.15)),
+      textColor: Colors.white,
+      backgroundDecoration: [
+        // Colorful blurred glow elements visible behind the glass card
+        Positioned(
+          top: -30,
+          left: -30,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFF76301).withOpacity(0.15),
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('CARD HOLDER', style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 8, letterSpacing: 1.5)),
-                  const SizedBox(height: 2),
-                  Text(
-                    card?.cardholderName.toUpperCase() ?? 'ALEXANDER VAUGHN',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                  ),
-                ],
-              ),
+        Positioned(
+          bottom: -30,
+          right: -30,
+          child: Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF13C296).withOpacity(0.1),
             ),
-            const SizedBox(width: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('EXPIRES', style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 8, letterSpacing: 1.5)),
-                    const SizedBox(height: 2),
-                    Text(
-                      card != null ? '${card!.expiryMonth}/${card!.expiryYear.length == 4 ? card!.expiryYear.substring(2) : card!.expiryYear}' : '12/28',
-                      style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                if (showBrand) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 32,
-                    height: 20,
-                    child: Stack(
-                      children: [
-                        Positioned(right: 12, child: Container(width: 20, height: 20, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.red.withOpacity(0.8)))),
-                        Positioned(right: 0, child: Container(width: 20, height: 20, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.yellow.withOpacity(0.8)))),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
+          ),
+        ),
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: const SizedBox(),
+          ),
         ),
       ],
     );
+  }
+
+  // ValarPay Logo top-left
+  Widget _buildValarPayLogo() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 18,
+            height: 18,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.2),
+              ),
+              alignment: Alignment.center,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        const Text(
+          'ValarPay',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Show card details when showDetails is true and card is not null
+  Widget _buildCardDetails(Color textColor) {
+    if (!showDetails || card == null) {
+      return const Spacer(); // Keep middle section empty/simple when details are hidden or it is a sample card (card is null)
+    }
+
+    final rawNumber = card?.cardNumber ?? '5399238492834821';
+    final formattedNum = _formatCardNumber(rawNumber);
+    final expiry = card != null 
+        ? '${card!.expiryMonth}/${card!.expiryYear.length == 4 ? card!.expiryYear.substring(2) : card!.expiryYear}' 
+        : '12/28';
+    final cvvVal = card?.cvv ?? '123';
+
+    return Expanded(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                formattedNum,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                    )
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  card?.cardholderName.toUpperCase() ?? 'ALEXANDER VAUGHN',
+                  style: TextStyle(
+                    color: textColor.withOpacity(0.9),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'EXP: $expiry',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'CVV: $cvvVal',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Card bottom info
+  Widget _buildCardBottomRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        const Text(
+          'Virtual Card',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+        _buildBrandLogo(),
+      ],
+    );
+  }
+
+  // Card brand logo helper
+  Widget _buildBrandLogo() {
+    final provider = card?.providerType?.toUpperCase() ?? '';
+    final brand = card?.metadata?['brand']?.toString().toUpperCase() ?? '';
+
+    bool isVisa = provider.contains('VISA') || brand.contains('VISA');
+    bool isMastercard = provider.contains('MASTERCARD') || brand.contains('MASTERCARD');
+
+    if (isVisa) {
+      return const Text(
+        'VISA',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          fontStyle: FontStyle.italic,
+          letterSpacing: 0.5,
+        ),
+      );
+    } else if (isMastercard) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.red.withOpacity(0.9),
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(-6, 0),
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.orange.withOpacity(0.9),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Verve Logo (exactly as in the OPay sample!)
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFE31B23), // Verve Red
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'V',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            'verve',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   String _formatCardNumber(String number) {
     String cleanNumber = number.replaceAll(' ', '');
     String formatted = '';
     for (int i = 0; i < cleanNumber.length; i++) {
-        if (i > 0 && i % 4 == 0) formatted += ' ';
-        formatted += cleanNumber[i];
+      if (i > 0 && i % 4 == 0) formatted += ' ';
+      formatted += cleanNumber[i];
     }
     return formatted;
   }
 }
 
-class ChipPainter extends CustomPainter {
+// 1. Midnight Executive Custom Painter (Sophisticated concentric waves)
+class MidnightExecutivePainter extends CustomPainter {
   final Color color;
-  ChipPainter({this.color = Colors.black12});
+  MidnightExecutivePainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1
+      ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
-    
-    canvas.drawLine(Offset(0, size.height * 0.33), Offset(size.width * 0.3, size.height * 0.33), paint);
-    canvas.drawLine(Offset(0, size.height * 0.66), Offset(size.width * 0.3, size.height * 0.66), paint);
-    
-    canvas.drawLine(Offset(size.width, size.height * 0.33), Offset(size.width * 0.7, size.height * 0.33), paint);
-    canvas.drawLine(Offset(size.width, size.height * 0.66), Offset(size.width * 0.7, size.height * 0.66), paint);
-    
-    canvas.drawLine(Offset(size.width * 0.5, 0), Offset(size.width * 0.5, size.height), paint);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(size.width * 0.2, size.height * 0.2, size.width * 0.6, size.height * 0.6), const Radius.circular(2)), paint);
+
+    final center = Offset(0, size.height);
+    const steps = 12;
+    final baseRadius = size.width * 0.1;
+    final maxRadius = size.width * 1.2;
+
+    for (int i = 0; i < steps; i++) {
+      final radius = baseRadius + (maxRadius - baseRadius) * (i / steps);
+      paint.color = color.withOpacity((0.8 - (i / steps) * 0.7) * color.opacity);
+      canvas.drawCircle(center, radius, paint);
+    }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class GridPainter extends CustomPainter {
+// 2. Quantum Grid Custom Painter (Futuristic digital dot matrix)
+class QuantumGridPainter extends CustomPainter {
+  final Color color;
+  QuantumGridPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..strokeWidth = 0.5;
-    for (double i = 0; i < size.width; i += 15) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 15) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
-  }
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+      ..color = color
+      ..style = PaintingStyle.fill;
 
-class CarbonFiberPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF11212E);
-    for (double x = 0; x < size.width; x += 6) {
-      for (double y = 0; y < size.height; y += 6) {
-        if ((x / 6 + y / 6) % 2 == 0) {
-          canvas.drawRect(Rect.fromLTWH(x, y, 3, 3), paint);
-        } else {
-          canvas.drawRect(Rect.fromLTWH(x + 3, y + 3, 3, 3), paint);
+    const double spacing = 14.0;
+    final int cols = (size.width / spacing).ceil();
+    final int rows = (size.height / spacing).ceil();
+
+    for (int c = 0; c < cols; c++) {
+      for (int r = 0; r < rows; r++) {
+        final double x = c * spacing + spacing / 2;
+        final double y = r * spacing + spacing / 2;
+        
+        final dx = size.width - x;
+        final dy = y;
+        final dist = (dx * dx + dy * dy);
+        final maxDist = (size.width * size.width + size.height * size.height);
+        final factor = 1.0 - (dist / maxDist).clamp(0.0, 1.0);
+        
+        if (factor > 0.1) {
+          paint.color = color.withOpacity(factor * 0.35 * color.opacity);
+          canvas.drawCircle(Offset(x, y), 1.2, paint);
         }
       }
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class DiagonalSplitPainter extends CustomPainter {
+// 3. Titanium Edge Custom Painter (Metallic brushed diagonal edge slices)
+class TitaniumEdgePainter extends CustomPainter {
+  final Color color;
+  TitaniumEdgePainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Colors.transparent, Color(0x99F76301), Colors.transparent],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(size.width / 2 - 2, 0, 4, size.height))
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    const steps = 8;
+    const double spacing = 24.0;
+
+    for (int i = 0; i < steps; i++) {
+      final path = Path();
+      final double offset = i * spacing;
+      path.moveTo(offset, 0);
+      path.lineTo(offset + size.height, size.height);
+      
+      paint.color = color.withOpacity((1.0 - (i / steps) * 0.8) * 0.25 * color.opacity);
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// 4. Ethereal Flow Custom Painter (Organic flowing bezier curves/waves)
+class EtherealFlowPainter extends CustomPainter {
+  final Color color;
+  EtherealFlowPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.rotate(0.26); 
-    canvas.drawLine(Offset(0, -size.height), Offset(0, size.height), paint);
-    canvas.restore();
+
+    for (int i = 0; i < 3; i++) {
+      final path = Path();
+      final double yOffset = size.height * (0.3 + i * 0.15);
+      final double controlY1 = size.height * (0.1 + i * 0.2);
+      final double controlY2 = size.height * (0.9 - i * 0.1);
+      
+      path.moveTo(0, yOffset);
+      path.cubicTo(
+        size.width * 0.35, controlY1,
+        size.width * 0.65, controlY2,
+        size.width, yOffset - 20,
+      );
+
+      paint.color = color.withOpacity((1.0 - i * 0.3) * 0.25 * color.opacity);
+      canvas.drawPath(path, paint);
+    }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class MicroGridPainter extends CustomPainter {
+// 5. Solar Velocity Custom Painter (Sweeping solar orbit paths)
+class SolarVelocityPainter extends CustomPainter {
+  final Color color;
+  SolarVelocityPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
-      ..strokeWidth = 0.5;
-    for (double i = 0; i < size.width; i += 6) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 6) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width * 0.85, size.height * 0.15);
+    const steps = 10;
+    final baseRadius = size.height * 0.2;
+    final maxRadius = size.width * 1.1;
+
+    for (int i = 0; i < steps; i++) {
+      final radius = baseRadius + (maxRadius - baseRadius) * (i / steps);
+      paint.color = color.withOpacity((1.0 - (i / steps) * 0.85) * 0.3 * color.opacity);
+      
+      final rect = Rect.fromCircle(center: center, radius: radius);
+      canvas.drawArc(rect, 0.5, 4.0, false, paint);
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+// 6. Prism Digital Custom Painter (Multi-faceted geometric glass polygons)
+class PrismDigitalPainter extends CustomPainter {
+  final Color color;
+  PrismDigitalPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path1 = Path()
+      ..moveTo(size.width * 0.2, 0)
+      ..lineTo(size.width * 0.8, 0)
+      ..lineTo(size.width * 0.5, size.height * 0.6)
+      ..close();
+
+    final path2 = Path()
+      ..moveTo(0, size.height * 0.3)
+      ..lineTo(size.width * 0.5, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final path3 = Path()
+      ..moveTo(size.width, size.height * 0.2)
+      ..lineTo(size.width * 0.6, size.height)
+      ..lineTo(size.width, size.height)
+      ..close();
+
+    paint.color = color.withOpacity(0.08 * color.opacity);
+    canvas.drawPath(path1, paint);
+    
+    paint.color = color.withOpacity(0.05 * color.opacity);
+    canvas.drawPath(path2, paint);
+    
+    paint.color = color.withOpacity(0.06 * color.opacity);
+    canvas.drawPath(path3, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

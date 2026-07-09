@@ -157,6 +157,9 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
       }
 
       if (instructionCompleted) {
+        if (_currentInstruction == LivenessInstruction.lookStraight && _finalSelfieImage == null) {
+          await _captureStraightSelfie();
+        }
         _nextInstruction();
       } else {
         // Periodic capture during action (throttle to 250ms for SPEED)
@@ -176,7 +179,7 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
       _isCapturingFrame = true;
       final xFile = await _cameraController!.takePicture();
       final File rawFile = File(xFile.path);
-      final File compressedFile = await _compress(rawFile, maxWidth: 400); // Liveness can be smaller
+      final File compressedFile = await _compress(rawFile, quality: 60, maxWidth: 400); // Liveness can be smaller
       
       final bytes = await compressedFile.readAsBytes();
       final base64String = base64Encode(bytes);
@@ -223,6 +226,27 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
       _captureFinalSelfie();
     }
   }
+
+  Future<void> _captureStraightSelfie() async {
+    if (_isCapturingFrame || _cameraController == null || !_cameraController!.value.isInitialized) return;
+    try {
+      _isCapturingFrame = true;
+      final xFile = await _cameraController!.takePicture();
+      final File rawFile = File(xFile.path);
+      final File compressedFile = await _compress(rawFile, quality: 85, maxWidth: 600); 
+      
+      final bytes = await compressedFile.readAsBytes();
+      _finalSelfieImage = base64Encode(bytes);
+      
+      if (compressedFile.existsSync()) {
+        try { compressedFile.deleteSync(); } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error capturing straight selfie: $e');
+    } finally {
+      _isCapturingFrame = false;
+    }
+  }
   
   Future<void> _captureFinalSelfie() async {
     try {
@@ -232,25 +256,27 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
       // One final high-res selfie will follow.
       debugPrint("✅ Instructions finished. Liveness frames collected: ${_livenessImages.length}");
 
-      // Capture the high quality final selfie with fallback system
-      XFile? xFile;
-      try {
-        xFile = await _cameraController?.takePicture();
-      } catch (e) {
-        debugPrint('High-res capture failed: $e');
-      }
+      if (_finalSelfieImage == null) {
+        // Capture the high quality final selfie with fallback system
+        XFile? xFile;
+        try {
+          xFile = await _cameraController?.takePicture();
+        } catch (e) {
+          debugPrint('High-res capture failed: $e');
+        }
 
-      if (xFile != null) {
-         final File rawFile = File(xFile.path);
-         final File compressedFile = await _compress(rawFile, quality: 40, maxWidth: 600); 
-         _finalSelfieImage = base64Encode(await compressedFile.readAsBytes());
-         
-         if (compressedFile.existsSync()) {
-           try { compressedFile.deleteSync(); } catch (_) {}
-         }
-      } else if (_livenessImages.isNotEmpty) {
-          _finalSelfieImage = _livenessImages.first;
-          debugPrint('Using fallback image from liveness frames.');
+        if (xFile != null) {
+           final File rawFile = File(xFile.path);
+           final File compressedFile = await _compress(rawFile, quality: 85, maxWidth: 600); 
+           _finalSelfieImage = base64Encode(await compressedFile.readAsBytes());
+           
+           if (compressedFile.existsSync()) {
+             try { compressedFile.deleteSync(); } catch (_) {}
+           }
+        } else if (_livenessImages.isNotEmpty) {
+            _finalSelfieImage = _livenessImages.first;
+            debugPrint('Using fallback image from liveness frames.');
+        }
       }
       
       if (mounted) {
@@ -269,7 +295,7 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
     }
   }
 
-  Future<File> _compress(File file, {int quality = 25, int maxWidth = 480}) async {
+  Future<File> _compress(File file, {int quality = 80, int maxWidth = 480}) async {
     try {
       final dir = await getTemporaryDirectory();
       final targetPath = path.join(dir.path, 'sm_${DateTime.now().microsecondsSinceEpoch}.jpg');
@@ -279,7 +305,6 @@ class _SmartSelfieWidgetState extends State<SmartSelfieWidget> with SingleTicker
         targetPath,
         quality: quality,
         minWidth: maxWidth,
-        minHeight: (maxWidth * 4 / 3).toInt(), // Maintain 3:4 aspect ratio
         format: CompressFormat.jpeg,
       );
       

@@ -54,13 +54,13 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
   void _loadInitialData() {
     ref.read(giftCardCategoriesNotifierProvider.notifier).getCategories();
-    ref.read(giftCardNotifierProvider.notifier).getProducts(currency: 'NGN');
+    ref.read(giftCardNotifierProvider.notifier).getProducts(currency: 'USD');
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final giftCardState = ref.watch(giftCardNotifierProvider);
@@ -301,10 +301,11 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Price in Naira
+                      // Price in Dollar
                       CurrentRateWidget(
                         price: _currentRate,
-                        text: 'Price in Naira',
+                        text: 'Price in Dollar',
+                        symbol: r'$',
                       ),
 
                       const SizedBox(height: 45),
@@ -502,6 +503,10 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
   void _showCountryModal() {
     if (_selectedProduct == null) return;
 
+    final brandProducts = _availableProducts
+        .where((p) => p.brand.brandName == _selectedProduct!.brand.brandName)
+        .toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -509,10 +514,14 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
       builder:
           (context) => GiftCardCountryModal(
             selectedCountry: _selectedCountry,
-            product: _selectedProduct!,
-            onCountrySelected: (country) {
+            brandProducts: brandProducts,
+            onProductSelected: (product) {
               setState(() {
-                _selectedCountry = country;
+                _selectedProduct = product;
+                _selectedCountry = product.country.name;
+                _selectedAmount = 'Select Amount';
+                _selectedAmountValue = null;
+                _currentRate = '0';
               });
               Navigator.pop(context);
             },
@@ -626,12 +635,12 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
                 buildDetailRow('Card Amount', _selectedAmount, isDark),
                 buildDetailRow(
                   'Rate',
-                  '${currencyFormatter((rateValue / _selectedAmountValue!).toStringAsFixed(2))}/${_selectedProduct!.recipientCurrencyCode}',
+                  '${currencyFormatter((rateValue / _selectedAmountValue!).toStringAsFixed(2), symbol: r'$')}/${_selectedProduct!.recipientCurrencyCode}',
                   isDark,
                 ),
                 buildDetailRow(
-                  'Expected Amount in Naira',
-                  currencyFormatter(_currentRate),
+                  'Expected Amount in USD',
+                  currencyFormatter(_currentRate, symbol: r'$'),
                   isDark,
                 ),
               ],
@@ -647,9 +656,13 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
   Future<void> _handlePin(double amount, {bool biometric = false}) async {
     final user = ref.read(userProvider);
+    final usdWallet = user?.wallets.firstWhere(
+      (w) => w.currency == 'USD',
+      orElse: () => user.wallets.first,
+    );
     final hasEnoughBalance = checkBalanceLeft(
       context,
-      user?.wallets.first.balance.toString() ?? '0',
+      usdWallet?.balance.toString() ?? '0',
       amount.toString(),
     );
     if (!hasEnoughBalance) return;
@@ -671,7 +684,7 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
 
     final paymentRequest = GiftCardPaymentRequest(
       productId: _selectedProduct!.productId,
-      currency: 'NGN',
+      currency: 'USD',
       walletPin: pin,
       amount: amount,
       unitPrice: _selectedAmountValue!,
@@ -731,9 +744,9 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
     final receiptData = [
       ShareableTransactionReceiptDetail(
         label: 'Amount',
-        value: currencyFormatter(_currentRate),
+        value: currencyFormatter(_currentRate, symbol: r'$'),
       ),
-      ShareableTransactionReceiptDetail(label: 'Currency', value: 'NGN'),
+      ShareableTransactionReceiptDetail(label: 'Currency', value: 'USD'),
       ShareableTransactionReceiptDetail(
         label: 'Transaction Type',
         value: 'Buy Giftcard',
@@ -765,6 +778,7 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
             (context) => TransactionReceiptWidget(
               headerText: 'Transaction',
               amount: _currentRate,
+              symbol: r'$',
               topDetails: [
                 TransactionDetail(label: 'Card Type', value: _selectedBrand),
                 TransactionDetail(label: 'Country', value: _selectedCountry),
@@ -772,11 +786,11 @@ class _GiftCardScreenState extends ConsumerState<GiftCardScreen> {
                 TransactionDetail(
                   label: 'Rate',
                   value:
-                      '${currencyFormatter((amount / _selectedAmountValue!).toStringAsFixed(2))}/${_selectedProduct!.recipientCurrencyCode}',
+                      '${currencyFormatter((amount / _selectedAmountValue!).toStringAsFixed(2), symbol: r'$')}/${_selectedProduct!.recipientCurrencyCode}',
                 ),
                 TransactionDetail(
                   label: 'Amount Paid',
-                  value: currencyFormatter(_currentRate),
+                  value: currencyFormatter(_currentRate, symbol: r'$'),
                 ),
               ],
               bottomDetails: [

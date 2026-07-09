@@ -45,6 +45,7 @@ import '../../features/dashboard/view/me/theme.dart';
 import '../../features/dashboard/view/home/notifications/notification_view.dart';
 import 'package:valarpay/features/dashboard/view/account/account_screen.dart';
 import 'package:valarpay/features/dashboard/view/account/account_setup_screen.dart';
+import 'package:valarpay/features/dashboard/view/account/multi_currency_dashboard.dart';
 import '../../features/dashboard/view/me/portfolio.dart';
 import 'package:valarpay/features/dashboard/view/addmoney/add_money_screen.dart';
 import 'package:valarpay/features/dashboard/view/addmoney/add_money_via_qrcode_screen.dart';
@@ -132,14 +133,16 @@ import '../../features/dashboard/view/finance/finance_intro_screen.dart';
 import 'package:valarpay/features/dashboard/view/finance/widgets/finance_product_intro_screen.dart';
 import 'package:valarpay/features/dashboard/view/services/flutterwave_bill/flutterwave_bill_screen.dart';
 import 'package:valarpay/features/dashboard/view/services/coralpay/coralpay_billing_screen.dart';
-
+import 'package:valarpay/features/dashboard/view/services/payout/payout_screen.dart';
 
 import 'package:valarpay/core/services/connectivity_service.dart';
 import '../../features/auth/views/onboarding/signup/identity_verification.dart';
 import 'package:valarpay/features/dashboard/view/KYC/BVN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
 import 'package:valarpay/features/dashboard/view/KYC/setup_pin.dart';
 import 'package:valarpay/features/dashboard/view/KYC/nin_camera_permission.dart';
 import 'package:valarpay/features/dashboard/view/KYC/nin_identity_verification.dart';
+import 'package:valarpay/features/dashboard/view/account/ngn_face_capture_screen.dart';
 
 final router = GoRouter(
   navigatorKey: ConnectivityService.navigatorKey,
@@ -541,7 +544,10 @@ final router = GoRouter(
     // Me section routes
     GoRoute(
       path: '/transaction-history',
-      builder: (context, state) => const TransactionHistoryPage(),
+      builder: (context, state) {
+        final currencyFilter = state.extra as String?;
+        return TransactionHistoryPage(currencyFilter: currencyFilter);
+      },
     ),
     GoRoute(
       path: '/transaction-details',
@@ -604,6 +610,13 @@ final router = GoRouter(
       builder: (context, state) => const SwapCurrencyScreen(),
     ),
     GoRoute(
+      path: '/payout/:currency',
+      builder: (context, state) {
+        final currency = state.pathParameters['currency']!;
+        return PayoutScreen(currency: currency);
+      },
+    ),
+    GoRoute(
       path: '/insurance',
       builder: (context, state) => const InsuranceScreen(),
     ),
@@ -648,6 +661,13 @@ final router = GoRouter(
       builder: (context, state) {
         final currencyCode = state.extra as String? ?? 'USD';
         return AccountSetupScreen(accountType: currencyCode);
+      },
+    ),
+    GoRoute(
+      path: '/multi-currency-dashboard/:currency',
+      builder: (context, state) {
+        final currency = state.pathParameters['currency']!;
+        return MultiCurrencyDashboardScreen(currency: currency);
       },
     ),
     GoRoute(
@@ -775,21 +795,45 @@ final router = GoRouter(
       builder: (context, state) => const SetupTransactionPinPage(),
     ),
     GoRoute(
-      path: '/bvn-verification',
-      builder: (context, state) => const BVNPage(),
-    ),
-    GoRoute(
-      path: '/nin-camera-permission/:nin',
+      path: '/ngn-face-capture',
       builder: (context, state) {
-        final nin = state.pathParameters['nin']!;
-        return NinCameraPermissionPage(nin: nin);
+        final data = state.extra as Map<String, dynamic>;
+        return NgnFaceCaptureScreen(
+          docType: data['docType'] as String,
+          docNumber: data['docNumber'] as String,
+        );
       },
     ),
     GoRoute(
-      path: '/nin-identity-verification/:nin',
+      path: '/bvn-verification',
       builder: (context, state) {
+        final isTierUpgrade = state.uri.queryParameters['isTierUpgrade'] == 'true';
+        return BVNPage(isTierUpgrade: isTierUpgrade);
+      },
+    ),
+    GoRoute(
+      path: '/nin-verification',
+      builder: (context, state) {
+        final isTierUpgrade = state.uri.queryParameters['isTierUpgrade'] == 'true';
+        return NINPage(isTierUpgrade: isTierUpgrade);
+      },
+    ),
+    GoRoute(
+      path: '/nin-camera-permission/:docType/:nin',
+      builder: (context, state) {
+        final docType = state.pathParameters['docType']!;
         final nin = state.pathParameters['nin']!;
-        return NinIdentityVerificationPage(nin: nin);
+        final isTierUpgrade = state.uri.queryParameters['isTierUpgrade'] == 'true';
+        return NinCameraPermissionPage(nin: nin, docType: docType, isTierUpgrade: isTierUpgrade);
+      },
+    ),
+    GoRoute(
+      path: '/nin-identity-verification/:docType/:nin',
+      builder: (context, state) {
+        final docType = state.pathParameters['docType']!;
+        final nin = state.pathParameters['nin']!;
+        final isTierUpgrade = state.uri.queryParameters['isTierUpgrade'] == 'true';
+        return NinIdentityVerificationPage(nin: nin, docType: docType, isTierUpgrade: isTierUpgrade);
       },
     ),
   ],

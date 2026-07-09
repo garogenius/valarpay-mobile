@@ -66,7 +66,7 @@ class _TransferToValarPayScreenState
           .read(internalAccountVerificationNotifierProvider.notifier)
           .verifyAccount(
             accountNumber: _accountController.text,
-            bankCode: '090672',
+            bankCode: '090286',
           );
     } catch (e) {
       setState(() {
@@ -83,7 +83,7 @@ class _TransferToValarPayScreenState
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
 
     final accountVerificationState = ref.watch(
       internalAccountVerificationNotifierProvider,

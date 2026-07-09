@@ -15,6 +15,13 @@ class DataRepository {
       final response = await apiClient.get(
         ApiEndpoints.getDataNetworkProviders,
       );
+      if (response.data is List) {
+        return NetworkProvidersResponse(
+          providers: (response.data as List).map((p) => NetworkProvider.fromJson(p)).toList(),
+          message: 'Success',
+          statusCode: 200,
+        );
+      }
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
@@ -53,13 +60,69 @@ class DataRepository {
     String? billerId,
   }) async {
     try {
-      // Clean network name: e.g. "MTN Nigeria" -> "MTN"
-      final cleanNetwork = (network ?? '').split(' ').first;
-      
       final response = await apiClient.get(
-        ApiEndpoints.getDataPlanByNetwork(cleanNetwork),
+        ApiEndpoints.getDataNetworkProviders,
       );
-      return DataVariationResponse.fromJson(response.data);
+
+      final rawData = response.data is Map ? (response.data['data'] ?? response.data['billers'] ?? response.data) : response.data;
+      List<dynamic> dataList = [];
+      if (rawData is List) {
+        dataList = rawData;
+      } else if (rawData is Map) {
+        dataList = rawData["billers"] ?? rawData["data"] ?? [];
+      }
+
+      var targetBiller;
+      final searchNetwork = (network ?? '').toLowerCase();
+      final searchBillerId = (billerId ?? '').toLowerCase();
+      
+      for (var b in dataList) {
+        if (b is Map) {
+          final bName = (b['name'] ?? b['billerName'] ?? b['network'] ?? '').toString().toLowerCase();
+          final bCode = (b['billerId'] ?? b['code'] ?? '').toString().toLowerCase();
+          
+          if ((searchBillerId.isNotEmpty && bCode.contains(searchBillerId)) ||
+              (searchNetwork.isNotEmpty && bName.contains(searchNetwork)) ||
+              (searchNetwork.isNotEmpty && searchNetwork.contains(bName))) {
+            targetBiller = b;
+            break;
+          }
+        }
+      }
+
+      List<Map<String, dynamic>> plansList = [];
+      if (targetBiller != null && targetBiller is Map) {
+        final bool isBillItems = targetBiller['billItems'] != null;
+        final plans = targetBiller['billItems'] ?? targetBiller['plans'] ?? targetBiller['items'] ?? targetBiller['variations'] ?? [];
+        if (plans is List) {
+          for (var plan in plans) {
+            if (plan is Map) {
+              final Map<String, dynamic> planMap = Map<String, dynamic>.from(plan);
+              
+              planMap['id'] = (planMap['billerItemId'] ?? planMap['itemId'] ?? planMap['id'] ?? planMap['operatorId'] ?? '').toString();
+              planMap['name'] = planMap['name'] ?? planMap['description'] ?? planMap['itemName'] ?? '';
+              planMap['network'] ??= targetBiller['network'] ?? targetBiller['name'];
+              planMap['billerId'] ??= targetBiller['billerId'] ?? targetBiller['code'];
+              
+              final double amt = double.tryParse(planMap['localAmount']?.toString() ?? planMap['amount']?.toString() ?? '0') ?? 0.0;
+              if (isBillItems) {
+                planMap['amount'] = amt / 100.0;
+                planMap['localAmount'] = amt / 100.0;
+              } else {
+                planMap['amount'] = amt;
+                planMap['localAmount'] = amt;
+              }
+              plansList.add(planMap);
+            }
+          }
+        }
+      }
+
+      return DataVariationResponse.fromJson({
+        'data': plansList,
+        'message': 'Success',
+        'statusCode': 200,
+      });
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ??
@@ -95,6 +158,21 @@ class DataRepository {
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to fetch data beneficiaries',
+      );
+    }
+  }
+
+  /// Check status of a bill purchase (airtime/data)
+  Future<Map<String, dynamic>> checkBillStatus(String billRef) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.getBillStatus,
+        data: {'billRef': billRef},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to check bill status',
       );
     }
   }

@@ -106,6 +106,9 @@ class _NotificationSettingsScreenState
         inApp: updatedPref.inApp,
       );
 
+      // Refresh preferences notifier to update downstream UI observers
+      ref.read(notificationPreferencesProvider.notifier).fetchPreferences();
+
       if (mounted) {
         AppMessenger.show(
           context,
@@ -215,21 +218,21 @@ class _NotificationSettingsScreenState
           // Preference toggles
           _buildPreferenceToggle(
             'Email Notifications',
-            'Receive notifications via email',
+            'Receive notifications via email (Free)',
             Icons.email_outlined,
             pref.email,
             (value) => _updatePreference(category, 'email', value),
           ),
           _buildPreferenceToggle(
             'SMS Notifications',
-            'Receive notifications via SMS',
+            'Receive notifications via SMS (Charges ₦6/transaction)',
             Icons.sms_outlined,
             pref.sms,
             (value) => _updatePreference(category, 'sms', value),
           ),
           _buildPreferenceToggle(
             'Push Notifications',
-            'Receive push notifications on your device',
+            'Receive push notifications on your device (Free)',
             Icons.notifications_outlined,
             pref.push,
             (value) => _updatePreference(category, 'push', value),

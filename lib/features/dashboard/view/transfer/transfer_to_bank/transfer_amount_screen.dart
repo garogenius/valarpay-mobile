@@ -162,13 +162,15 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     try {
       await ref
           .read(transferNotifierProvider.notifier)
-          .initiateTransfer(
+          .initiateBankTransfer(
             bankCode: widget.accountDetails.bankCode,
             accountNumber: widget.accountDetails.accountNumber,
+            accountName: widget.accountDetails.accountName,
             amount: amount,
             currency: 'NGN',
             description: _descriptionController.text.trim(),
             pin: pin,
+            fee: _transferFee?.fee ?? 0.0,
             saveBeneficiary: _saveBeneficiary,
             sessionId: widget.accountDetails.sessionId,
           );
@@ -342,30 +344,6 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
     );
 
     if (!hasEnoughBalance) return;
-    
-    if (_amount >= 50000) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SmartSelfieWidget(
-            onComplete: (selfie, liveness) async {
-              setState(() => _isLivenessVerifying = true);
-              final ok = await ref.read(walletNotifierProvider.notifier).submitSmartSelfieAuth(
-                selfieImage: selfie,
-                livenessImages: liveness,
-              );
-              setState(() => _isLivenessVerifying = false);
-              if (ok && mounted) {
-                Navigator.pop(context); // Pop the selfie screen
-                _proceedToPinEntry(biometric);
-              }
-              return ok;
-            },
-          ),
-        ),
-      );
-      return;
-    }
 
     await _proceedToPinEntry(biometric);
   }

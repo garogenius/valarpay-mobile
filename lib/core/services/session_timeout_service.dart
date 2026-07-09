@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/utils/app_messenger.dart';
+import 'package:valarpay/core/services/connectivity_service.dart';
 
 /// Unified Session Timeout Service
 ///
@@ -21,6 +22,9 @@ class SessionTimeoutService {
   static bool _isInBackground = false;
   static const String _lastActivityKey = 'last_activity_timestamp';
   static const String _backgroundTimeKey = 'background_timestamp';
+  
+  static Timer? _logoutCountdownTimer;
+  static bool _isShowingLogoutDialog = false;
 
   // Timeout when user is inactive (not touching the app)
   static Duration _inactivityTimeout = const Duration(minutes: 60);
@@ -102,6 +106,8 @@ class SessionTimeoutService {
     _backgroundTime = null;
     _isActive = false;
     _isInBackground = false;
+    _isShowingLogoutDialog = false;
+    _logoutCountdownTimer?.cancel();
 
     // Clear stored timestamps to prevent false timeouts
     await LocalStorageService.remove(_lastActivityKey);
@@ -137,16 +143,8 @@ class SessionTimeoutService {
     final shouldLogout = await _checkBackgroundTimeout();
 
     if (shouldLogout) {
-      // Get friendly duration text
-      final durationText = _backgroundTimeout.inMinutes >= 60 
-          ? '${_backgroundTimeout.inHours} hours' 
-          : '${_backgroundTimeout.inMinutes} minutes';
-          
-      await _handleAutoLogout(
-        context,
-        reason: 'Your session expired after $durationText in the background',
-      );
-      return true; // Logged out
+      _showLogoutCountdownDialog(context);
+      return false; // Will logout after countdown
     }
 
     // Reset activity time since user is back
@@ -219,20 +217,69 @@ class SessionTimeoutService {
       final lastActivity = _lastActivityTime ?? now;
       final inactiveDuration = now.difference(lastActivity);
 
-      // If user hasn't touched the app for X time, logout
       if (inactiveDuration >= _inactivityTimeout) {
-        timer.cancel();
-        
-        // Get friendly duration text
-        final durationText = _inactivityTimeout.inMinutes >= 60 
-          ? '${_inactivityTimeout.inHours} hours' 
-          : '${_inactivityTimeout.inMinutes} minutes';
-          
-        await _handleAutoLogout(
-          context,
-          reason: 'Your session expired after $durationText of inactivity',
-        );
+        _showLogoutCountdownDialog(context);
       }
+    });
+  }
+
+  static void _showLogoutCountdownDialog(BuildContext originalContext) {
+    if (_isShowingLogoutDialog) return;
+    _isShowingLogoutDialog = true;
+    int secondsLeft = 10;
+
+    final context = ConnectivityService.navigatorKey.currentContext ?? originalContext;
+    if (!context.mounted) {
+      _handleAutoLogout(originalContext, reason: 'Your session has expired due to inactivity');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            _logoutCountdownTimer?.cancel();
+            _logoutCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (secondsLeft > 1) {
+                if (context.mounted) {
+                  setState(() {
+                    secondsLeft--;
+                  });
+                }
+              } else {
+                timer.cancel();
+                if (Navigator.canPop(ctx)) {
+                  Navigator.pop(ctx);
+                }
+                _handleAutoLogout(context, reason: 'Your session has expired');
+              }
+            });
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Session Expiring'),
+              content: Text('The app will log you out in $secondsLeft seconds due to inactivity.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    _logoutCountdownTimer?.cancel();
+                    _isShowingLogoutDialog = false;
+                    recordActivity();
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Stay Logged In'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      _logoutCountdownTimer?.cancel();
+      _isShowingLogoutDialog = false;
+      recordActivity();
     });
   }
 

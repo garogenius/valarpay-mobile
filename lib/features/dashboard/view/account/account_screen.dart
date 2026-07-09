@@ -9,6 +9,7 @@ import 'package:valarpay/core/widgets/kyc_not_set_widget.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 import 'package:valarpay/features/dashboard/widgets/services_widgets/swap_currency_widgets/currency_selector_modal.dart'; // Import supportedCurrencies
+import 'package:valarpay/features/notifiers/tier_notifier.dart';
 import 'package:valarpay/features/models/wallet.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     // Refresh user profile when screen loads to get latest wallet data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(userNotifierProvider.notifier).refreshUserProfile();
+      ref.read(tierNotifierProvider.notifier).getUserTier();
       _showProfileReminder();
     });
   }
@@ -82,20 +84,21 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get user data from provider
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final wallets = user?.wallets ?? [];
-    final tierLevel = user?.tierLevel ?? 'notSet';
+    
+    final tierState = ref.watch(tierNotifierProvider);
+    final currentTier = tierState.data?.isNotEmpty == true ? tierState.data!.first.currentTier : 'notSet';
+    final tierLevel = currentTier != 'notSet' ? currentTier : (user?.tierLevel ?? 'notSet');
     
     // Map existing currencies to speed up filtering
     final existingCurrencies = wallets.map((w) => w.currency.toUpperCase()).toSet();
     
     // Filter supported currencies to show ONLY those NOT yet activated
-    // We skip NGN from the list as it is the base account
     final availableSetupCurrencies = supportedCurrencies.where((c) {
       final code = c.code.toUpperCase();
-      return code != 'NGN' && !existingCurrencies.contains(code);
+      return !existingCurrencies.contains(code);
     }).toList();
 
     return Scaffold(
@@ -132,12 +135,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               
               return Padding(
                 padding: EdgeInsets.only(bottom: 20.h),
-                child: _accountCard(
-                  wallet: wallet,
-                  tierLevel: tierLevel,
-                  showTierUpgrade: isNgn, // Only show upgrade link on main NGN wallet
-                  isVisible: showBalances,
-                  onToggle: () => setState(() => showBalances = !showBalances),
+                child: GestureDetector(
+                  onTap: () {
+                    if (!isNgn) {
+                      context.push('/multi-currency-dashboard/${wallet.currency}');
+                    }
+                  },
+                  child: _accountCard(
+                    wallet: wallet,
+                    tierLevel: tierLevel,
+                    showTierUpgrade: isNgn, // Only show upgrade link on main NGN wallet
+                    isVisible: showBalances,
+                    onToggle: () => setState(() => showBalances = !showBalances),
+                  ),
                 ),
               );
             }),

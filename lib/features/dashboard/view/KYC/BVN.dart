@@ -16,7 +16,8 @@ import 'kyc_step_provider.dart';
 final bvnProvider = StateProvider<String>((ref) => '');
 
 class BVNPage extends ConsumerStatefulWidget {
-  const BVNPage({Key? key}) : super(key: key);
+  final bool isTierUpgrade;
+  const BVNPage({Key? key, this.isTierUpgrade = false}) : super(key: key);
 
   @override
   ConsumerState<BVNPage> createState() => _BVNPageState();
@@ -225,19 +226,6 @@ class _BVNPageState extends ConsumerState<BVNPage> {
                     return;
                   }
 
-                  if (!user.isPhoneVerified && !_phoneVerifiedLocally) {
-                    _showPhoneVerificationModal(context, phone, onVerified: () {
-                      if (mounted) {
-                        setState(() {
-                          _phoneVerifiedLocally = true;
-                        });
-                      }
-                      // Trigger BVN verification automatically after phone is verified
-                      _submitBvn(bvn, dob, phone);
-                    });
-                    return;
-                  }
-
                   _submitBvn(bvn, dob, phone);
                 },
               ),
@@ -255,62 +243,10 @@ class _BVNPageState extends ConsumerState<BVNPage> {
     // Ensure socket is connected before proceeding
     await SmileIdSocketService().connect();
     
-    try {
-      // Step 1: Basic KYC — verify BVN details
-      final res = await ref.read(userNotifierProvider.notifier).submitBasicKyc(
-            idType: 'BVN',
-            idNumber: bvn,
-            idDob: dob,
-            idPhoneNumber: phone,
-          );
-
-      if (!mounted) return;
-
-      if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
-        // Step 2: Check if there's a synchronous error wrapped in a 200 OK
-        final lowerMsg = (res.message ?? '').toLowerCase();
-        
-        // If Basic KYC is already done, just proceed to liveness check
-        if (lowerMsg.contains('exist') || lowerMsg.contains('already')) {
-          if (!mounted) return;
-          ref.read(kycStepProvider.notifier).state = 4;
-          context.push('/nin-camera-permission/$bvn');
-          return;
-        }
-
-        if (res.isSuccess == false || 
-            lowerMsg.contains('invalid') || 
-            lowerMsg.contains('fail')) {
-          AppMessenger.show(
-            context,
-            message: res.message.isNotEmpty ? res.message : 'BVN verification failed. Please try again.',
-            type: MessageType.error,
-          );
-          return;
-        }
-
-        if (!mounted) return;
-
-        // Success: Proceed directly to liveness check without waiting for socket
-        ref.read(kycStepProvider.notifier).state = 4;
-        context.push('/nin-camera-permission/$bvn');
-      } else {
-        AppMessenger.show(
-          context,
-          message: res?.message ?? 'BVN verification failed. Please try again.',
-          type: MessageType.error,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        AppMessenger.show(
-          context,
-          message: e.toString().replaceAll('Exception: ', ''),
-          type: MessageType.error,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+    if (mounted) {
+      ref.read(kycStepProvider.notifier).state = 4;
+      context.push('/nin-camera-permission/BVN/$bvn?isTierUpgrade=${widget.isTierUpgrade}');
+      setState(() => _isSubmitting = false);
     }
   }
 

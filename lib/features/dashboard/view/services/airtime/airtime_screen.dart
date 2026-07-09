@@ -152,6 +152,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
               ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
               ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
               ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+              ref.read(airtimeSelectedBillItemIdProvider.notifier).state = p.billItemId;
             }
             
             if (mounted) setState(() {});
@@ -172,6 +173,9 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
             final plan = plans.first;
             if (plan.operatorId != 0) {
               ref.read(airtimeSelectedOperatorIdProvider.notifier).state = plan.operatorId;
+            }
+            if (plan.billItemId.isNotEmpty) {
+              ref.read(airtimeSelectedBillItemIdProvider.notifier).state = plan.billItemId;
             }
           }
         }).catchError((e) {
@@ -206,11 +210,30 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
 
     try {
       final billerId = ref.read(airtimeSelectedBillerIdProvider);
+      String? billItemId = ref.read(airtimeSelectedBillItemIdProvider);
+      
+      // Fallback if billItemId is empty or null
+      if (billItemId == null || billItemId.isEmpty) {
+        final providers = ref.read(airtimeProvidersNotifierProvider).data ?? [];
+        final selectedNetwork = ref.read(airtimeSelectedNetworkProvider);
+        if (providers.isNotEmpty) {
+          try {
+            final match = providers.firstWhere((p) =>
+              (billerId != null && billerId.isNotEmpty && p.billerId == billerId) ||
+              (p.network.toLowerCase().contains(selectedNetwork.toLowerCase()) || 
+               selectedNetwork.toLowerCase().contains(p.network.toLowerCase()))
+            );
+            billItemId = match.billItemId;
+          } catch (_) {}
+        }
+      }
+
       final request = AirtimePurchaseRequest(
         walletPin: pin,
         amount: Helpers.parsedAmount(_amountController.text),
         operatorId: operatorId,
         billerId: billerId,
+        itemId: billItemId,
         phone: _phoneController.text.trim(),
         currency: 'NGN',
         addBeneficiary: _saveBeneficiary,
@@ -532,7 +555,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isVerified = user?.isBvnVerified ?? false;
+    final isVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final network = ref.watch(airtimeSelectedNetworkProvider);
     final operatorId = ref.watch(airtimeSelectedOperatorIdProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -940,6 +963,7 @@ class _AirtimeScreenState extends ConsumerState<AirtimeScreen> {
                           ref.read(airtimeSelectedNetworkProvider.notifier).state = p.network;
                           ref.read(airtimeSelectedOperatorIdProvider.notifier).state = opId;
                           ref.read(airtimeSelectedBillerIdProvider.notifier).state = p.billerId;
+                          ref.read(airtimeSelectedBillItemIdProvider.notifier).state = p.billItemId;
                           Navigator.pop(context);
                         },
                         child: Container(

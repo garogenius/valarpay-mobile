@@ -147,7 +147,7 @@ class DashboardKYCProgressWidget extends ConsumerWidget {
     final user = ref.watch(userProvider);
     if (user == null) return const SizedBox();
 
-    final isBvnVerified = user.isBvnVerified;
+    final isBvnVerified = user.isBvnVerified || user.isNinVerified || user.wallets.isNotEmpty;
     final isWalletPinSet = user.isWalletPinSet;
     final isNinVerified = user.isNinVerified;
 

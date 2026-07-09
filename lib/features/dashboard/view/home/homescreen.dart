@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:valarpay/features/dashboard/view/home/widgets/balance_skeleton.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import 'package:valarpay/features/providers/user_provider.dart';
 import '../../widgets/home_widgets/payment_widget_icons.dart';
 import '../../widgets/home_widgets/kyc_widget.dart';
 import '../../widgets/home_widgets/ourservice.dart';
+import '../../widgets/home_widgets/multi_currency_receive_modal.dart';
 import '../KYC/BVN.dart';
 import '../KYC/NIN.dart';
 import '../KYC/setup_pin.dart';
@@ -21,12 +23,13 @@ import '../settings/create_passcode.dart';
 
 import '../../../../core/providers/dashboard_provider.dart';
 import '../../../../core/services/dashboard_service.dart';
-import '../../widgets/home_widgets/dashboard_customize_widgets.dart';
-import '../../../notifiers/transaction_notifier.dart';
 import 'package:valarpay/features/providers/wallet_providers.dart';
+import 'package:valarpay/features/models/wallet.dart';
+import '../../widgets/home_widgets/dashboard_customize_widgets.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import '../../../../core/services/local_storage_service.dart';
-
+import 'package:valarpay/core/services/local_storage_service.dart';
+import '../../widgets/home_widgets/investment_promo_widget.dart';
+import '../../../notifiers/transaction_notifier.dart';
 class Homescreen extends ConsumerStatefulWidget {
   const Homescreen({Key? key}) : super(key: key);
 
@@ -40,6 +43,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
   int _currentImageIndex = 0;
   Timer? _timer;
   late PageController _pageController;
+  int _currentWalletIndex = 0;
 
   final List<String> _bannerImages = const [
     'assets/images/valar_ban1.png',
@@ -141,10 +145,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
     final capitalizedUserName =
         userName[0].toUpperCase() + userName.substring(1);
     // Get wallet data
-    final wallet =
-        user?.wallets.isNotEmpty == true ? user!.wallets.first : null;
-    final balance = wallet?.formattedBalance ?? '₦0.00';
-    final accountNumber = wallet?.accountNumber ?? '';
+    final wallets = user?.wallets ?? [];
 
     final greeting = _getGreeting();
 
@@ -171,42 +172,39 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                     children: [
                       user == null 
                       ? const BalanceSkeleton() 
-                      : _BalanceCard(
-                        balance: balance,
-                        accountNumber: accountNumber,
-                        isBalanceVisible: _isBalanceVisible,
-                        onToggleVisibility: _toggleBalanceVisibility,
-                      ),
-// Security tips card removed as requested
+                      : _buildWalletsCarousel(wallets),
                       const SizedBox(height: 16),
                       const PaymentWidget(),
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final user = ref.watch(userProvider);
-                          if (user != null) {
-                            final isBvnVerified = user.isBvnVerified;
-                            final isWalletPinSet =
-                                user.isWalletPinSet;
+                      if (wallets.isEmpty || wallets[_currentWalletIndex].currency.toUpperCase() == 'NGN') ...[
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final user = ref.watch(userProvider);
+                            if (user != null) {
+                              final hasWallet = user.wallets.isNotEmpty;
+                              final isVerified = hasWallet || user.isBvnVerified || user.isNinVerified;
+                              final isWalletPinSet = user.isWalletPinSet;
 
-                            // Show KYC widget if BVN is not verified OR wallet PIN is not set
-                            final shouldShowKyc =
-                                !isBvnVerified || !isWalletPinSet;
+                              // Show KYC widget if not verified OR wallet PIN is not set
+                              final shouldShowKyc =
+                                  !isVerified || !isWalletPinSet;
 
-                            if (!shouldShowKyc) {
-                              return const SizedBox(height: 12);
+                              if (!shouldShowKyc) {
+                                return const SizedBox(height: 12);
+                              }
+
+                              return Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  KYCWidget(user: user),
+                                ],
+                              );
                             }
-
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                KYCWidget(user: user),
-                              ],
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                            return const SizedBox();
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 16),
                       Consumer(
                         builder: (context, ref, child) {
                           final dashboardWidget = ref.watch(dashboardProvider);
@@ -225,7 +223,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                                 ),
                               );
                             case DashboardWidgetType.transactions:
-                              return const DashboardRecentTransactionsWidget();
+                              return DashboardRecentTransactionsWidget();
                             case DashboardWidgetType.kyc:
                             case DashboardWidgetType.none:
                               return const SizedBox.shrink();
@@ -233,7 +231,10 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      const OurServicesWidget(),
+                      if (wallets.isEmpty || wallets[_currentWalletIndex].currency.toUpperCase() == 'NGN')
+                        const OurServicesWidget()
+                      else
+                        InvestmentPromoWidget(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -245,7 +246,57 @@ class _HomescreenState extends ConsumerState<Homescreen> {
       ),
     );
   }
+  Widget _buildWalletsCarousel(List<dynamic> wallets) {
+    if (wallets.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 95,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentWalletIndex = index;
+              });
+              ref.read(activeWalletIndexProvider.notifier).state = index;
+            },
+            itemCount: wallets.length,
+            itemBuilder: (context, index) {
+              final wallet = wallets[index];
+              return _BalanceCard(
+                wallet: wallet,
+                isBalanceVisible: _isBalanceVisible,
+                onToggleVisibility: _toggleBalanceVisibility,
+              );
+            },
+          ),
+        ),
+        if (wallets.length > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(wallets.length, (index) {
+              final isActive = index == _currentWalletIndex;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                height: 6,
+                width: isActive ? 24 : 6,
+                decoration: BoxDecoration(
+                  color: isActive ? appTheme.primaryColor : Colors.grey.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ],
+      ],
+    );
+  }
 }
+
+
 
 /// ---------- App Bar ----------
 class _HomeAppBar extends ConsumerStatefulWidget {
@@ -424,15 +475,13 @@ class _NotificationIconButton extends ConsumerWidget {
 
 /// ---------- Balance Card ----------
 class _BalanceCard extends StatelessWidget {
-  final String balance;
-  final String accountNumber;
+  final WalletModel wallet;
   final bool isBalanceVisible;
   final VoidCallback onToggleVisibility;
 
   const _BalanceCard({
     Key? key,
-    required this.balance,
-    required this.accountNumber,
+    required this.wallet,
     required this.isBalanceVisible,
     required this.onToggleVisibility,
   }) : super(key: key);
@@ -441,6 +490,7 @@ class _BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final onPrimary = Theme.of(context).colorScheme.onPrimary;
+    final isNgn = wallet.currency.toUpperCase() == 'NGN';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -465,7 +515,7 @@ class _BalanceCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Main Balance',
+                isNgn ? 'Main Balance' : '${wallet.currency.toUpperCase()} Balance',
                 style: textTheme.bodySmall?.copyWith(color: onPrimary),
               ),
               const SizedBox(width: 6),
@@ -479,7 +529,7 @@ class _BalanceCard extends StatelessWidget {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => context.push('/transaction-history'),
+                onTap: () => context.push('/transaction-history', extra: wallet.currency),
                 child: Row(
                   children: [
                     Text(
@@ -506,19 +556,33 @@ class _BalanceCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    isBalanceVisible
-                        ? currencyFormatter(balance)
-                        : '₦ ••••••••',
-                    style: textTheme.headlineSmall?.copyWith(
-                      color: onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        wallet.symbol.trim(),
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isBalanceVisible
+                            ? currencyFormatter(wallet.balance, symbol: '').trim()
+                            : '••••••••',
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               const Spacer(),
-              const _AddMoneyButton(),
+              _AddMoneyButton(wallet: wallet),
             ],
           ),
         ],
@@ -528,7 +592,8 @@ class _BalanceCard extends StatelessWidget {
 }
 
 class _AddMoneyButton extends StatelessWidget {
-  const _AddMoneyButton({Key? key}) : super(key: key);
+  final WalletModel wallet;
+  const _AddMoneyButton({Key? key, required this.wallet}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -536,7 +601,13 @@ class _AddMoneyButton extends StatelessWidget {
     final iconColor = isDark ? Colors.white : appTheme.primaryColor;
 
     return GestureDetector(
-      onTap: () => context.push('/add-money'),
+      onTap: () {
+        if (wallet.currency.toUpperCase() == 'NGN') {
+          context.push('/add-money');
+        } else {
+          MultiCurrencyReceiveModal.show(context, wallet);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(

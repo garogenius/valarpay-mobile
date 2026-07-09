@@ -152,30 +152,35 @@ class TransferNotifier extends StateNotifier<DataState<TransferResponse>> {
   TransferNotifier(this._repository)
     : super(DataState<TransferResponse>.initial());
 
-  Future<void> initiateTransfer({
+  Future<void> initiateBankTransfer({
     required String bankCode,
     required String accountNumber,
+    String? accountName,
     required double amount,
     required String currency,
     required String description,
     required String pin,
+    double? fee,
     required bool saveBeneficiary,
-    required String sessionId,
+    String? sessionId,
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
       final request = InitiateTransferRequest(
         bankCode: bankCode,
         accountNumber: accountNumber,
+        accountName: accountName,
         amount: amount,
         currency: currency,
         description: description,
         pin: pin,
+        fee: fee,
         saveBeneficiary: saveBeneficiary,
         sessionId: sessionId,
+        requestRef: 'bank-${DateTime.now().millisecondsSinceEpoch}',
       );
 
-      final res = await _repository.initiateTransfer(request);
+      final res = await _repository.initiateBankTransfer(request);
 
       state = state.copyWith(
         isInitialLoading: false,
@@ -184,7 +189,53 @@ class TransferNotifier extends StateNotifier<DataState<TransferResponse>> {
         message: res.message,
       );
     } catch (e, stack) {
-      log('[TransferNotifier initiateTransfer] $e\n$stack');
+      log('[TransferNotifier initiateBankTransfer] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        isDataAvailable: false,
+        message: 'Transfer failed: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<void> initiateNattyPayTransfer({
+    required String bankCode,
+    required String accountNumber,
+    String? accountName,
+    required double amount,
+    required String currency,
+    required String description,
+    required String pin,
+    double? fee,
+    required bool saveBeneficiary,
+    String? sessionId,
+  }) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final request = InitiateTransferRequest(
+        bankCode: bankCode,
+        accountNumber: accountNumber,
+        accountName: accountName,
+        amount: amount,
+        currency: currency,
+        description: description,
+        pin: pin,
+        fee: fee,
+        saveBeneficiary: saveBeneficiary,
+        sessionId: sessionId,
+        requestRef: 'intra-${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      final res = await _repository.initiateNattyPayTransfer(request);
+
+      state = state.copyWith(
+        isInitialLoading: false,
+        data: [res],
+        isDataAvailable: true,
+        message: res.message,
+      );
+    } catch (e, stack) {
+      log('[TransferNotifier initiateNattyPayTransfer] $e\n$stack');
       state = state.copyWith(
         isInitialLoading: false,
         isDataAvailable: false,

@@ -8,6 +8,7 @@ class NetworkProvider {
   final String? billerIcon;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String billItemId;
 
   NetworkProvider({
     required this.id,
@@ -19,24 +20,37 @@ class NetworkProvider {
     this.billerIcon,
     required this.createdAt,
     required this.updatedAt,
+    this.billItemId = '',
   });
 
-  factory NetworkProvider.fromJson(Map<String, dynamic> json) =>
-      NetworkProvider(
-        id: json['id']?.toString() ?? json['operatorId']?.toString() ?? json['billerId']?.toString() ?? '',
-        planName: json['name'] ?? json['planName'] ?? json['billerName'] ?? json['biller_name'] ?? json['short_name'] ?? '',
-        network: json['network'] ?? json['code'] ?? json['name'] ?? json['billerName'] ?? json['biller_name'] ?? json['short_name'] ?? '',
-        countryISOCode: json['countryISOCode'] ?? (json['country'] is Map ? json['country']['isoName'] : null) ?? '',
-        operatorId: json['operatorId'] ?? 0,
-        billerId: json['billerId']?.toString() ?? json['code']?.toString() ?? json['biller_code']?.toString(),
-        billerIcon: json['billerIcon']?.toString() ?? json['logoUrl']?.toString(),
-        createdAt: json['createdAt'] != null
-            ? DateTime.parse(json['createdAt'])
-            : DateTime.now(),
-        updatedAt: json['updatedAt'] != null
-            ? DateTime.parse(json['updatedAt'])
-            : DateTime.now(),
-      );
+  factory NetworkProvider.fromJson(Map<String, dynamic> json) {
+    String parsedBillItemId = "";
+    if (json["billItems"] is List && (json["billItems"] as List).isNotEmpty) {
+      parsedBillItemId = json["billItems"][0]["id"]?.toString() ?? 
+                         json["billItems"][0]["billerItemId"]?.toString() ?? "";
+    } else if (json["billItemId"] != null) {
+      parsedBillItemId = json["billItemId"]?.toString() ?? "";
+    } else if (json["itemId"] != null) {
+      parsedBillItemId = json["itemId"]?.toString() ?? "";
+    }
+
+    return NetworkProvider(
+      id: json['id']?.toString() ?? json['operatorId']?.toString() ?? json['billerId']?.toString() ?? '',
+      planName: json['name'] ?? json['planName'] ?? json['billerName'] ?? json['biller_name'] ?? json['short_name'] ?? '',
+      network: json['network'] ?? json['code'] ?? json['name'] ?? json['billerName'] ?? json['biller_name'] ?? json['short_name'] ?? '',
+      countryISOCode: json['countryISOCode'] ?? (json['country'] is Map ? json['country']['isoName'] : null) ?? '',
+      operatorId: json['operatorId'] ?? 0,
+      billerId: json['billerId']?.toString() ?? json['code']?.toString() ?? json['biller_code']?.toString(),
+      billerIcon: json['billerIcon']?.toString() ?? json['logoUrl']?.toString() ?? json['iconUrl']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      billItemId: parsedBillItemId,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -48,6 +62,7 @@ class NetworkProvider {
         'billerIcon': billerIcon,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
+        'billItemId': billItemId,
       };
 }
 

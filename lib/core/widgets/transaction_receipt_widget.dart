@@ -28,6 +28,7 @@ class TransactionReceiptWidget extends ConsumerStatefulWidget {
   final String headerText;
   final List<ShareableTransactionReceiptDetail>? shareableDetails;
   final String? receiptDate;
+  final String symbol;
 
   const TransactionReceiptWidget({
     Key? key,
@@ -37,6 +38,7 @@ class TransactionReceiptWidget extends ConsumerStatefulWidget {
     required this.headerText,
     this.shareableDetails,
     this.receiptDate,
+    this.symbol = '₦',
   }) : super(key: key);
 
   @override
@@ -124,7 +126,7 @@ class _TransactionReceiptWidgetState
                     const SizedBox(height: 8),
                     // Amount
                     Text(
-                      currencyFormatter(widget.amount),
+                      currencyFormatter(widget.amount, symbol: widget.symbol),
                       style: const TextStyle(
                         fontFamily: 'SF Pro',
                         fontSize: 32,

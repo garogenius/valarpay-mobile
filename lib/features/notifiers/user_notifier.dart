@@ -20,6 +20,8 @@ import 'package:valarpay/features/models/verify_otp_request.dart';
 import 'package:valarpay/features/models/verify_phone_number.dart';
 import 'package:valarpay/features/models/verify_wallet_pin_request.dart';
 import 'package:valarpay/features/repositories/user_repository.dart';
+import 'package:valarpay/features/notifiers/wallet_notifier.dart';
+import 'package:valarpay/features/models/wallet.dart';
 
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/features/providers/user_provider.dart';
@@ -257,6 +259,29 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     try {
       final user = await _repository.getUserProfile();
       
+      // Attempt to fetch NGN virtual account to update balance and account details
+      try {
+        final walletRepo = _ref.read(walletRepositoryProvider);
+        final ngnResponse = await walletRepo.getNgnVirtualAccount();
+        if (ngnResponse != null && ngnResponse['data'] != null) {
+          final ngnData = ngnResponse['data'] as Map<String, dynamic>;
+          final ngnWallet = WalletModel.fromJson({
+            ...ngnData,
+            'currency': 'NGN',
+            'balance': ngnData['balance'] ?? ngnData['availableBalance'] ?? 0.0,
+          });
+
+          final existingIndex = user.wallets.indexWhere((w) => w.currency.toUpperCase() == 'NGN');
+          if (existingIndex >= 0) {
+            user.wallets[existingIndex] = ngnWallet;
+          } else {
+            user.wallets.insert(0, ngnWallet);
+          }
+        }
+      } catch (e) {
+        log('[UserNotifier] Failed to fetch NGN virtual account during profile refresh: $e');
+      }
+      
       // Mitigate backend replication lag by preserving local 'true' states
       final currentUser = _ref.read(userProvider);
       UserModel finalUser = user;
@@ -365,6 +390,28 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     }
   }
 
+  /// Verify BVN only for Tier 2 KYC upgrade
+  Future<NinVerificationResponse?> verifyBvnTier2(String bvn) async {
+    try {
+      final response = await _repository.verifyBvnTier2(bvn);
+      if (response.isSuccess) {
+        log(
+          '[UserNotifier] BVN verification successful, refreshing profile...',
+        );
+        await refreshUserProfile();
+      }
+
+      return response;
+    } catch (e, stack) {
+      log('[UserNotifier BVN Verification Error] $e\n$stack');
+      return NinVerificationResponse(
+        message: e.toString().replaceAll('Exception: ', ''),
+        error: 'Verification failed',
+        statusCode: 500,
+      );
+    }
+  }
+
   Future<void> editProfile({
     String? fullName,
     String? phoneNumber,
@@ -443,55 +490,6 @@ class UserNotifier extends StateNotifier<DataState<UserModel>> {
     }
   }
 
-  Future<ApiResponse?> submitBasicKyc({
-    required String idType,
-    required String idNumber,
-    required String idDob,
-    String? idPhoneNumber, // optional
-  }) async {
-    try {
-      final res = await _repository.submitBasicKyc(
-        idType: idType,
-        idNumber: idNumber,
-        dob: idDob,
-        phoneNumber: idPhoneNumber,
-      );
-      return res;
-    } catch (e) {
-      log('Basic KYC Error: $e');
-      rethrow;
-    }
-  }
-
-  Future<ApiResponse?> submitSmartSelfieRegister({
-    required String selfieImage,
-    required List<String> livenessImages,
-  }) async {
-    try {
-      final res = await _repository.submitSmartSelfieRegister(
-        selfieImage: selfieImage,
-        livenessImages: livenessImages,
-      );
-      return res;
-    } catch (e) {
-      log('Smart Selfie Register Error: $e');
-      rethrow;
-    }
-  }
-
-  Future<ApiResponse?> submitSmartSelfieAuth({
-    required String selfieImage,
-  }) async {
-    try {
-      final res = await _repository.submitSmartSelfieAuth(
-        selfieImage: selfieImage,
-      );
-      return res;
-    } catch (e) {
-      log('Smart Selfie Auth Error: $e');
-      rethrow;
-    }
-  }
 
   Future<ApiResponse?> getSmileIdJobStatus(String jobId) async {
     try {

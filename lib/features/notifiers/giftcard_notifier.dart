@@ -101,6 +101,16 @@ class GiftCardNotifier extends StateNotifier<DataState<GiftCardProduct>> {
     }
   }
 
+  Future<String?> checkGiftCardStatus(String billRef) async {
+    try {
+      final res = await _repository.checkGiftCardStatus(billRef);
+      return res['status'];
+    } catch (e, stack) {
+      log('[GiftCardNotifier checkGiftCardStatus] $e\n$stack');
+      rethrow;
+    }
+  }
+
   void reset() => state = DataState<GiftCardProduct>.initial();
 }
 

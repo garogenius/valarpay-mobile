@@ -18,13 +18,8 @@ class ApiEndpoints {
       '/api/v1/user/verify-forgot-password';
 
   // KYC - SmileID Verification
-  static const String verifyBvn = '/api/v1/user/smileid/basic-kyc'; // alias for old verifyBvn
-  static const String basicKyc = '/api/v1/user/smileid/basic-kyc';
-  static const String biometricKyc = '/api/v1/user/smileid/smart-selfie-register';
-  static const String smartSelfieAuth = '/api/v1/user/smileid/smart-selfie-auth';
   static String smileIdJobStatus(String jobId) => '/api/v1/user/smileid/job-status/$jobId';
-  static const String verifyNin = '/api/v1/user/verify-nin';
-  static const String kycTier2 = '/api/v1/user/kyc-tier2';
+  static const String kycTier2 = '/api/v1/kyc/tier-2';
 
   // KYC - Address Verification (Tier 3) NO LONGER USED (Replaced by uploadTier3Document)
 
@@ -39,9 +34,9 @@ class ApiEndpoints {
   static const String createPasscode = '/api/v1/user/create-passcode';
   static const String editProfile = '/api/v1/user/edit-profile';
   static const String uploadDocument = '/api/v1/user/upload-document';
-  static const String uploadTier3Document = '/api/v1/user/upload-tier3-document';
+  static const String uploadTier3Document = '/api/v1/kyc/tier-3';
   static const String uploadCacDocument = '/api/v1/user/upload-cac-document';
-  static const String getUserTier = '/api/v1/user/tier';
+  static const String getUserTier = '/api/v1/kyc/profile';
 
   static const String getAllTransactions = '/api/v1/wallet/transaction';
 
@@ -52,17 +47,20 @@ class ApiEndpoints {
 
   // Bill payment endpoints
   static const String getAirtimeNetworkProviders =
-      '/api/v1/bill/airtime/network-providers';
+      '/api/v1/bills/airtime/billers';
   static const String getAirtimePlan = '/api/v1/bill/airtime/get-plan';
   static const String getAirtimeVariation =
       '/api/v1/bill/airtime/palmpay/get-items';
-  static const String payAirtime = '/api/v1/bill/airtime/pay';
+  static const String payAirtime = '/api/v1/bills/purchase/bill';
   static const String getDataNetworkProviders =
-      '/api/v1/bill/airtime/network-providers';
-  static const String getDataPlan = '/api/v1/bill/data/get-plan';
+      '/api/v1/bills/data/billers';
+  static const String getDataPlan = '/api/v1/bills/data/billers';
   static String getDataPlanByNetwork(String network) => '/api/v1/bill/data/get-plan/$network';
   static const String getDataVariation = '/api/v1/bill/data/palmpay/get-items';
-  static const String purchaseData = '/api/v1/bill/data/pay';
+  static const String purchaseData = '/api/v1/bills/purchase/bill';
+  
+  static const String getBillStatus = '/api/v1/bills/status/bill';
+  static const String getGiftCardStatus = '/api/v1/bills/status/gift-card';
 
   // Cable TV endpoints
   static const String getCablePlan = '/api/v1/bill/remita/paytv/get-plan';
@@ -92,8 +90,8 @@ class ApiEndpoints {
   // Giftcard endpoints
   static const String getGiftCardCategories =
       '/api/v1/bill/giftcard/get-categories';
-  static const String getGiftCardProducts = '/api/v1/bill/giftcard/get-product';
-  static const String payGiftCard = '/api/v1/bill/giftcard/pay';
+  static const String getGiftCardProducts = '/api/v1/bills/gift-cards';
+  static const String payGiftCard = '/api/v1/bills/purchase/gift-card';
   static const String getGiftCardRedeemCode =
       '/api/v1/bill/giftcard/get-redeem-code';
   static const String getGiftCardFxRate = '/api/v1/bill/giftcard/get-fx-rate';
@@ -107,13 +105,13 @@ class ApiEndpoints {
   static const String payElectricity = '/api/v1/bill/remita/electricity/pay';
 
   // Beneficiary endpoints
-  static const String getUserBeneficiaries = '/api/v1/user/get-beneficiaries';
+  static const String getUserBeneficiaries = '/api/v1/beneficiaries';
 
   // Transfer endpoints
   static const String getBanks = '/api/v1/wallet/get-banks';
-  static const String getMatchedBanks = '/api/v1/wallet/get-matched-banks';
-  static const String getTransferFee = '/api/v1/wallet/get-transfer-fee';
-  static const String getBeneficiaries = '/api/v1/user/get-beneficiaries';
+  static const String getMatchedBanks = '/api/v1/transfers/matched-banks';
+  static const String getTransferFee = '/api/v1/transfers/transfer-fee';
+  static const String getBeneficiaries = '/api/v1/beneficiaries';
   static const String initiateTransfer = '/api/v1/wallet/initiate-transfer';
   static const String verifyAccount = '/api/v1/wallet/verify-account';
   static const String getTransactions = '/api/v1/wallet/transaction';
@@ -125,6 +123,11 @@ class ApiEndpoints {
   static const String createCurrencyAccount = '/api/v1/currency/accounts';
   static const String payazaMainAccount = '/api/v1/currency/payaza/main-account';
   static const String verifyPayazaAccount = '/api/v1/currency/payaza/accounts/verify';
+  static const String createPayshigaAccount = '/api/v1/multi-currency/accounts';
+  static const String getPayshigaAccountStatus = '/api/v1/multi-currency/accounts';
+  static const String createPayshigaPayout = '/api/v1/multi-currency/payouts';
+  static String payshigaPayoutStatus(String ref) => '/api/v1/multi-currency/payouts/$ref';
+
   static const String payazaCardCharge = '/api/v1/currency/payaza/collections/card/charge';
   static const String payazaCardCheck3DS = '/api/v1/currency/payaza/collections/card/check-3ds';
   static const String payazaCardTransactionStatus = '/api/v1/currency/payaza/collections/card/transaction-status';
@@ -135,6 +138,7 @@ class ApiEndpoints {
   static String payazaDeleteCardToken(String tokenId) => '/api/v1/currency/payaza/collections/card/tokens/$tokenId';
   static const String payazaMobileInitiate = '/api/v1/currency/payaza/collections/mobile/initiate';
   static const String payazaVirtualAccounts = '/api/v1/currency/payaza/virtual-accounts';
+  static String payazaMerchantBanks(String currencyCode) => '/api/v1/currency/payaza/merchant-banks/$currencyCode';
   static String payazaVirtualAccountDetails(String number) => '/api/v1/currency/payaza/virtual-accounts/$number';
   static const String payazaExchangeQuotation = '/api/v1/currency/payaza/exchange/quotation';
   static const String payazaExchangeExecute = '/api/v1/currency/payaza/exchange/execute';
@@ -153,6 +157,7 @@ class ApiEndpoints {
   static String getPayoutDestinations(String currency) => '/api/v1/currency/accounts/$currency/payout-destinations';
   static String createPayout(String currency) => '/api/v1/currency/accounts/$currency/payouts';
   static String getPayouts(String currency) => '/api/v1/currency/accounts/$currency/payouts';
+  static const String getMultiCurrencyFees = '/api/v1/multi-currency/fees';
 
   // Notification endpoints
   static const String getNotifications = '/api/v1/notification';
@@ -260,4 +265,20 @@ class ApiEndpoints {
       '/api/v1/bill/coralpay/transaction';
 
   // future endpoints can go here
+  
+  // New Account Endpoints
+  static const String openNgnAccount = '/api/v1/accounts';
+  static const String getNgnAccount = '/api/v1/accounts/ngn';
+
+  // New Transfer Endpoints
+  static const String verifyBankAccount = '/api/v1/transfers/account-enquiry';
+  static const String initiateBankTransfer = '/api/v1/transfers/bank';
+  static String getBanksByCurrency(String currency) => '/api/v1/transfers/banks/$currency';
+  static const String initiateNattyPayTransfer = '/api/v1/transfers/intra';
+
+  // New Beneficiary Endpoints
+  static const String getBeneficiariesList = '/api/v1/beneficiaries';
+  static const String addBeneficiary = '/api/v1/beneficiaries';
+  static String getBeneficiaryDetails(String id) => '/api/v1/beneficiaries/$id';
+  static String deleteBeneficiary(String id) => '/api/v1/beneficiaries/$id';
 }

@@ -151,6 +151,16 @@ class AirtimePurchaseNotifier
     }
   }
 
+  Future<String?> checkStatus(String billRef) async {
+    try {
+      final res = await _repository.checkBillStatus(billRef);
+      return res['status'];
+    } catch (e, stack) {
+      log('[AirtimePurchaseNotifier checkStatus] $e\n$stack');
+      rethrow;
+    }
+  }
+
   void reset() => state = DataState<AirtimePurchaseResponse>.initial();
 }
 

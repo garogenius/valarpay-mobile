@@ -40,14 +40,35 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
     final tierData = tierState.data?.isNotEmpty == true ? tierState.data!.first : null;
 
     TierInfo? getTier(String name) {
-      if (tierData == null) return null;
-      try {
-        return tierData.tiers.firstWhere(
-          (t) => t.tier.toLowerCase() == name.toLowerCase() || t.tier == name,
-        );
-      } catch (_) {
-        return null;
+      TierInfo? tier;
+      if (tierData != null) {
+        if (tierData.tier?.tier.toLowerCase() == name.toLowerCase()) {
+          tier = tierData.tier;
+        } else {
+          try {
+            tier = tierData.tiers.firstWhere(
+              (t) => t.tier.toLowerCase() == name.toLowerCase() || t.tier == name,
+            );
+          } catch (_) {}
+        }
       }
+      
+      final isBvnVerified = user?.isBvnVerified ?? false;
+      
+      // Override or fallback requirements dynamically
+      if (name.toLowerCase() == 'one') {
+        final req = 'Identity';
+        final fallback = TierInfo(tier: 'one', dailyTransactionLimit: 200000, balanceLimit: 300000, requirements: [req, 'Basic Information']);
+        return tier != null ? TierInfo(tier: tier.tier, dailyTransactionLimit: tier.dailyTransactionLimit, balanceLimit: tier.balanceLimit, requirements: [req, 'Basic Information']) : fallback;
+      } else if (name.toLowerCase() == 'two') {
+        final req = 'Identity';
+        final fallback = TierInfo(tier: 'two', dailyTransactionLimit: 1000000, balanceLimit: 5000000, requirements: [req]);
+        return tier != null ? TierInfo(tier: tier.tier, dailyTransactionLimit: tier.dailyTransactionLimit, balanceLimit: tier.balanceLimit, requirements: [req]) : fallback;
+      } else if (name.toLowerCase() == 'three') {
+        final fallback = TierInfo(tier: 'three', dailyTransactionLimit: 5000000, balanceLimit: null, requirements: ['Proof of Address', 'Bank Statement']);
+        return tier != null ? TierInfo(tier: tier.tier, dailyTransactionLimit: tier.dailyTransactionLimit, balanceLimit: tier.balanceLimit, requirements: ['Proof of Address', 'Bank Statement']) : fallback;
+      }
+      return tier;
     }
 
     final tier1 = getTier('one');
@@ -102,6 +123,7 @@ class _UpgradeKycScreenState extends ConsumerState<UpgradeKycScreen> {
               isExpanded: _isTier3Expanded,
               isNinVerified: isNinVerified,
               isAddressSubmitted: isAddressSubmitted,
+              isTier2OrHigher: tierData?.currentTier == 'two' || tierData?.currentTier == 'three' || ((user?.isBvnVerified ?? false) && isNinVerified),
               user: user,
               tierInfo: tier3,
               onToggle: () {

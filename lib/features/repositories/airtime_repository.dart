@@ -15,6 +15,13 @@ class AirtimeRepository {
       final response = await apiClient.get(
         ApiEndpoints.getAirtimeNetworkProviders,
       );
+      if (response.data is List) {
+        return NetworkProvidersResponse(
+          providers: (response.data as List).map((p) => NetworkProvider.fromJson(p)).toList(),
+          message: 'Success',
+          statusCode: 200,
+        );
+      }
       return NetworkProvidersResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
@@ -237,6 +244,21 @@ class AirtimeRepository {
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ?? 'Failed to fetch airtime beneficiaries',
+      );
+    }
+  }
+
+  /// Check status of a bill purchase (airtime/data)
+  Future<Map<String, dynamic>> checkBillStatus(String billRef) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.getBillStatus,
+        data: {'billRef': billRef},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Failed to check bill status',
       );
     }
   }

@@ -69,6 +69,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         await ref.read(userNotifierProvider.notifier).refreshUserProfile();
 
         if (loginResponse.accessToken != null) {
+          final userCurrency = loginResponse.user.currency ?? 'NGN';
+          final hasCurrencyWallet = loginResponse.user.wallets.any((w) => w.currency == userCurrency);
+          
+          if (userCurrency != 'NGN' && !hasCurrencyWallet) {
+            context.pushReplacement('/account-setup', extra: userCurrency);
+            return;
+          }
+          
+          if (userCurrency == 'NGN' && !hasCurrencyWallet) {
+            _showKycModal(context);
+            return;
+          }
+
           // Don't call setState or show AppMessage after navigation
           context.pushReplacement('/');
           return;
@@ -119,6 +132,84 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void initState() {
     initialize();
     super.initState();
+  }
+
+  void _showKycModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Prevent dismissing by back button
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Identity Verification',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose your preferred method to verify your identity and open your NGN account',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.pushReplacement('/bvn-verification');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: appTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Use BVN', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.pushReplacement('/nin-verification');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: appTheme.primaryColor, width: 1.5),
+                    ),
+                  ),
+                  child: const Text('Use NIN', style: TextStyle(color: appTheme.primaryColor)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.pushReplacement('/');
+                },
+                child: const Text('Do it later', style: TextStyle(color: Colors.grey)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

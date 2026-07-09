@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/themes/app_theme.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
 
@@ -146,7 +147,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => context.push('/signup'),
+                        onPressed: () async {
+                          await LocalStorageService.saveBool('has_seen_onboarding', true);
+                          if (mounted) {
+                            context.push('/signup');
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: appTheme.primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -172,7 +178,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: () => context.push('/signin'),
+                        onPressed: () async {
+                          await LocalStorageService.saveBool('has_seen_onboarding', true);
+                          if (mounted) {
+                            context.push('/signin');
+                          }
+                        },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
                             color: Colors.white,

@@ -44,6 +44,62 @@ class BeneficiaryNotifier extends StateNotifier<DataState<Beneficiary>> {
     }
   }
 
+  Future<bool> addBeneficiary(Map<String, dynamic> data) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      await _repository.addBeneficiary(data);
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: 'Beneficiary added successfully',
+      );
+      return true;
+    } catch (e, stack) {
+      log('[BeneficiaryNotifier addBeneficiary Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: 'Failed to add beneficiary: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
+  Future<Beneficiary?> getBeneficiary(String id) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      final res = await _repository.getBeneficiary(id);
+      state = state.copyWith(
+        isInitialLoading: false,
+      );
+      return res.data;
+    } catch (e, stack) {
+      log('[BeneficiaryNotifier getBeneficiary Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: 'Failed to get beneficiary: ${e.toString()}',
+      );
+      return null;
+    }
+  }
+
+  Future<bool> deleteBeneficiary(String id) async {
+    state = state.copyWith(isInitialLoading: true, message: null);
+    try {
+      await _repository.deleteBeneficiary(id);
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: 'Beneficiary deleted successfully',
+      );
+      return true;
+    } catch (e, stack) {
+      log('[BeneficiaryNotifier deleteBeneficiary Error] $e\n$stack');
+      state = state.copyWith(
+        isInitialLoading: false,
+        message: 'Failed to delete beneficiary: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
   void reset() => state = DataState<Beneficiary>.initial();
 }
 

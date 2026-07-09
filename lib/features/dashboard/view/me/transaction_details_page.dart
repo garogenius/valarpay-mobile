@@ -106,7 +106,17 @@ class TransactionDetailsPage extends StatelessWidget {
         }
       }
 
-      topTitle = provider.isEmpty ? displayType : '$provider $displayType';
+      if (provider.toLowerCase().contains('kuda')) {
+        if (displayType == 'Airtime' || displayType == 'Intl. Airtime') {
+          topTitle = 'Airtime purchase';
+        } else if (displayType == 'Mobile Data') {
+          topTitle = 'Data purchase';
+        } else {
+          topTitle = displayType;
+        }
+      } else {
+        topTitle = provider.isEmpty ? displayType : '$provider $displayType';
+      }
 
       topDetails = [
         buildDetailRow('Amount', '₦${transaction.billDetails!.amount}', false),

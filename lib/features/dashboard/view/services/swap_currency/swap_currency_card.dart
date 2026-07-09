@@ -35,62 +35,57 @@ class CurrencyAmountInput extends StatelessWidget {
       child: Row(
         children: [
           /// LEFT SIDE (LABEL + INPUT)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    currencySymbol,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w400,
-                    ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
                   ),
-
-                  const SizedBox(width: 4),
-
-                  SizedBox(
-                    width: 150,
-                    child: TextField(
-                      controller: controller,
-                      keyboardType: TextInputType.number,
-                      enabled: isEditable,
+                ),
+                Row(
+                  children: [
+                    Text(
+                      currencySymbol,
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
                         fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        hintStyle: TextStyle(
-                          color: isDark
-                              ? Colors.white38
-                              : Colors.grey[400],
-                          fontSize: 24,
-                        ),
-                        border: InputBorder.none,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        enabled: isEditable,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '0.00',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.grey[400],
+                            fontSize: 24,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-
-          const Spacer(),
-
+          const SizedBox(width: 8),
           /// RIGHT SIDE (FLAG + CODE)
           GestureDetector(
             onTap: onCurrencyTap,

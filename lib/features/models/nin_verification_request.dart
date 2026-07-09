@@ -1,25 +1,31 @@
 class NinVerificationRequest {
   final String nin;
+  final String? docType;
   final String selfieImage;
   final List<String>? livenessImages;
 
   NinVerificationRequest({
     required this.nin,
+    this.docType,
     required this.selfieImage,
     this.livenessImages,
   });
 
   factory NinVerificationRequest.fromJson(Map<String, dynamic> json) =>
       NinVerificationRequest(
-        nin: json['nin'] ?? '',
+        nin: json['nin'] ?? json['bvn'] ?? '',
         selfieImage: json['selfieImage'] ?? '',
         livenessImages: (json['livenessImages'] as List?)?.cast<String>(),
       );
 
   Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{
-      'nin': nin,
-    };
+    final map = <String, dynamic>{};
+    
+    if (docType != null && docType!.toUpperCase() == 'BVN') {
+      map['bvn'] = nin;
+    } else {
+      map['nin'] = nin;
+    }
     
     // Only include selfieImage if it's not empty
     if (selfieImage.isNotEmpty) {

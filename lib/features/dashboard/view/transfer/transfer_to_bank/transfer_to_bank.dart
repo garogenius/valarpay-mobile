@@ -211,7 +211,7 @@ class _TransferToBankScreenState extends ConsumerState<TransferToBankScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
 
     // Listen to account verification state
     ref.listen(accountVerificationNotifierProvider, (previous, next) {

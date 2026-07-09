@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:valarpay/features/providers/wallet_providers.dart';
+import 'package:valarpay/features/dashboard/widgets/home_widgets/multi_currency_receive_modal.dart';
 
 class PaymentWidget extends ConsumerWidget {
   const PaymentWidget({Key? key}) : super(key: key);
@@ -24,45 +25,51 @@ class PaymentWidget extends ConsumerWidget {
         children: [
           _buildActionItem(
             context,
-            svgAssetPath: 'assets/images/payment_wid/valarpay.svg',
-            label: isNgn ? 'To ValarPay' : 'Deposit',
+            svgAssetPath: isNgn ? 'assets/images/payment_wid/valarpay.svg' : 'assets/images/payment_wid/valarpay.svg',
+            label: isNgn ? 'To ValarPay' : 'Payout',
             onTap: () {
               if (isNgn) {
                 context.push("/transfer-to-valarpay");
               } else {
-                context.push("/account/$currency/deposit");
+                context.push("/payout/$currency");
               }
             },
+            iconData: isNgn ? null : Icons.send,
           ),
           _buildActionItem(
             context,
-            svgAssetPath: 'assets/images/payment_wid/Bank.svg',
-            label: isNgn ? 'To Bank' : '$currency Transfer',
+            svgAssetPath: isNgn ? 'assets/images/payment_wid/Bank.svg' : 'assets/images/payment_wid/Bank.svg',
+            label: isNgn ? 'To Bank' : 'Receive',
             onTap: () {
               if (isNgn) {
                 context.push("/transfer-to-bank");
-              } else {
-                context.push("/account/$currency/transfer");
+              } else if (activeWallet != null) {
+                MultiCurrencyReceiveModal.show(context, activeWallet);
               }
             },
+            iconData: isNgn ? null : Icons.call_received,
           ),
           _buildActionItem(
             context,
-            svgAssetPath: 'assets/images/payment_wid/withdraw.svg',
-            label: isNgn ? 'Withdraw' : 'Destination',
+            svgAssetPath: isNgn ? 'assets/images/payment_wid/withdraw.svg' : 'assets/images/payment_wid/withdraw.svg',
+            label: isNgn ? 'Withdraw' : 'Swap',
             onTap: () {
               if (isNgn) {
                 context.push("/withdraw");
               } else {
-                context.push("/account/$currency/destinations");
+                context.push("/swap-currency");
               }
             },
+            iconData: isNgn ? null : Icons.currency_exchange,
           ),
           _buildActionItem(
             context,
             svgAssetPath: 'assets/images/payment_wid/Account.svg',
             label: 'Account',
-            onTap: () => context.push("/account"),
+            onTap: () {
+               context.push("/account");
+            },
+            iconData: null,
           ),
         ],
       ),
@@ -74,6 +81,7 @@ class PaymentWidget extends ConsumerWidget {
     required String svgAssetPath,
     required String label,
     required VoidCallback onTap,
+    IconData? iconData,
   }) {
     return Semantics(
       label: label,
@@ -93,15 +101,17 @@ class PaymentWidget extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: SvgPicture.asset(
-                  svgAssetPath,
-                  width: 20,
-                  height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                ),
+                child: iconData != null
+                  ? Icon(iconData, color: Colors.white, size: 20)
+                  : SvgPicture.asset(
+                      svgAssetPath,
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
               ),
             ),
             const SizedBox(height: 6),

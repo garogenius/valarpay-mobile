@@ -67,17 +67,20 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     final amount = double.tryParse(amountText.replaceAll(',', ''));
     if (amount == null || amount <= 0) return;
 
+    final user = ref.read(userProvider);
+
     ref.read(currencyNotifierProvider.notifier).convertCurrency(
       amount: amount,
       fromCurrency: fromCurrency.code,
       toCurrency: toCurrency.code,
+      userId: user?.id ?? '',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Fetch available wallets & distinct currency codes owned by the user
@@ -113,39 +116,31 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
     }
 
     ref.listen(currencyNotifierProvider, (previous, next) {
-      // print('[SwapCurrencyScreen] State changed. isDataAvailable: ${next.isDataAvailable}');
       if (next.isDataAvailable && next.singleData != null) {
         final data = next.singleData!;
-        // print('[SwapCurrencyScreen] Conversion result: ${data.convertedAmount}');
         toAmountController.text = currencyFormatter(data.convertedAmount.toStringAsFixed(2), symbol: '');
         
         setState(() {
-          // The API parameters are swapped to handle backend inversion, 
-          // so we use local state currencies for correct display.
-          // data.rate is the multiplier used (approximately).
-          
           if (data.exchangeRate < 1 && data.exchangeRate > 0) {
-             // Rate is like 0.0007. 1/rate is ~1400.
-             // We want "1 USD = 1400 NGN"
-             // In our swapped context: 
-             // Request was USD->NGN. Result ~0.0007.
-             // User view is NGN->USD.
-             // We want to show "1 USD = 1400 NGN".
-             // USD is 'toCurrency' in UI. NGN is 'fromCurrency' in UI.
-             // Display: 1 {to} = {1/rate} {from}
              _displayRate = '1 ${toCurrency.code} = ${currencyFormatter((1/data.exchangeRate).toStringAsFixed(2), symbol: '')} ${fromCurrency.code}';
-          } else {
-             // Rate is > 1. e.g. 1400.
-             // User view USD->NGN.
-             // Request NGN->USD. Result ~1400.
-             // We want "1 USD = 1400 NGN".
-             // USD is 'fromCurrency' in UI.
-             // Display: 1 {from} = {rate} {to}
+          } else if (data.exchangeRate >= 1) {
              _displayRate = '1 ${fromCurrency.code} = ${currencyFormatter(data.exchangeRate.toStringAsFixed(2), symbol: '')} ${toCurrency.code}';
+          } else {
+             // Fallback if exchangeRate is 0 or missing, we can calculate it
+             if (data.amount > 0 && data.convertedAmount > 0) {
+                 double calculatedRate = data.convertedAmount / data.amount;
+                 _displayRate = '1 ${fromCurrency.code} = ${currencyFormatter(calculatedRate.toStringAsFixed(2), symbol: '')} ${toCurrency.code}';
+             } else {
+                 _displayRate = 'Rate unavailable';
+             }
           }
         });
       } else if (next.message != null && !next.isInitialLoading) {
-         // Optionally handle error
+         setState(() {
+            _displayRate = next.message!;
+         });
+         toAmountController.text = '0.00';
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.message!), backgroundColor: Colors.red));
       }
     });
 
@@ -255,14 +250,17 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : Text(
-                                    _displayRate.isNotEmpty
-                                        ? _displayRate
-                                        : 'Enter amount to see rate',
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white : Colors.black,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                : Expanded(
+                                    child: Text(
+                                      _displayRate.isNotEmpty
+                                          ? _displayRate
+                                          : 'Enter amount to see rate',
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.black,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                           ],
@@ -488,7 +486,7 @@ class _SwapCurrencyScreenState extends ConsumerState<SwapCurrencyScreen> {
 //   @override
 //   Widget build(BuildContext context) {
 //     final user = ref.watch(userProvider);
-//     final isBvnVerified = user?.isBvnVerified ?? false;
+//     final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
 //     final isDark = Theme.of(context).brightness == Brightness.dark;
 
 //     return Scaffold(

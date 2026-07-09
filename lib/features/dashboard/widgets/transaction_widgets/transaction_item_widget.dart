@@ -242,6 +242,16 @@ class TransactionItemWidget extends StatelessWidget {
           }
         }
 
+        if (provider.toLowerCase().contains('kuda')) {
+          if (displayType == 'Airtime' || displayType == 'Intl. Airtime') {
+            return 'Airtime purchase';
+          } else if (displayType == 'Mobile Data') {
+            return 'Data purchase';
+          } else {
+            return displayType;
+          }
+        }
+
         return provider.isEmpty ? displayType : '$provider $displayType';
       case 'WITHDRAWAL':
         return 'Withdrawal';

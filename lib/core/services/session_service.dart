@@ -22,6 +22,7 @@ class SessionService {
   static const String _userFullnameKey = 'user_fullname';
   static const String _userActualUsernameKey = 'user_actual_username';
   static const String _userPhoneNumberKey = 'user_phone_number';
+  static const String _userProfileImageKey = 'user_profile_image';
   static const String _signUpDraftKey = 'sign_up_draft';
 
   // Save signup draft
@@ -56,6 +57,7 @@ class SessionService {
     await prefs.setString(_userFullnameKey, response.user.fullname);
     await prefs.setString(_userActualUsernameKey, response.user.username);
     await prefs.setString(_userPhoneNumberKey, response.user.phoneNumber ?? '');
+    await prefs.setString(_userProfileImageKey, response.user.profileImageUrl ?? '');
     
     // Save token if any in secure storage and SharedPreferences as a fallback
     if (response.accessToken != null) {
@@ -105,6 +107,13 @@ class SessionService {
     final phoneNumber = prefs.getString(_userPhoneNumberKey);
     if (phoneNumber == null) return null;
     return phoneNumber;
+  }
+
+  static Future<String?> getProfileImageUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileImageUrl = prefs.getString(_userProfileImageKey);
+    if (profileImageUrl == null || profileImageUrl.isEmpty) return null;
+    return profileImageUrl;
   }
 
   static Future<UserModel?> getUser() async {
@@ -171,5 +180,6 @@ class SessionService {
     await prefs.setString(_userDetailsKey, jsonEncode(user.toJson()));
     await prefs.setString(_userFullnameKey, user.fullname);
     await prefs.setString(_userPhoneNumberKey, user.phoneNumber ?? '');
+    await prefs.setString(_userProfileImageKey, user.profileImageUrl ?? '');
   }
 }

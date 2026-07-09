@@ -37,6 +37,7 @@ class AirtimePlan {
   final List<dynamic> promotions;
   final String status;
   final double? payAmount;
+  final String billItemId;
 
   AirtimePlan({
     required this.id,
@@ -76,62 +77,78 @@ class AirtimePlan {
     required this.promotions,
     required this.status,
     this.payAmount,
+    this.billItemId = '',
   });
 
-  factory AirtimePlan.fromJson(Map<String, dynamic> json) => AirtimePlan(
-    id: json['id'] ?? 0,
-    operatorId: json['operatorId'] ?? 0,
-    name: json['name'] ?? '',
-    bundle: json['bundle'] ?? false,
-    data: json['data'] ?? false,
-    pin: json['pin'] ?? false,
-    comboProduct: json['comboProduct'] ?? false,
-    supportsLocalAmounts: json['supportsLocalAmounts'] ?? false,
-    supportsGeographicalRechargePlans:
-        json['supportsGeographicalRechargePlans'] ?? false,
-    denominationType: json['denominationType'] ?? '',
-    senderCurrencyCode: json['senderCurrencyCode'] ?? '',
-    senderCurrencySymbol: json['senderCurrencySymbol'] ?? '',
-    destinationCurrencyCode: json['destinationCurrencyCode'] ?? '',
-    destinationCurrencySymbol: json['destinationCurrencySymbol'] ?? '',
-    commission: (json['commission'] ?? 0).toDouble(),
-    internationalDiscount: (json['internationalDiscount'] ?? 0).toDouble(),
-    localDiscount: (json['localDiscount'] ?? 0).toDouble(),
-    mostPopularAmount: json['mostPopularAmount']?.toDouble(),
-    mostPopularLocalAmount: json['mostPopularLocalAmount']?.toDouble(),
-    minAmount: (json['minAmount'] ?? 0).toDouble(),
-    maxAmount: (json['maxAmount'] ?? 0).toDouble(),
-    localMinAmount: json['localMinAmount']?.toDouble(),
-    localMaxAmount: json['localMaxAmount']?.toDouble(),
-    country: Country.fromJson(json['country'] ?? {}),
-    fx: FxRate.fromJson(json['fx'] ?? {}),
-    logoUrls: List<String>.from(json['logoUrls'] ?? []),
-    fixedAmounts: List<double>.from(
-      (json['fixedAmounts'] ?? []).map((x) => x.toDouble()),
-    ),
-    fixedAmountsDescriptions: Map<String, dynamic>.from(
-      json['fixedAmountsDescriptions'] ?? {},
-    ),
-    localFixedAmounts: List<double>.from(
-      (json['localFixedAmounts'] ?? []).map((x) => x.toDouble()),
-    ),
-    localFixedAmountsDescriptions: Map<String, dynamic>.from(
-      json['localFixedAmountsDescriptions'] ?? {},
-    ),
-    suggestedAmounts: List<double>.from(
-      (json['suggestedAmounts'] ?? []).map((x) => x.toDouble()),
-    ),
-    suggestedAmountsMap: Map<String, dynamic>.from(
-      json['suggestedAmountsMap'] ?? {},
-    ),
-    fees: Fees.fromJson(json['fees'] ?? {}),
-    geographicalRechargePlans: List<dynamic>.from(
-      json['geographicalRechargePlans'] ?? [],
-    ),
-    promotions: List<dynamic>.from(json['promotions'] ?? []),
-    status: json['status'] ?? '',
-    payAmount: json['payAmount']?.toDouble(),
-  );
+  factory AirtimePlan.fromJson(Map<String, dynamic> json) {
+    String parsedBillItemId = "";
+    if (json["billItemId"] != null) {
+      parsedBillItemId = json["billItemId"]?.toString() ?? "";
+    } else if (json["itemId"] != null) {
+      parsedBillItemId = json["itemId"]?.toString() ?? "";
+    } else if (json["billerItemId"] != null) {
+      parsedBillItemId = json["billerItemId"]?.toString() ?? "";
+    } else if (json["billers"] is List && (json["billers"] as List).isNotEmpty) {
+      final biller = json["billers"][0];
+      parsedBillItemId = biller["billItemId"]?.toString() ?? biller["itemId"]?.toString() ?? "";
+    }
+
+    return AirtimePlan(
+      id: json['id'] ?? 0,
+      operatorId: json['operatorId'] ?? 0,
+      name: json['name'] ?? '',
+      bundle: json['bundle'] ?? false,
+      data: json['data'] ?? false,
+      pin: json['pin'] ?? false,
+      comboProduct: json['comboProduct'] ?? false,
+      supportsLocalAmounts: json['supportsLocalAmounts'] ?? false,
+      supportsGeographicalRechargePlans:
+          json['supportsGeographicalRechargePlans'] ?? false,
+      denominationType: json['denominationType'] ?? '',
+      senderCurrencyCode: json['senderCurrencyCode'] ?? '',
+      senderCurrencySymbol: json['senderCurrencySymbol'] ?? '',
+      destinationCurrencyCode: json['destinationCurrencyCode'] ?? '',
+      destinationCurrencySymbol: json['destinationCurrencySymbol'] ?? '',
+      commission: (json['commission'] ?? 0).toDouble(),
+      internationalDiscount: (json['internationalDiscount'] ?? 0).toDouble(),
+      localDiscount: (json['localDiscount'] ?? 0).toDouble(),
+      mostPopularAmount: json['mostPopularAmount']?.toDouble(),
+      mostPopularLocalAmount: json['mostPopularLocalAmount']?.toDouble(),
+      minAmount: (json['minAmount'] ?? 0).toDouble(),
+      maxAmount: (json['maxAmount'] ?? 0).toDouble(),
+      localMinAmount: json['localMinAmount']?.toDouble(),
+      localMaxAmount: json['localMaxAmount']?.toDouble(),
+      country: Country.fromJson(json['country'] ?? {}),
+      fx: FxRate.fromJson(json['fx'] ?? {}),
+      logoUrls: List<String>.from(json['logoUrls'] ?? []),
+      fixedAmounts: List<double>.from(
+        (json['fixedAmounts'] ?? []).map((x) => x.toDouble()),
+      ),
+      fixedAmountsDescriptions: Map<String, dynamic>.from(
+        json['fixedAmountsDescriptions'] ?? {},
+      ),
+      localFixedAmounts: List<double>.from(
+        (json['localFixedAmounts'] ?? []).map((x) => x.toDouble()),
+      ),
+      localFixedAmountsDescriptions: Map<String, dynamic>.from(
+        json['localFixedAmountsDescriptions'] ?? {},
+      ),
+      suggestedAmounts: List<double>.from(
+        (json['suggestedAmounts'] ?? []).map((x) => x.toDouble()),
+      ),
+      suggestedAmountsMap: Map<String, dynamic>.from(
+        json['suggestedAmountsMap'] ?? {},
+      ),
+      fees: Fees.fromJson(json['fees'] ?? {}),
+      geographicalRechargePlans: List<dynamic>.from(
+        json['geographicalRechargePlans'] ?? [],
+      ),
+      promotions: List<dynamic>.from(json['promotions'] ?? []),
+      status: json['status'] ?? '',
+      payAmount: json['payAmount']?.toDouble(),
+      billItemId: parsedBillItemId,
+    );
+  }
 }
 
 class Country {
@@ -265,12 +282,15 @@ class AirtimePurchaseRequest {
   });
 
   Map<String, dynamic> toJson() => {
+    'requestRef': 'AIRTIME-${DateTime.now().millisecondsSinceEpoch}',
+    'billType': 'AIRTIME',
+    'billItemId': itemId ?? billerId ?? operatorId?.toString(),
+    'customerId': phone,
+    'customerFirstName': 'Customer', // Default if not provided
+    'customerPhone': phone,
+    'amountInNaira': amount,
     'walletPin': walletPin,
-    'amount': amount,
-    if (operatorId != null) 'operatorId': operatorId,
-    'phone': phone,
-    'currency': currency,
-    if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,
+    'saveBeneficiary': addBeneficiary ?? false,
   };
 }
 

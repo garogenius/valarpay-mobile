@@ -12,6 +12,7 @@ class Tier3Card extends StatefulWidget {
   final VoidCallback onToggle;
   final bool isNinVerified;
   final bool isAddressSubmitted;
+  final bool isTier2OrHigher;
   final UserModel? user;
   final TierInfo? tierInfo;
 
@@ -21,6 +22,7 @@ class Tier3Card extends StatefulWidget {
     required this.onToggle,
     this.isNinVerified = false,
     this.isAddressSubmitted = false,
+    this.isTier2OrHigher = false,
     this.user,
     this.tierInfo,
   }) : super(key: key);
@@ -123,7 +125,8 @@ class _Tier3CardState extends State<Tier3Card> {
                 // Clickable upgrade text
                 Expanded(
                   child: GestureDetector(
-                    onTap: widget.isNinVerified && !widget.isAddressSubmitted
+                    behavior: HitTestBehavior.opaque,
+                    onTap: widget.isTier2OrHigher && !widget.isAddressSubmitted
                         ? () {
                             // Directly navigate to document upload for Tier 3 review
                             final request = const KycAddressRequest();
@@ -143,14 +146,14 @@ class _Tier3CardState extends State<Tier3Card> {
                               ? 'Tier 3' 
                               : 'Upgrade to Tier 3',
                           style: TextStyle(
-                            color: widget.isNinVerified && !widget.isAddressSubmitted
+                            color: widget.isTier2OrHigher && !widget.isAddressSubmitted
                                 ? const Color(0xFFF76301)
                                 : const Color(0xFF9CA3AF),
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (widget.isNinVerified && !widget.isAddressSubmitted) ...[
+                        if (widget.isTier2OrHigher && !widget.isAddressSubmitted) ...[
                           SizedBox(width: 4.w),
                           Icon(
                             Icons.arrow_forward_ios,

@@ -136,7 +136,14 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
     if (!_hasMore || state.isInitialLoading || state.isPaginating) return;
 
     _currentPage++;
-    await fetchTransactions();
+    await fetchTransactions(
+      status: _statusFilter,
+      dateFrom: _dateFromFilter,
+      dateTo: _dateToFilter,
+      type: _typeFilter,
+      category: _categoryFilter,
+      limit: _limitFilter,
+    );
   }
 
   /// Refresh transactions (pull to refresh)
@@ -162,6 +169,86 @@ class TransactionNotifier extends StateNotifier<DataState<TransactionModel>> {
       dateFrom: null,
       dateTo: null,
     );
+  }
+
+  /// Check status of a bill or gift card transaction
+  Future<String?> checkTransactionStatus({
+    required String transactionId,
+    required String billRef,
+    required bool isGiftCard,
+  }) async {
+    try {
+      final Map<String, dynamic> result;
+      if (isGiftCard) {
+        result = await _repository.checkGiftCardStatus(billRef: billRef);
+      } else {
+        result = await _repository.checkBillStatus(billRef: billRef);
+      }
+      
+      final String? apiStatus = result['status'];
+      if (apiStatus != null) {
+        final String mappedStatus = apiStatus.toLowerCase();
+        
+        // Find and update in _allTransactions
+        for (var i = 0; i < _allTransactions.length; i++) {
+          if (_allTransactions[i].id == transactionId) {
+            _allTransactions[i] = TransactionModel(
+              id: _allTransactions[i].id,
+              walletId: _allTransactions[i].walletId,
+              transactionRef: _allTransactions[i].transactionRef,
+              type: _allTransactions[i].type,
+              category: _allTransactions[i].category,
+              currency: _allTransactions[i].currency,
+              status: mappedStatus,
+              description: _allTransactions[i].description,
+              previousBalance: _allTransactions[i].previousBalance,
+              currentBalance: _allTransactions[i].currentBalance,
+              reference: _allTransactions[i].reference,
+              billDetails: _allTransactions[i].billDetails,
+              transferDetails: _allTransactions[i].transferDetails,
+              depositDetails: _allTransactions[i].depositDetails,
+              createdAt: _allTransactions[i].createdAt,
+              updatedAt: DateTime.now(),
+            );
+            break;
+          }
+        }
+        
+        // Update state data list
+        if (state.data != null) {
+          final updatedList = state.data!.map((tx) {
+            if (tx.id == transactionId) {
+              return TransactionModel(
+                id: tx.id,
+                walletId: tx.walletId,
+                transactionRef: tx.transactionRef,
+                type: tx.type,
+                category: tx.category,
+                currency: tx.currency,
+                status: mappedStatus,
+                description: tx.description,
+                previousBalance: tx.previousBalance,
+                currentBalance: tx.currentBalance,
+                reference: tx.reference,
+                billDetails: tx.billDetails,
+                transferDetails: tx.transferDetails,
+                depositDetails: tx.depositDetails,
+                createdAt: tx.createdAt,
+                updatedAt: DateTime.now(),
+              );
+            }
+            return tx;
+          }).toList();
+          
+          state = state.copyWith(data: updatedList);
+        }
+        return apiStatus;
+      }
+      return null;
+    } catch (e, stack) {
+      log('[TransactionNotifier checkTransactionStatus] $e\n$stack');
+      rethrow;
+    }
   }
 
   /// Reset state

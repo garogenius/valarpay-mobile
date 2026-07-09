@@ -123,6 +123,16 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
       } else {
         _accountNumber = savedPhoneNumber;
       }
+
+      if (_profileImageUrl == null || _profileImageUrl!.isEmpty) {
+        SessionService.getProfileImageUrl().then((url) {
+          if (mounted) {
+            setState(() {
+              _profileImageUrl = url;
+            });
+          }
+        });
+      }
       _isLoading = false;
     });
   }
@@ -209,7 +219,15 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
             type: MessageType.success,
           );
           await LoginActivityService.trackLogin('success');
-          context.go('/');
+          
+          final userCurrency = loginResponse.user.currency ?? 'NGN';
+          final hasCurrencyWallet = loginResponse.user.wallets.any((w) => w.currency == userCurrency);
+          
+          if (userCurrency != 'NGN' && !hasCurrencyWallet) {
+            context.pushReplacement('/account-setup', extra: userCurrency);
+          } else {
+            context.go('/');
+          }
         } else {
           await LoginActivityService.trackLogin('failed');
           if (!context.mounted) return;
@@ -244,7 +262,15 @@ class _BiometricLoginScreenState extends ConsumerState<BiometricLoginScreen> {
             message: 'Welcome back, ${user.fullname}',
             type: MessageType.success,
           );
-          context.go('/');
+          
+          final userCurrency = user.currency ?? 'NGN';
+          final hasCurrencyWallet = user.wallets.any((w) => w.currency == userCurrency);
+          
+          if (userCurrency != 'NGN' && !hasCurrencyWallet) {
+            context.pushReplacement('/account-setup', extra: userCurrency);
+          } else {
+            context.go('/');
+          }
         } else {
           if (!context.mounted) return;
           AppMessenger.show(

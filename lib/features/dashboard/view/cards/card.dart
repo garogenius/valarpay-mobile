@@ -34,7 +34,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         title: Text(
-          "Card Management",
+          "ValarPay Cards",
           style: TextStyle(
             fontSize: 18, 
             fontWeight: FontWeight.bold, 
@@ -67,7 +67,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
                   children: [
                     _buildCardToggle("Physical", 0),
                     _buildCardToggle("Virtual", 1),
-                    _buildCardToggle("Linked", 2),
+                    _buildCardToggle("Link Card", 2),
                   ],
                 ),
               ),

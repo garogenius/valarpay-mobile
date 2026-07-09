@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/services/session_service.dart';
 import 'package:valarpay/core/routing/app_router.dart';
+import 'package:valarpay/core/services/connectivity_service.dart';
+import 'package:valarpay/core/utils/app_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valarpay/core/network/data_state.dart';
 
@@ -76,6 +78,12 @@ class ApiClient {
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('user_access_token');
               await prefs.remove('user_details');
+              
+              final context = ConnectivityService.navigatorKey.currentContext;
+              if (context != null && context.mounted) {
+                AppMessenger.show(context, message: 'Session expired. Please login again.', type: MessageType.error);
+              }
+              
               // Optionally trigger a global event or redirect if router is accessible
               router.go('/signin');
             }

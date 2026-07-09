@@ -26,11 +26,43 @@ class BeneficiaryRepository {
       }
 
       final response = await apiClient.get(
-        ApiEndpoints.getBeneficiaries,
+        ApiEndpoints.getBeneficiariesList,
         queryParameters: queryParams,
       );
 
       return BeneficiariesResponse.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> addBeneficiary(Map<String, dynamic> data) async {
+    try {
+      await apiClient.post(
+        ApiEndpoints.addBeneficiary,
+        data: data,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<BeneficiaryDetailsResponse> getBeneficiary(String id) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.getBeneficiaryDetails(id),
+      );
+      return BeneficiaryDetailsResponse.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteBeneficiary(String id) async {
+    try {
+      await apiClient.delete(
+        ApiEndpoints.deleteBeneficiary(id),
+      );
     } catch (e) {
       rethrow;
     }

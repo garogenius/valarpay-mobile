@@ -40,7 +40,7 @@ class _BettingScreenState extends ConsumerState<BettingScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final platformsState = ref.watch(bettingPlatformsNotifierProvider);
 

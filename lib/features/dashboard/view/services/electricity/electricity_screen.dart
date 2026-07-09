@@ -85,7 +85,7 @@ class _ElectricityScreenState extends ConsumerState<ElectricityScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final electricityState = ref.watch(electricityNotifierProvider);
     final billInfoState = ref.watch(electricityBillInfoNotifierProvider);

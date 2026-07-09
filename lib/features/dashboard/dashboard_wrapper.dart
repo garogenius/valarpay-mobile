@@ -12,6 +12,10 @@ import 'package:valarpay/core/services/session_timeout_service.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/services/biometric_transaction_tracker.dart';
 import '/features/dashboard/widgets/navbar.dart';
+import 'package:valarpay/features/notifiers/account_creation_status_provider.dart';
+import 'package:valarpay/features/notifiers/user_notifier.dart';
+import 'package:valarpay/core/utils/app_messenger.dart';
+import 'dart:async';
 
 class DashboardWrapper extends ConsumerStatefulWidget {
   final Widget child;
@@ -45,10 +49,52 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     });
   }
 
+  Timer? _accountCheckTimer;
+  int _pollCount = 0;
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _accountCheckTimer?.cancel();
     super.dispose();
+  }
+
+  void _startAccountPolling() {
+    if (_accountCheckTimer != null && _accountCheckTimer!.isActive) return;
+    _pollCount = 0;
+    _accountCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      _pollCount++;
+      // Stop polling after 12 tries (1 minute)
+      if (_pollCount > 12) {
+        timer.cancel();
+        if (mounted) {
+          ref.read(accountCreationProcessingProvider.notifier).state = false;
+          AppMessenger.show(context, message: 'Account creation is taking longer than expected. We will notify you once it is ready.', type: MessageType.error);
+        }
+        return;
+      }
+
+      try {
+        final user = await ref.read(userNotifierProvider.notifier).refreshUserProfile();
+        if (user != null) {
+          final hasNgn = user.wallets.any((w) => w.currency.toUpperCase() == 'NGN');
+          if (hasNgn) {
+            timer.cancel();
+            if (mounted) {
+              ref.read(accountCreationProcessingProvider.notifier).state = false;
+              AppMessenger.show(context, message: 'Account created successfully!', type: MessageType.success);
+            }
+          }
+        }
+      } catch (e) {
+        // error handled silently
+      }
+    });
   }
 
   @override
@@ -113,7 +159,7 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
     final isRootPage = ['/', '/finance', '/cards', '/me'].contains(currentPath);
     if (!isRootPage) return;
 
-    final isKycVerified = user.isBvnVerified || user.isNinVerified;
+    final isKycVerified = user.wallets.isNotEmpty || user.isBvnVerified || user.isNinVerified;
     final isPasscodeSet = user.isPasscodeSet;
     final isPinSet = user.isWalletPinSet;
 
@@ -358,13 +404,58 @@ class _DashboardWrapperState extends ConsumerState<DashboardWrapper>
       }
     });
 
+    final isAccountProcessing = ref.watch(accountCreationProcessingProvider);
+    if (isAccountProcessing) {
+      _startAccountPolling();
+    }
+
     return GestureDetector(
       // onTap: () => SessionTimeoutService.recordActivity(), // Disabled session timeout
       // onPanDown: (_) => SessionTimeoutService.recordActivity(), // Disabled session timeout
       behavior: HitTestBehavior.translucent,
-      child: Scaffold(
-        body: widget.child,
-        bottomNavigationBar: const CustomBottomNavBar(),
+      child: Stack(
+        children: [
+          Scaffold(
+            body: widget.child,
+            bottomNavigationBar: const CustomBottomNavBar(),
+          ),
+          if (isAccountProcessing)
+            Container(
+              color: Colors.black.withOpacity(0.85),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Color(0xFFF76301)),
+                    SizedBox(height: 24),
+                    Text(
+                      'Account Processing...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        'We are creating your NGN account. This may take a few moments.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          decoration: TextDecoration.none,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -473,6 +564,26 @@ class _KycVerificationModal extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: const Text('Verify with BVN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/nin-verification');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: appTheme.primaryColor, width: 1.5),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text('Verify with NIN', style: TextStyle(color: appTheme.primaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

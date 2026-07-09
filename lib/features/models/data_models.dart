@@ -549,14 +549,15 @@ class DataPurchaseRequest {
   });
 
   Map<String, dynamic> toJson() => {
+    'requestRef': 'DATA-${DateTime.now().millisecondsSinceEpoch}',
+    'billType': 'DATA',
+    'billItemId': itemId ?? billerId ?? operatorId?.toString(),
+    'customerId': phone,
+    'customerFirstName': 'Customer', // Default if not provided
+    'customerPhone': phone,
+    'amountInNaira': amount,
     'walletPin': walletPin,
-    'amount': amount,
-    if (operatorId != null) 'operatorId': operatorId,
-    if (billerId != null) 'billerId': billerId,
-    if (itemId != null) 'itemId': itemId,
-    'phone': phone,
-    'currency': currency,
-    if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,
+    'saveBeneficiary': addBeneficiary ?? false,
   };
 }
 

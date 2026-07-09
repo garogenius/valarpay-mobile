@@ -108,8 +108,8 @@ class _Tier1CardState extends State<Tier1Card> {
                   if (widget.tierInfo != null)
                     ...widget.tierInfo!.requirements.map((req) {
                       bool isVerified = false;
-                      if (req.toLowerCase().contains('bvn') && isBvnVerified) isVerified = true;
-                      // Add other checks if needed, like liveness which might be user.isSelfieVerified if that exists
+                      if (req.toLowerCase().contains('identity') && (isBvnVerified || (widget.user?.isNinVerified ?? false))) isVerified = true;
+                      if (req.toLowerCase().contains('basic information') && (widget.user?.fullname != null)) isVerified = true;
                       
                       return Padding(
                         padding: EdgeInsets.only(bottom: 12.h),
@@ -141,7 +141,7 @@ class _Tier1CardState extends State<Tier1Card> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'BVN',
+                          'Identity',
                           style: TextStyle(
                             color: Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
@@ -153,15 +153,15 @@ class _Tier1CardState extends State<Tier1Card> {
                         Row(
                           children: [
                             Icon(
-                              isBvnVerified ? Icons.check_circle : Icons.cancel,
-                              color: isBvnVerified ? Colors.green : Colors.red,
+                              (isBvnVerified || (widget.user?.isNinVerified ?? false)) ? Icons.check_circle : Icons.cancel,
+                              color: (isBvnVerified || (widget.user?.isNinVerified ?? false)) ? Colors.green : Colors.red,
                               size: 16.sp,
                             ),
                             SizedBox(width: 4.w),
                             Text(
-                              isBvnVerified ? 'Verified' : 'Not Verified',
+                              (isBvnVerified || (widget.user?.isNinVerified ?? false)) ? 'Verified' : 'Not Verified',
                               style: TextStyle(
-                                color: isBvnVerified ? Colors.green : Colors.red,
+                                color: (isBvnVerified || (widget.user?.isNinVerified ?? false)) ? Colors.green : Colors.red,
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w500,
                               ),

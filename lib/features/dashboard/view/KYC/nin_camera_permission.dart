@@ -9,7 +9,9 @@ import 'package:valarpay/features/dashboard/view/KYC/nin_identity_verification.d
 
 class NinCameraPermissionPage extends ConsumerStatefulWidget {
   final String nin;
-  const NinCameraPermissionPage({required this.nin, Key? key})
+  final String? docType;
+  final bool isTierUpgrade;
+  const NinCameraPermissionPage({required this.nin, this.docType, this.isTierUpgrade = false, Key? key})
       : super(key: key);
 
   @override
@@ -27,7 +29,11 @@ class _NinCameraPermissionPageState
       final status = await Permission.camera.request();
 
       if (status.isGranted) {
-        context.push('/nin-identity-verification/${widget.nin}');
+        if (widget.docType != null) {
+          context.push('/nin-identity-verification/${widget.docType}/${widget.nin}?isTierUpgrade=${widget.isTierUpgrade}');
+        } else {
+          context.push('/nin-identity-verification/NIN/${widget.nin}?isTierUpgrade=${widget.isTierUpgrade}');
+        }
       } else if (status.isDenied) {
         AppMessenger.show(
           context,

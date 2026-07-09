@@ -13,6 +13,7 @@ class CurrencyNotifier extends StateNotifier<DataState<CurrencyConversionData>> 
     required double amount,
     required String fromCurrency,
     required String toCurrency,
+    required String userId,
   }) async {
     state = state.copyWith(isInitialLoading: true, message: null);
     try {
@@ -21,6 +22,7 @@ class CurrencyNotifier extends StateNotifier<DataState<CurrencyConversionData>> 
         amount: amount,
         fromCurrency: fromCurrency,
         toCurrency: toCurrency,
+        userId: userId,
       );
       
       // print('[CurrencyNotifier] Raw API Response: $res');

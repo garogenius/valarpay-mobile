@@ -116,17 +116,17 @@ class _InternalTransferAmountScreenState
       );
       await ref
           .read(transferNotifierProvider.notifier)
-          .initiateTransfer(
-            bankCode: '090672',
+          .initiateNattyPayTransfer(
+            bankCode: "090286",
             accountNumber: widget.accountDetails.accountNumber,
+            accountName: widget.accountDetails.accountName,
             amount: amount,
             currency: 'NGN',
             description: _narrationController.text.trim(),
             pin: pin,
+            fee: 0.0,
             saveBeneficiary: _saveBeneficiary,
-            sessionId:
-                widget.accountDetails.sessionId ??
-                Helpers.generateTransferRef(),
+            sessionId: widget.accountDetails.sessionId ?? Helpers.generateTransferRef(),
           );
 
       _hideLoading();
@@ -197,30 +197,6 @@ class _InternalTransferAmountScreenState
     );
 
     if (!hasEnoughBalance) return;
-    
-    if (amount >= 50000) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SmartSelfieWidget(
-            onComplete: (selfie, liveness) async {
-              setState(() => _isLivenessVerifying = true);
-              final ok = await ref.read(walletNotifierProvider.notifier).submitSmartSelfieAuth(
-                selfieImage: selfie,
-                livenessImages: liveness,
-              );
-              setState(() => _isLivenessVerifying = false);
-              if (ok && mounted) {
-                Navigator.pop(context); // Pop the selfie screen
-                _proceedToPinEntry(biometric, amount);
-              }
-              return ok;
-            },
-          ),
-        ),
-      );
-      return;
-    }
 
     await _proceedToPinEntry(biometric, amount);
   }

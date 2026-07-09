@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:valarpay/core/utils/currency_formatter.dart';
 
 class CurrentRateWidget extends StatelessWidget {
-  String text;
-  String price;
-  CurrentRateWidget({required this.price, required this.text, super.key});
+  final String text;
+  final String price;
+  final String symbol;
+  const CurrentRateWidget({required this.price, required this.text, this.symbol = '₦', super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +22,7 @@ class CurrentRateWidget extends StatelessWidget {
           children: [
             Text(text,
                 style: TextStyle(color: Color(0XFF216EB2), fontSize: 16)),
-            Text(currencyFormatter(price),
+            Text(currencyFormatter(price, symbol: symbol),
                 style: TextStyle(
                     color: isDark ? Colors.white70 : Colors.grey[600],
                     fontSize: 14))

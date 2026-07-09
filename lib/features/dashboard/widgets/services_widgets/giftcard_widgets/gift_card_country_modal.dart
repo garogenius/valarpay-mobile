@@ -4,28 +4,28 @@ import '/core/themes/color_utils.dart';
 
 class GiftCardCountryModal extends StatelessWidget {
   final String selectedCountry;
-  final GiftCardProduct product;
-  final Function(String) onCountrySelected;
+  final List<GiftCardProduct> brandProducts;
+  final Function(GiftCardProduct) onProductSelected;
 
   const GiftCardCountryModal({
     super.key,
     required this.selectedCountry,
-    required this.product,
-    required this.onCountrySelected,
+    required this.brandProducts,
+    required this.onProductSelected,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // For now, we'll show just the product's country since most products are country-specific
-    final countries = [
-      {
-        'name': product.country.name,
-        'flag': product.country.flagUrl,
-        'isoName': product.country.isoName,
+    final Map<String, GiftCardProduct> uniqueCountries = {};
+    for (final p in brandProducts) {
+      final countryName = p.country.name;
+      if (countryName.isNotEmpty && !uniqueCountries.containsKey(countryName)) {
+        uniqueCountries[countryName] = p;
       }
-    ];
+    }
+    final countriesList = uniqueCountries.values.toList();
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
@@ -62,73 +62,88 @@ class GiftCardCountryModal extends StatelessWidget {
 
           // Country List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: countries.length,
-              itemBuilder: (context, index) {
-                final country = countries[index];
-                final isSelected = country['name'] == selectedCountry;
-
-                return GestureDetector(
-                  onTap: () => onCountrySelected(country['name'] as String),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          isDark ? const Color(0xFF2B2725) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                      border: isSelected
-                          ? Border.all(color: AppColors.primaryColor, width: 2)
-                          : null,
+            child: countriesList.isEmpty
+                ? Center(
+                    child: Text(
+                      'No countries available',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        fontSize: 16,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 24,
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: countriesList.length,
+                    itemBuilder: (context, index) {
+                      final prod = countriesList[index];
+                      final countryName = prod.country.name;
+                      final flagUrl = prod.country.flagUrl;
+                      final isSelected = countryName == selectedCountry;
+
+                      return GestureDetector(
+                        onTap: () => onProductSelected(prod),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
+                            color: isDark
+                                ? const Color(0xFF2B2725)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected
+                                ? Border.all(
+                                    color: AppColors.primaryColor, width: 2)
+                                : null,
                           ),
-                          child: country['flag'].toString().startsWith('http')
-                              ? Image.network(
-                                  country['flag'] as String,
-                                  width: 32,
-                                  height: 24,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.flag, size: 18),
-                                )
-                              : Center(
-                                  child: Text(
-                                    country['flag'] as String,
-                                    style: const TextStyle(fontSize: 18),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: flagUrl.startsWith('http')
+                                    ? Image.network(
+                                        flagUrl,
+                                        width: 32,
+                                        height: 24,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(Icons.flag, size: 18),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          flagUrl.isNotEmpty ? flagUrl : '🏳️',
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  countryName,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            country['name'] as String,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primaryColor,
+                                  size: 20,
+                                ),
+                            ],
                           ),
                         ),
-                        if (isSelected)
-                          const Icon(
-                            Icons.check_circle,
-                            color: AppColors.primaryColor,
-                            size: 20,
-                          ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),

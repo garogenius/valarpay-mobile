@@ -242,6 +242,16 @@ class DataPurchaseNotifier
     }
   }
 
+  Future<String?> checkStatus(String billRef) async {
+    try {
+      final res = await _repository.checkBillStatus(billRef);
+      return res['status'];
+    } catch (e, stack) {
+      log('[DataPurchaseNotifier checkStatus] $e\n$stack');
+      rethrow;
+    }
+  }
+
   void reset() => state = DataState<DataPurchaseResponse>.initial();
 }
 

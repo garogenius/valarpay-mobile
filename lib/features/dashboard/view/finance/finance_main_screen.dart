@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:valarpay/core/services/local_storage_service.dart';
 import 'package:valarpay/core/themes/color_utils.dart';
+import 'package:valarpay/core/utils/ngn_account_checker.dart';
 
 class FinanceMainScreen extends ConsumerStatefulWidget {
   const FinanceMainScreen({super.key});
@@ -96,7 +97,7 @@ class _FinanceMainScreenState extends ConsumerState<FinanceMainScreen> {
               subtitle: 'Save with discipline towards a specific goal or project',
               interest: '${((ref.watch(savingsProductNotifierProvider).data?.where((p) => p.name.contains('FLEX_SAVE')).firstOrNull?.interestRate ?? 0.17) * 100).toInt()}% p.a',
               icon: Icons.track_changes,
-              onTap: () => context.push('/finance/savings/target/plans'),
+              onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/savings/target/plans')),
               isDark: isDark,
               gradientColors: [const Color(0xFF1E3A8A), const Color(0xFF1E40AF)], // Blue
             ),
@@ -106,7 +107,7 @@ class _FinanceMainScreenState extends ConsumerState<FinanceMainScreen> {
               subtitle: 'Save effortlessly with flexible rules that fit your lifestyle',
               interest: '${((ref.watch(easyLifeProductNotifierProvider).data?.firstOrNull?.interestRatePerAnnum ?? 0.0) * 100).toInt()}% p.a',
               icon: Icons.auto_awesome_outlined,
-              onTap: () => context.push('/finance/easylife/intro'),
+              onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/easylife/intro')),
               isDark: isDark,
               gradientColors: [const Color(0xFF1A567E), const Color(0xFF133E5B)], // Teal/Dark Blue
             ),
@@ -116,7 +117,7 @@ class _FinanceMainScreenState extends ConsumerState<FinanceMainScreen> {
               subtitle: 'Lock a lump sum for a set period and earn higher interest',
               interest: '${((ref.watch(fixedDepositPlanNotifierProvider).data?.firstOrNull?.interestRate ?? 0.17) * 100).toInt()}% p.a',
               icon: Icons.lock_outline,
-              onTap: () => context.push('/finance/fixed-deposit/plans'),
+              onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/fixed-deposit/plans')),
               isDark: isDark,
               gradientColors: [const Color(0xFF4338CA), const Color(0xFF3730A3)], // Indigo
             ),

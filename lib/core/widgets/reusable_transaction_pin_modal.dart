@@ -41,12 +41,14 @@ class PinNotifier extends StateNotifier<List<String>> {
 
 class TransactionPinModal extends ConsumerStatefulWidget {
   final String title;
+  final String? subtitle;
   final Function(String pin)? onComplete;
   final VoidCallback? onForgotPin;
 
   const TransactionPinModal({
     Key? key,
     this.title = 'Enter Transaction Pin',
+    this.subtitle,
     this.onComplete,
     this.onForgotPin,
   }) : super(key: key);
@@ -59,6 +61,7 @@ class TransactionPinModal extends ConsumerStatefulWidget {
   static Future<String?> show(
     BuildContext context, {
     String title = 'Enter Transaction Pin',
+    String? subtitle,
     VoidCallback? onForgotPin,
     Function(String)? onCompletePin,
   }) {
@@ -68,6 +71,7 @@ class TransactionPinModal extends ConsumerStatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => TransactionPinModal(
         title: title,
+        subtitle: subtitle,
         onForgotPin: onForgotPin,
         onComplete: onCompletePin,
       ),
@@ -147,14 +151,30 @@ class _TransactionPinModalState extends ConsumerState<TransactionPinModal> {
                   constraints: const BoxConstraints(),
                 ),
                 Expanded(
-                  child: Text(
-                    widget.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'SF Pro',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'SF Pro',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (widget.subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.subtitle!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: 'SF Pro',
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: 40), // Balance the back button

@@ -13,6 +13,9 @@ import '../../widgets/transaction_widgets/transaction_item_widget.dart';
 import '../../widgets/transaction_widgets/transaction_shimmer_loader.dart';
 import '../../widgets/transaction_widgets/empty_transactions_widget.dart';
 import '../../../notifiers/transaction_notifier.dart';
+import '../../../notifiers/notification_notifier.dart';
+import '../../widgets/me_widgets/status_selection.dart';
+import '../../widgets/me_widgets/category.dart';
 
 // State providers for UI state
 final selectedMonthProvider = StateProvider<String>((ref) => 'OCT 2025');
@@ -20,7 +23,12 @@ final selectedStatusFilterProvider = StateProvider<String?>((ref) => null);
 final selectedCategoryFilterProvider = StateProvider<String?>((ref) => null);
 
 class TransactionHistoryPage extends ConsumerStatefulWidget {
-  const TransactionHistoryPage({Key? key}) : super(key: key);
+  final String? currencyFilter;
+  
+  const TransactionHistoryPage({
+    Key? key,
+    this.currencyFilter,
+  }) : super(key: key);
 
   @override
   ConsumerState<TransactionHistoryPage> createState() =>
@@ -32,6 +40,7 @@ class _TransactionHistoryPageState
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _isAlertCardDismissed = false;
 
   @override
   void initState() {
@@ -212,10 +221,23 @@ class _TransactionHistoryPageState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final selectedMonth = ref.watch(selectedMonthProvider);
     final transactionState = ref.watch(transactionNotifierProvider);
     final transactions = transactionState.data ?? [];
+
+    final selectedStatuses = ref.watch(selectedStatusesProvider);
+    final selectedCategories = ref.watch(selectedCategoriesProvider);
+    final preferencesAsync = ref.watch(notificationPreferencesProvider);
+
+    final hasTransactionAlerts = preferencesAsync.maybeWhen(
+      data: (prefs) {
+        final txPref = prefs['TRANSACTIONS'];
+        if (txPref == null) return false;
+        return txPref.sms || txPref.push || txPref.email;
+      },
+      orElse: () => true, // default to true to not show it while loading/error
+    );
 
     // Parse selectedMonth (e.g., 'OCT 2025')
     DateTime? monthStart;
@@ -243,6 +265,60 @@ class _TransactionHistoryPageState
                   !txDate.isAfter(monthEnd!);
             }).toList()
             : transactions;
+            
+    // Filter by currency if provided
+    if (widget.currencyFilter != null) {
+      filteredTransactions = filteredTransactions
+          .where((tx) => tx.currency.toUpperCase() == widget.currencyFilter!.toUpperCase())
+          .toList();
+    }
+
+    // Filter by selected status
+    if (!selectedStatuses.contains('All Status')) {
+      filteredTransactions = filteredTransactions.where((tx) {
+        final statusLower = tx.status.toLowerCase();
+        return selectedStatuses.any((s) {
+          final sLower = s.toLowerCase();
+          if (sLower == 'processing') {
+            return statusLower == 'pending' || statusLower == 'processing';
+          }
+          if (sLower == 'successful') {
+            return statusLower == 'success' || statusLower == 'successful';
+          }
+          return statusLower == sLower;
+        });
+      }).toList();
+    }
+
+    // Filter by selected category
+    if (!selectedCategories.contains('All Categories')) {
+      filteredTransactions = filteredTransactions.where((tx) {
+        final catLower = tx.category.toLowerCase();
+        final billTypeLower = tx.billDetails?.billType?.toLowerCase() ?? '';
+        return selectedCategories.any((c) {
+          final cLower = c.toLowerCase();
+          if (cLower.contains('transfer')) {
+            return catLower == 'transfer';
+          }
+          if (cLower == 'airtime') {
+            return billTypeLower == 'airtime' || billTypeLower.contains('airtime');
+          }
+          if (cLower == 'mobile data') {
+            return billTypeLower == 'data' || billTypeLower.contains('data') || billTypeLower.contains('bundle');
+          }
+          if (cLower == 'electricity') {
+            return billTypeLower == 'electricity';
+          }
+          if (cLower == 'cable tv') {
+            return billTypeLower == 'cable' || billTypeLower.contains('tv');
+          }
+          if (cLower.contains('giftcard')) {
+            return billTypeLower.contains('giftcard') || billTypeLower.contains('gift_card');
+          }
+          return catLower.contains(cLower) || billTypeLower.contains(cLower);
+        });
+      }).toList();
+    }
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
@@ -486,6 +562,8 @@ class _TransactionHistoryPageState
                         ],
                       ),
                     ),
+                    if (!hasTransactionAlerts && !_isAlertCardDismissed)
+                      _buildNoAlertsCard(context),
                     const SizedBox(height: 4),
                     // Transactions List
                     Expanded(
@@ -561,6 +639,102 @@ class _TransactionHistoryPageState
           },
         );
       },
+    );
+  }
+
+  Widget _buildNoAlertsCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark 
+              ? [const Color(0xFF2C1609), const Color(0xFF1E0E06)]
+              : [const Color(0xFFFFF7ED), const Color(0xFFFFEDD5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF4C270E) : const Color(0xFFFFD8A8), 
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF76301).withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_active_outlined,
+              color: Color(0xFFF76301),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No Transaction Alerts Active',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : const Color(0xFF7A2D00),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Activate SMS, email or push notifications to track your transactions instantly.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey[300] : const Color(0xFF9E4712),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () {
+                    context.push('/notification-settings');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text(
+                        'Activate Now',
+                        style: TextStyle(
+                          color: Color(0xFFF76301),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: Color(0xFFF76301), size: 18),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isAlertCardDismissed = true;
+              });
+            },
+            child: Icon(
+              Icons.close, 
+              size: 18, 
+              color: isDark ? Colors.grey[500] : const Color(0xFF9E4712),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -112,3 +112,31 @@ class BeneficiariesResponse {
     };
   }
 }
+
+class BeneficiaryDetailsResponse {
+  final String message;
+  final int statusCode;
+  final Beneficiary? data;
+
+  BeneficiaryDetailsResponse({
+    required this.message,
+    required this.statusCode,
+    this.data,
+  });
+
+  factory BeneficiaryDetailsResponse.fromJson(Map<String, dynamic> json) {
+    return BeneficiaryDetailsResponse(
+      message: json['message'] ?? '',
+      statusCode: json['statusCode'] ?? 0,
+      data: json['data'] != null ? Beneficiary.fromJson(json['data']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'statusCode': statusCode,
+      if (data != null) 'data': data!.toJson(),
+    };
+  }
+}

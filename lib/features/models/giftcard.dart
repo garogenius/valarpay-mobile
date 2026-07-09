@@ -4,8 +4,17 @@ class GiftCardCategory {
 
   GiftCardCategory({required this.id, required this.name});
 
-  factory GiftCardCategory.fromJson(Map<String, dynamic> json) {
-    return GiftCardCategory(id: json['id'] ?? 0, name: json['name'] ?? '');
+  factory GiftCardCategory.fromJson(dynamic json) {
+    if (json is Map) {
+      return GiftCardCategory(
+        id: json['id'] is int ? json['id'] : (int.tryParse(json['id']?.toString() ?? '') ?? 0),
+        name: json['name']?.toString() ?? json['category']?.toString() ?? '',
+      );
+    }
+    return GiftCardCategory(
+      id: 0,
+      name: json?.toString() ?? '',
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -19,10 +28,16 @@ class GiftCardBrand {
 
   GiftCardBrand({required this.brandId, required this.brandName});
 
-  factory GiftCardBrand.fromJson(Map<String, dynamic> json) {
+  factory GiftCardBrand.fromJson(dynamic json) {
+    if (json is Map) {
+      return GiftCardBrand(
+        brandId: json['brandId'] is int ? json['brandId'] : (int.tryParse(json['brandId']?.toString() ?? '') ?? 0),
+        brandName: json['brandName']?.toString() ?? json['name']?.toString() ?? json['brand']?.toString() ?? '',
+      );
+    }
     return GiftCardBrand(
-      brandId: json['brandId'] ?? 0,
-      brandName: json['brandName'] ?? '',
+      brandId: 0,
+      brandName: json?.toString() ?? '',
     );
   }
 
@@ -42,11 +57,18 @@ class GiftCardCountry {
     required this.flagUrl,
   });
 
-  factory GiftCardCountry.fromJson(Map<String, dynamic> json) {
+  factory GiftCardCountry.fromJson(dynamic json) {
+    if (json is Map) {
+      return GiftCardCountry(
+        isoName: json['isoName']?.toString() ?? json['code']?.toString() ?? '',
+        name: json['name']?.toString() ?? json['countryName']?.toString() ?? '',
+        flagUrl: json['flagUrl']?.toString() ?? json['flag']?.toString() ?? json['image']?.toString() ?? '',
+      );
+    }
     return GiftCardCountry(
-      isoName: json['isoName'] ?? '',
-      name: json['name'] ?? '',
-      flagUrl: json['flagUrl'] ?? '',
+      isoName: '',
+      name: json?.toString() ?? '',
+      flagUrl: '',
     );
   }
 
@@ -61,10 +83,16 @@ class RedeemInstruction {
 
   RedeemInstruction({required this.concise, required this.verbose});
 
-  factory RedeemInstruction.fromJson(Map<String, dynamic> json) {
+  factory RedeemInstruction.fromJson(dynamic json) {
+    if (json is Map) {
+      return RedeemInstruction(
+        concise: json['concise']?.toString() ?? '',
+        verbose: json['verbose']?.toString() ?? '',
+      );
+    }
     return RedeemInstruction(
-      concise: json['concise'] ?? '',
-      verbose: json['verbose'] ?? '',
+      concise: '',
+      verbose: json?.toString() ?? '',
     );
   }
 
@@ -78,10 +106,13 @@ class AdditionalRequirements {
 
   AdditionalRequirements({required this.userIdRequired});
 
-  factory AdditionalRequirements.fromJson(Map<String, dynamic> json) {
-    return AdditionalRequirements(
-      userIdRequired: json['userIdRequired'] ?? false,
-    );
+  factory AdditionalRequirements.fromJson(dynamic json) {
+    if (json is Map) {
+      return AdditionalRequirements(
+        userIdRequired: json['userIdRequired'] == true || json['userIdRequired']?.toString() == 'true',
+      );
+    }
+    return AdditionalRequirements(userIdRequired: false);
   }
 
   Map<String, dynamic> toJson() {
@@ -90,7 +121,7 @@ class AdditionalRequirements {
 }
 
 class GiftCardProduct {
-  final int productId;
+  final String productId;
   final String productName;
   final bool global;
   final String status;
@@ -147,51 +178,51 @@ class GiftCardProduct {
   });
 
   factory GiftCardProduct.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0.0;
+    }
+
     return GiftCardProduct(
-      productId: json['productId'] ?? 0,
+      productId: json['productId']?.toString() ?? json['id']?.toString() ?? json['identifier']?.toString() ?? '',
       productName: json['productName'] ?? '',
       global: json['global'] ?? false,
       status: json['status'] ?? '',
       supportsPreOrder: json['supportsPreOrder'] ?? false,
-      senderFee: (json['senderFee'] ?? 0).toDouble(),
-      senderFeePercentage: (json['senderFeePercentage'] ?? 0).toDouble(),
-      discountPercentage: (json['discountPercentage'] ?? 0).toDouble(),
+      senderFee: parseDouble(json['senderFee']),
+      senderFeePercentage: parseDouble(json['senderFeePercentage']),
+      discountPercentage: parseDouble(json['discountPercentage']),
       denominationType: json['denominationType'] ?? '',
       recipientCurrencyCode: json['recipientCurrencyCode'] ?? '',
-      minRecipientDenomination: json['minRecipientDenomination']?.toDouble(),
-      maxRecipientDenomination: json['maxRecipientDenomination']?.toDouble(),
+      minRecipientDenomination: json['minRecipientDenomination'] != null ? parseDouble(json['minRecipientDenomination']) : null,
+      maxRecipientDenomination: json['maxRecipientDenomination'] != null ? parseDouble(json['maxRecipientDenomination']) : null,
       senderCurrencyCode: json['senderCurrencyCode'] ?? '',
-      minSenderDenomination: json['minSenderDenomination']?.toDouble(),
-      maxSenderDenomination: json['maxSenderDenomination']?.toDouble(),
-      fixedRecipientDenominations:
-          (json['fixedRecipientDenominations'] as List?)
-              ?.map((e) => (e as num).toDouble())
-              .toList() ??
-          [],
-      fixedSenderDenominations:
-          (json['fixedSenderDenominations'] as List?)
-              ?.map((e) => (e as num).toDouble())
-              .toList(),
-      fixedRecipientToSenderDenominationsMap:
-          (json['fixedRecipientToSenderDenominationsMap']
-                  as Map<String, dynamic>?)
-              ?.map((key, value) => MapEntry(key, (value as num).toDouble())),
-      metadata: (json['metadata'] as Map<String, dynamic>?)?.map(
-        (key, value) => MapEntry(key, value.toString()),
-      ),
-      logoUrls: (json['logoUrls'] as List?)?.cast<String>() ?? [],
+      minSenderDenomination: json['minSenderDenomination'] != null ? parseDouble(json['minSenderDenomination']) : null,
+      maxSenderDenomination: json['maxSenderDenomination'] != null ? parseDouble(json['maxSenderDenomination']) : null,
+      fixedRecipientDenominations: json['fixedRecipientDenominations'] is List
+          ? (json['fixedRecipientDenominations'] as List).map((e) => parseDouble(e)).toList()
+          : [],
+      fixedSenderDenominations: json['fixedSenderDenominations'] is List
+          ? (json['fixedSenderDenominations'] as List).map((e) => parseDouble(e)).toList()
+          : null,
+      fixedRecipientToSenderDenominationsMap: json['fixedRecipientToSenderDenominationsMap'] is Map
+          ? (json['fixedRecipientToSenderDenominationsMap'] as Map).map((key, value) => MapEntry(key.toString(), parseDouble(value)))
+          : null,
+      metadata: json['metadata'] is Map
+          ? (json['metadata'] as Map).map((key, value) => MapEntry(key.toString(), value.toString()))
+          : null,
+      logoUrls: json['logoUrls'] is List
+          ? (json['logoUrls'] as List).map((e) => e.toString()).toList()
+          : [],
       brand: GiftCardBrand.fromJson(json['brand'] ?? {}),
       category: GiftCardCategory.fromJson(json['category'] ?? {}),
       country: GiftCardCountry.fromJson(json['country'] ?? {}),
-      redeemInstruction: RedeemInstruction.fromJson(
-        json['redeemInstruction'] ?? {},
-      ),
-      additionalRequirements: AdditionalRequirements.fromJson(
-        json['additionalRequirements'] ?? {},
-      ),
-      fixedRecipientToPayAmount: (json['fixedRecipientToPayAmount']
-              as Map<String, dynamic>?)
-          ?.map((key, value) => MapEntry(key, (value as num).toDouble())),
+      redeemInstruction: RedeemInstruction.fromJson(json['redeemInstruction'] ?? {}),
+      additionalRequirements: AdditionalRequirements.fromJson(json['additionalRequirements'] ?? {}),
+      fixedRecipientToPayAmount: json['fixedRecipientToPayAmount'] is Map
+          ? (json['fixedRecipientToPayAmount'] as Map).map((key, value) => MapEntry(key.toString(), parseDouble(value)))
+          : null,
     );
   }
 
@@ -240,14 +271,105 @@ class GiftCardProductResponse {
   });
 
   factory GiftCardProductResponse.fromJson(Map<String, dynamic> json) {
+    final List<GiftCardProduct> products = [];
+    
+    dynamic rawList;
+    if (json['data'] is List) {
+      rawList = json['data'];
+    } else if (json['data'] is Map) {
+      final Map<String, dynamic> dataMap = json['data'];
+      rawList = dataMap['products'] ?? dataMap['content'] ?? dataMap['items'] ?? dataMap['giftcards'] ?? dataMap['data'];
+    }
+    
+    rawList ??= json['products'] ?? json['content'] ?? json['items'] ?? json['giftcards'];
+    
+    if (rawList == null && json is List) {
+      rawList = json;
+    }
+    
+    rawList ??= [json];
+
+    double parseDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0.0;
+    }
+
+    if (rawList is List) {
+      for (var item in rawList) {
+        if (item is Map) {
+          final mapItem = Map<String, dynamic>.from(item);
+          if (mapItem['package'] != null) {
+            // New package format
+            final packageImage = mapItem['image']?.toString() ?? '';
+            final packageName = mapItem['package']?.toString() ?? '';
+            final categoryName = mapItem['category']?.toString() ?? '';
+            final countriesList = mapItem['countries'];
+            if (countriesList is List) {
+              for (var countryObj in countriesList) {
+                if (countryObj is Map) {
+                  final countryMap = Map<String, dynamic>.from(countryObj);
+                  final countryName = countryMap['name']?.toString() ?? '';
+                  final countryImage = countryMap['image']?.toString() ?? '';
+                  final countryPkgName = countryMap['packageName']?.toString() ?? packageName;
+                  final countryCurrency = countryMap['currency']?.toString() ?? '';
+                  final itemsList = countryMap['items'];
+                  if (itemsList is List) {
+                    for (var itemObj in itemsList) {
+                      if (itemObj is Map) {
+                        final itemMap = Map<String, dynamic>.from(itemObj);
+                        final identifier = itemMap['identifier']?.toString() ?? '';
+                        final double minVal = parseDouble(itemMap['localProductValueMin'] ?? itemMap['minRecipientDenomination']);
+                        final double maxVal = parseDouble(itemMap['localProductValueMax'] ?? itemMap['maxRecipientDenomination']);
+                        final isRange = minVal != maxVal;
+
+                        final product = GiftCardProduct(
+                          productId: identifier,
+                          productName: countryPkgName,
+                          global: false,
+                          status: 'ACTIVE',
+                          supportsPreOrder: false,
+                          senderFee: 0.0,
+                          senderFeePercentage: 0.0,
+                          discountPercentage: 0.0,
+                          denominationType: isRange ? 'RANGE' : 'FIXED',
+                          recipientCurrencyCode: countryCurrency,
+                          minRecipientDenomination: minVal,
+                          maxRecipientDenomination: maxVal,
+                          senderCurrencyCode: countryCurrency,
+                          minSenderDenomination: minVal,
+                          maxSenderDenomination: maxVal,
+                          fixedRecipientDenominations: isRange ? [] : [minVal],
+                          logoUrls: packageImage.isNotEmpty ? [packageImage] : [],
+                          brand: GiftCardBrand(brandId: 0, brandName: packageName),
+                          category: GiftCardCategory(id: 0, name: categoryName),
+                          country: GiftCardCountry(
+                            isoName: countryName,
+                            name: countryName,
+                            flagUrl: countryImage,
+                          ),
+                          redeemInstruction: RedeemInstruction(concise: '', verbose: ''),
+                          additionalRequirements: AdditionalRequirements(userIdRequired: false),
+                        );
+                        products.add(product);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            // Old format
+            products.add(GiftCardProduct.fromJson(mapItem));
+          }
+        }
+      }
+    }
+
     return GiftCardProductResponse(
-      message: json['message'] ?? '',
-      statusCode: json['statusCode'] ?? 0,
-      data:
-          (json['data'] as List?)
-              ?.map((item) => GiftCardProduct.fromJson(item))
-              .toList() ??
-          [],
+      message: json['message'] ?? 'Success',
+      statusCode: json['statusCode'] ?? 200,
+      data: products,
     );
   }
 
@@ -261,12 +383,13 @@ class GiftCardProductResponse {
 }
 
 class GiftCardPaymentRequest {
-  final int productId;
+  final String productId;
   final String currency;
   final String walletPin;
   final double amount;
   final double unitPrice;
   final int quantity;
+  final bool? addBeneficiary;
 
   GiftCardPaymentRequest({
     required this.productId,
@@ -275,16 +398,19 @@ class GiftCardPaymentRequest {
     required this.amount,
     required this.unitPrice,
     required this.quantity,
+    this.addBeneficiary,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'productId': productId,
-      'currency': currency,
+      'requestRef': 'GIFT-${DateTime.now().millisecondsSinceEpoch}',
+      'billItemId': productId,
+      'customerEmail': 'customer@example.com',
+      'customerName': 'Customer',
+      'customerPhone': '08000000000',
+      'requestedAmount': amount,
       'walletPin': walletPin,
-      'amount': amount,
-      'unitPrice': unitPrice,
-      'quantity': quantity,
+      if (addBeneficiary != null) 'addBeneficiary': addBeneficiary,
     };
   }
 }

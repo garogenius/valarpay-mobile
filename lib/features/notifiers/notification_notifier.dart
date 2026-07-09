@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:valarpay/core/network/api_client.dart';
 import 'package:valarpay/core/network/data_state.dart';
 import 'package:valarpay/features/models/notification_model.dart';
+import 'package:valarpay/features/models/notification_preference.dart';
 import 'package:valarpay/features/repositories/notification_repository.dart';
 import 'package:valarpay/features/notifiers/user_notifier.dart';
 
@@ -222,4 +223,34 @@ final notificationNotifierProvider =
       ref,
     ) {
       return NotificationNotifier(ref.read(notificationRepositoryProvider));
+    });
+
+/// Notification Preferences Notifier
+class NotificationPreferencesNotifier extends StateNotifier<AsyncValue<Map<String, NotificationPreference>>> {
+  final NotificationRepository _repository;
+
+  NotificationPreferencesNotifier(this._repository) : super(const AsyncValue.loading());
+
+  Future<void> fetchPreferences() async {
+    state = const AsyncValue.loading();
+    try {
+      final prefsData = await _repository.getNotificationPreferences();
+      final Map<String, NotificationPreference> prefsMap = {};
+      for (var data in prefsData) {
+        final pref = NotificationPreference.fromJson(data);
+        prefsMap[pref.category] = pref;
+      }
+      state = AsyncValue.data(prefsMap);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+/// Notification Preferences Notifier Provider
+final notificationPreferencesProvider =
+    StateNotifierProvider<NotificationPreferencesNotifier, AsyncValue<Map<String, NotificationPreference>>>((
+      ref,
+    ) {
+      return NotificationPreferencesNotifier(ref.read(notificationRepositoryProvider))..fetchPreferences();
     });

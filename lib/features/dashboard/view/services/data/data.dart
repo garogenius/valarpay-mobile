@@ -46,6 +46,8 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   @override
   void initState() {
     super.initState();
+    _phoneController.addListener(_onTextChanged);
+    _amountController.addListener(_onTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(dataBeneficiaryNotifierProvider.notifier)
@@ -70,7 +72,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
               ref.read(dataSelectedNetworkProvider.notifier).state = currentPlan.network;
               ref.read(dataSelectedBillerIdProvider.notifier).state = currentPlan.billerId;
               ref.read(dataSelectedOperatorIdProvider.notifier).state = currentPlan.operatorId;
-              final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+              final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
                ref.read(dataVariationNotifierProvider.notifier).getVariation(
                  network: currentPlan.network,
                  operatorId: currentPlan.operatorId,
@@ -83,8 +85,16 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     });
   }
 
+  void _onTextChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    _phoneController.removeListener(_onTextChanged);
+    _amountController.removeListener(_onTextChanged);
     _phoneController.dispose();
     _amountController.dispose();
     super.dispose();
@@ -103,17 +113,14 @@ class _DataScreenState extends ConsumerState<DataScreen> {
 
 
   bool _isFormValid() {
-    final selectedNetwork = ref.read(dataSelectedNetworkProvider);
-    final selectedOperatorId = ref.read(dataSelectedOperatorIdProvider);
-    final selectedBillerId = ref.read(dataSelectedBillerIdProvider);
-    final selectedPlan = ref.read(dataSelectedPlanProvider);
+    final selectedNetwork = ref.watch(dataSelectedNetworkProvider);
+    final selectedPlan = ref.watch(dataSelectedPlanProvider);
 
-    return _phoneController.text.isNotEmpty &&
-        _amountController.text.isNotEmpty &&
-        _amountController.text != '0' &&
+    return _phoneController.text.trim().isNotEmpty &&
+        _amountController.text.trim().isNotEmpty &&
+        _amountController.text.trim() != '0' &&
         selectedNetwork.isNotEmpty &&
-        selectedPlan.isNotEmpty &&
-        (selectedOperatorId > 0 || selectedBillerId != null);
+        selectedPlan.isNotEmpty;
   }
 
   String _formatTo11(String raw) {
@@ -193,7 +200,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
           final operatorId = ref.read(dataSelectedOperatorIdProvider);
           final billerId = ref.read(dataSelectedBillerIdProvider);
           if (network.isNotEmpty) {
-               final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+               final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
                ref.read(dataVariationNotifierProvider.notifier).getVariation(
                  network: network,
                  operatorId: operatorId,
@@ -215,7 +222,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
     final selectedNetwork = ref.watch(dataSelectedNetworkProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -403,7 +410,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
-                              children: ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'].asMap().entries.map((entry) {
+                              children: ['HOT', 'Daily', 'Weekly', 'Monthly'].asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final title = entry.value;
                                 final isSelected = _selectedTabIndex == index;
@@ -417,7 +424,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                     if (network.isNotEmpty) {
                                       final operatorId = ref.read(dataSelectedOperatorIdProvider);
                                       final billerId = ref.read(dataSelectedBillerIdProvider);
-                                      final category = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][index];
+                                      final category = ['HOT', 'Daily', 'Weekly', 'Monthly'][index];
                                       ref.read(dataVariationNotifierProvider.notifier)
                                           .getVariation(
                                             network: network,
@@ -730,7 +737,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                            Navigator.pop(context);
                            
                            // Trigger variation fetch with network name and current category
-                           final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'XtraValue', 'Social', 'Broadband'][_selectedTabIndex];
+                           final currentCategory = ['HOT', 'Daily', 'Weekly', 'Monthly'][_selectedTabIndex];
                            ref.read(dataVariationNotifierProvider.notifier)
                                 .getVariation(
                                   network: p.network,
@@ -1120,22 +1127,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                                         setState(() {
                                           _phoneController.text = formatted;
                                         });
-
-                                        final digitsOnly = formatted.replaceAll(
-                                          RegExp(r'\D'),
-                                          '',
-                                        );
-                                        if (digitsOnly.length >= 10) {
-                                          await ref
-                                              .read(
-                                                dataPlansNotifierProvider
-                                                    .notifier,
-                                              )
-                                              .getPlans(
-                                                phone: formatted,
-                                                currency: 'NGN',
-                                              );
-                                        }
+                                        _detectNetworkProvider(formatted);
 
                                         if (Navigator.canPop(context)) {
                                           Navigator.pop(context);

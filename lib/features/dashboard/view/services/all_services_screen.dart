@@ -6,6 +6,7 @@ import 'package:valarpay/core/utils/color_utils.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/features/models/transaction_model.dart';
 import 'package:valarpay/features/notifiers/transaction_notifier.dart';
+import 'package:valarpay/core/utils/ngn_account_checker.dart';
 
 class AllServicesScreen extends ConsumerStatefulWidget {
   const AllServicesScreen({Key? key}) : super(key: key);
@@ -81,49 +82,49 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
         } else if (billType.contains('EDUCATION')) {
           item = ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
-            label: 'Education',
+            label: 'Exams',
             onTap: () => context.push('/coralpay-billing/COLLECTIONS/Education'),
           );
         } else if (billType.contains('SCHOOL')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/Education.svg',
+            icon: 'assets/icons/university_icon.svg',
             label: 'School Fees',
             onTap: () => context.push('/flutterwave-billing/SCHPB/School Fees'),
           );
         } else if (billType.contains('WAEC') || 
                    billType.contains('JAMB')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/Education.svg',
+            icon: 'assets/images/me_icons/doc.svg',
             label: 'Exam Pins',
             onTap: () => context.push('/education'),
           );
         } else if (billType.contains('TRANSPORT')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/flight.svg',
+            icon: 'assets/icons/location_point_icon.svg',
             label: 'Transport',
             onTap: () => context.push('/transport'),
           );
         } else if (billType.contains('TAX')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/icons/receipt_icon.svg',
             label: 'Pay Tax',
             onTap: () => context.push('/flutterwave-billing/TAX/Pay Tax'),
           );
         } else if (billType.contains('GOVERNMENT') || billType.contains('GOV')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/images/nav_icons/bank.svg',
             label: 'Gov Fees',
             onTap: () => context.push('/coming-soon'),
           );
         } else if (billType.contains('CHURCH')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/Education.svg',
+            icon: 'assets/icons/house_icon.svg',
             label: 'Church',
             onTap: () => context.push('/coralpay-billing/CHURCH_COLLECTIONS/Church'),
           );
         } else if (billType.contains('LIFESTYLE') || billType.contains('EVENT')) {
           item = ServiceItem(
-            icon: 'assets/images/service_icon/int.svg',
+            icon: 'assets/icons/star_icon.svg',
             label: 'Lifestyle',
             onTap: () => context.push('/coralpay-billing/EVENTS_AND_LIFESTYLE/Lifestyle'),
           );
@@ -177,27 +178,22 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ServiceItem(
             icon: 'assets/images/service_icon/int.svg',
             label: 'Invest',
-            onTap: () => context.push('/invest'),
+            onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/invest')),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/Data.svg',
             label: 'Easylife Savings',
-            onTap: () => context.push('/finance/easylife/intro'),
-          ),
-          ServiceItem(
-            icon: 'assets/images/service_icon/cable.svg',
-            label: 'Fixed Savings',
-            onTap: () => context.push('/finance/savings/fixed/plans'),
+            onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/easylife/intro')),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/light.svg',
             label: 'Target Saving',
-            onTap: () => context.push('/finance/savings/target/plans'),
+            onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/savings/target/plans')),
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/cable.svg',
             label: 'Fixed Deposit',
-            onTap: () => context.push('/finance/fixed-deposit/plans'),
+            onTap: () => NgnAccountChecker.checkAndExecute(context, ref, () => context.push('/finance/fixed-deposit/plans')),
           ),
 
           ServiceItem(
@@ -252,7 +248,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           ),
           ServiceItem(
             icon: 'assets/images/service_icon/Education.svg',
-            label: 'Education',
+            label: 'Exam',
             onTap: () => context.push('/coralpay-billing/COLLECTIONS/Education'),
           ),
           // ServiceItem(
@@ -261,7 +257,7 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
           //   onTap: () => context.push('/education'),
           // ),
           ServiceItem(
-            icon: 'assets/images/service_icon/Education.svg',
+            icon: 'assets/icons/university_icon.svg',
             label: 'School Fees',
             onTap: () => context.push('/flutterwave-billing/SCHPB/School Fees'),
           ),
@@ -276,32 +272,32 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             onTap: () => context.push('/flight'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/flight.svg',
+            icon: 'assets/icons/location_point_icon.svg',
             label: 'Transport',
             onTap: () => context.push('/transport'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/icons/receipt_icon.svg',
             label: 'Pay Tax',
             onTap: () => context.push('/flutterwave-billing/TAX/Pay Tax'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/images/nav_icons/bank.svg',
             label: 'Gov Fees',
             onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/images/nav_icons/briefcase.svg',
             label: 'TSA/State',
             onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/icons/heart_icon.svg',
             label: 'Hospital',
             onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/icons/RIVER.svg',
             label: 'Water Bill',
             onTap: () => context.push('/coming-soon'),
           ),
@@ -311,17 +307,17 @@ class _AllServicesScreenState extends ConsumerState<AllServicesScreen> {
             onTap: () => context.push('/swap-currency'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/shoping.svg',
+            icon: 'assets/icons/cart_icon.svg',
             label: 'Shopping',
-            onTap: () => context.push('/shopping'),
+            onTap: () => context.push('/coming-soon'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/Education.svg',
+            icon: 'assets/icons/house_icon.svg',
             label: 'Church',
             onTap: () => context.push('/coralpay-billing/CHURCH_COLLECTIONS/Church'),
           ),
           ServiceItem(
-            icon: 'assets/images/service_icon/int.svg',
+            icon: 'assets/icons/star_icon.svg',
             label: 'Lifestyle',
             onTap: () => context.push('/coralpay-billing/EVENTS_AND_LIFESTYLE/Lifestyle'),
           ),

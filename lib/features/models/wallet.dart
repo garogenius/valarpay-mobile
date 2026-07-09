@@ -68,6 +68,8 @@ class WalletModel {
     return '${_getCurrencySymbol(currency)}${balance.toStringAsFixed(2)}';
   }
 
+  String get symbol => _getCurrencySymbol(currency);
+
   static String _getCurrencySymbol(String currencyCode) {
     switch (currencyCode.toUpperCase()) {
       case 'NGN':

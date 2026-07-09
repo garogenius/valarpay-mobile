@@ -5,6 +5,7 @@ import 'package:valarpay/features/models/notification_model.dart';
 import 'package:valarpay/features/notifiers/notification_notifier.dart';
 import '../../../widgets/home_widgets/notification_widgets.dart' as widgets;
 import '../../../widgets/transaction_widgets/transaction_shimmer_loader.dart';
+import 'package:valarpay/features/notifiers/transaction_notifier.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   final int? initialTab;
@@ -555,6 +556,27 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
               ref
                   .read(notificationNotifierProvider.notifier)
                   .markAsRead(notification.id);
+            }
+
+            if ((notification.category == 'TRANSACTIONS' || notification.category == 'SERVICES') && notification.metadata != null) {
+              final reference = notification.metadata?['reference'] ??
+                  notification.metadata?['transactionRef'] ??
+                  notification.metadata?['ref'];
+                  
+              if (reference != null) {
+                 final transactionsState = ref.read(transactionNotifierProvider);
+                 final transactions = transactionsState.data ?? [];
+                 
+                 try {
+                   final transaction = transactions.firstWhere(
+                     (t) => t.reference == reference || t.transactionRef == reference || t.id == reference
+                   );
+                   context.push('/transaction-details', extra: transaction);
+                   return;
+                 } catch (e) {
+                   // Fallback to notification view if not found
+                 }
+              }
             }
 
             context.push(

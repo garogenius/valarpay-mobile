@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:valarpay/features/dashboard/view/KYC/NIN.dart';
+import 'package:valarpay/features/dashboard/view/KYC/BVN.dart' as valarpay_bvn;
 import 'package:valarpay/features/models/user.dart';
 import 'package:valarpay/features/models/user_tier.dart';
 import 'package:intl/intl.dart';
@@ -49,36 +50,65 @@ class _Tier2CardState extends State<Tier2Card> {
                 // Clickable upgrade text
                 Expanded(
                   child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      // Navigate to NIN entry
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NINPage(),
-                        ),
-                      );
+                      bool isBvnVerified = widget.user?.isBvnVerified ?? false;
+                      if (isBvnVerified && isNinVerified) return;
+
+                      if (isBvnVerified && !isNinVerified) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NINPage(isTierUpgrade: true),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const valarpay_bvn.BVNPage(isTierUpgrade: true),
+                          ),
+                        );
+                      }
                     },
                     child: Row(
                       children: [
                         Text(
-                          isNinVerified ? 'Tier 2' : 'Upgrade to Tier 2',
+                          (() {
+                            bool isBvnVerified = widget.user?.isBvnVerified ?? false;
+                            bool bothVerified = isBvnVerified && isNinVerified;
+                            return bothVerified ? 'Tier 2' : 'Upgrade to Tier 2';
+                          })(),
                           style: TextStyle(
-                            color:
-                                isNinVerified
-                                    ? const Color(0xFF9CA3AF)
-                                    : const Color(0xFFF76301),
+                            color: (() {
+                              bool isBvnVerified = widget.user?.isBvnVerified ?? false;
+                              bool bothVerified = isBvnVerified && isNinVerified;
+                              return bothVerified
+                                  ? const Color(0xFF9CA3AF)
+                                  : const Color(0xFFF76301);
+                            })(),
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (!isNinVerified) ...[
-                          SizedBox(width: 4.w),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: const Color(0xFFF76301),
-                            size: 14.sp,
-                          ),
-                        ],
+                        Builder(
+                          builder: (context) {
+                            bool isBvnVerified = widget.user?.isBvnVerified ?? false;
+                            bool bothVerified = isBvnVerified && isNinVerified;
+                            
+                            if (!bothVerified) {
+                              return Padding(
+                                padding: EdgeInsets.only(left: 4.w),
+                                child: Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: const Color(0xFFF76301),
+                                  size: 14.sp,
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -132,8 +162,8 @@ class _Tier2CardState extends State<Tier2Card> {
                   if (widget.tierInfo != null)
                     ...widget.tierInfo!.requirements.map((req) {
                       bool isVerified = false;
-                      if (req.toLowerCase().contains('nin') && isNinVerified) isVerified = true;
-                      if (req.toLowerCase().contains('bvn') && (widget.user?.isBvnVerified ?? false)) isVerified = true;
+                      bool isBvnVerified = widget.user?.isBvnVerified ?? false;
+                      if (req.toLowerCase().contains('identity') && isBvnVerified && isNinVerified) isVerified = true;
                       
                       return Padding(
                         padding: EdgeInsets.only(bottom: 12.h),
@@ -160,13 +190,13 @@ class _Tier2CardState extends State<Tier2Card> {
                       );
                     }).toList()
                   else ...[
-                    // Fallback to NIN if tierInfo is null
+                    // Fallback to Identity if tierInfo is null
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'NIN',
+                          'Identity',
                           style: TextStyle(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
@@ -178,24 +208,9 @@ class _Tier2CardState extends State<Tier2Card> {
                         ),
                         Row(
                           children: [
-                            if (nin != null && nin.isNotEmpty) ...[
-                              Text(
-                                '***${nin.substring(nin.length - 4)}',
-                                style: TextStyle(
-                                  color:
-                                      Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.grey[400]
-                                          : const Color(0xFF6B7280),
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              SizedBox(width: 8.w),
-                            ],
                             Icon(
-                              isNinVerified ? Icons.check_circle : Icons.cancel,
-                              color: isNinVerified ? Colors.green : Colors.red,
+                              (widget.user?.isBvnVerified ?? false) && isNinVerified ? Icons.check_circle : Icons.cancel,
+                              color: (widget.user?.isBvnVerified ?? false) && isNinVerified ? Colors.green : Colors.red,
                               size: 16.sp,
                             ),
                           ],

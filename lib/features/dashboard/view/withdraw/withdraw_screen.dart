@@ -39,7 +39,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final isBvnVerified = user?.isBvnVerified ?? false;
+    final isBvnVerified = (user?.isBvnVerified ?? false) || (user?.isNinVerified ?? false) || (user?.wallets.isNotEmpty ?? false);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

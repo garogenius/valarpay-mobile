@@ -130,8 +130,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         context.pushReplacement('/passcode-login');
       }
     } else {
-      // No saved username, go to signin
-      context.pushReplacement('/signin');
+      // No saved username, check onboarding seen
+      final hasSeenOnboarding = await LocalStorageService.getBool(
+        'has_seen_onboarding',
+      );
+      if (hasSeenOnboarding ?? false) {
+        context.pushReplacement('/signin');
+      } else {
+        context.pushReplacement('/intro');
+      }
     }
   }
 
